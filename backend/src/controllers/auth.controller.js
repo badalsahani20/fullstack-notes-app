@@ -9,7 +9,7 @@ export const registerUser = async (req, res, next) => {
         
         //Check if user exists
         const existingUser = await User.findOne({email});
-        if(existingUser) return res.status(400).json({message: "Email already exists"});
+        if(existingUser) return res.status(400).json({message: "Email already exists, please login"});
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -36,6 +36,15 @@ export const loginUser = async(req, res, next) => {
         });
 
         res.json({ message : "Login successful", user, token});
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const getAllUsers = async(req, res, next) => {
+    try {
+        const users = await User.find();
+        res.json(users);
     } catch (error) {
         next(error);
     }

@@ -77,3 +77,14 @@ body {
 @utility fade-in {
   animation: fadeIn 0.3s ease-in-out both;
 }
+
+.has-value ~ label {
+  top: -1.5rem !important;
+  font-size: 0.75rem !important;
+  color: var(--color-accent);
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
