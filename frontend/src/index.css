@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@import "tailwindcss";
+
+/* 🌈 Color Theme Variables */
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222.2 84% 4.9%);
+  --color-primary: hsl(221 83% 53%);
+  --color-primary-foreground: hsl(210 40% 98%);
+  --color-secondary: hsl(210 40% 96.1%);
+  --color-secondary-foreground: hsl(222.2 47.4% 11.2%);
+  --color-muted: hsl(215 16.3% 46.9%);
+  --color-muted-foreground: hsl(215 16.3% 46.9%);
+  --color-card: hsl(0 0% 98%);
+  --color-accent: hsl(221 83% 53%);
+  --color-accent-foreground: hsl(210 40% 98%);
+
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-soft-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 🌙 Dark Mode Theme */
+@variant dark {
+  --color-background: hsl(222.2 84% 4.9%);
+  --color-foreground: hsl(210 40% 98%);
+  --color-card: hsl(217 33% 17%);
+  --color-secondary: hsl(217 33% 17%);
+  --color-muted: hsl(217 10% 50%);
+  --color-accent: hsl(217 91% 60%);
+}
+
+/* 🌟 Global Base Styles */
+body {
+  @apply bg-background text-foreground font-sans transition-colors duration-300 ease-in-out;
+}
+
+/* 🧩 Utility Classes (custom reusable components) */
+@utility card {
+  @apply bg-card border border-muted rounded-[var(--radius-lg)] p-4 shadow-[var(--shadow-soft)] transition-all duration-200 hover:shadow-[var(--shadow-soft-lg)];
+}
+
+@utility btn-primary {
+  @apply bg-accent text-accent-foreground px-4 py-2 rounded-[var(--radius-md)] font-medium hover:opacity-90 transition-all;
+}
+
+@utility btn-outline {
+  @apply border border-accent text-accent bg-transparent px-4 py-2 rounded-[var(--radius-md)] hover:bg-accent hover:text-accent-foreground transition-all;
+}
+
+@utility input {
+  @apply w-full bg-secondary text-foreground px-3 py-2 border border-muted rounded-[var(--radius-md)] focus:ring-2 focus:ring-accent outline-none;
+}
+
+@utility title {
+  @apply text-2xl font-semibold text-foreground;
+}
+
+@utility subtitle {
+  @apply text-muted text-sm;
+}
+
+/* ✨ Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility fade-in {
+  animation: fadeIn 0.3s ease-in-out both;
+}
