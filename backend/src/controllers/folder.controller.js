@@ -71,8 +71,10 @@ export const deleteFolder = async (req, res, next) => {
     );
 
     const folder = await Folder.findOneAndDelete({ _id: folderId, user: req.user._id });
-    if(!folder) return res.status(404).json({message: "Folder Deleted"});
-    res.json({ message: "Folder deleted" });
+
+    if(!folder) return res.status(404).json({message: "Folder not found"});
+
+    res.json({ message: "Folder deleted & notes moved to Uncategorized" });
   } catch (error) {
     next(error);
   }

@@ -1,25 +1,8 @@
 import { useEffect, useState } from "react";
 import api from "../lib/api";
-import { FolderPlus, StickyNote, Timer } from "lucide-react";
+import { Folder, FolderPlus, Timer } from "lucide-react";
 import image from "../assets/pen.png";
-
-interface Note {
-  _id: string;
-  title: string;
-  content: string;
-  color: string;
-  pinned: boolean;
-  folder: string | null;
-  createdAt: string;
-  updatedAt: Date;
-}
-
-interface Folder {
-  _id: string;
-  name: string;
-  color: string;
-  createdAt: string;
-}
+import {motion, AnimatePresence} from 'framer-motion'
 
 const isToday = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -42,11 +25,37 @@ const isThisMonth = (dateStr: string) => {
     date.getFullYear() === now.getFullYear()
   );
 };
+
+const listVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+};
+
+interface Note {
+  _id: string;
+  title: string;
+  content: string;
+  color: string;
+  pinned: boolean;
+  folder: string | null;
+  createdAt: string;
+  updatedAt: Date;
+}
+
+interface Folder {
+  _id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
 const DashBoard = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [folderFilter, setFolderFilter] = useState<"today" | "week" | "month">(
     "today"
   );
@@ -54,19 +63,7 @@ const DashBoard = () => {
     "today"
   );
 
-  const filteredFolders = folders.filter((folder) => {
-    if (folderFilter === "today") return isToday(folder.createdAt);
-    if (folderFilter === "week") return isThisWeek(folder.createdAt);
-    return isThisMonth(folder.createdAt);
-  });
-
-  const filteredNotes = notes.filter((note) => {
-    if (noteFilter === "today") return isToday(note.createdAt);
-    if (noteFilter === "week") return isThisWeek(note.createdAt);
-    return isThisMonth(note.createdAt);
-  });
-
-  useEffect(() => {
+   useEffect(() => {
     const fetchNotes = async () => {
       try {
         setLoading(true);
@@ -98,35 +95,65 @@ const DashBoard = () => {
       }
     };
     fetchFolders();
+  }, []);
+  const filteredFolders = folders.filter((folder) => {
+    if (folderFilter === "today") return isToday(folder.createdAt);
+    if (folderFilter === "week") return isThisWeek(folder.createdAt);
+    return isThisMonth(folder.createdAt);
   });
 
+
+  const monthFilteredNotes = notes.filter((note) => {
+    const d = new Date(note.createdAt);
+    return (
+      d.getMonth() === selectedMonth.getMonth() && d.getFullYear() === selectedMonth.getFullYear()
+    );
+  });
+
+  const finalNotes = monthFilteredNotes.filter((note) => {
+    if(noteFilter === "today") return isToday(note.createdAt);
+    if(noteFilter === "week") return isThisWeek(note.createdAt);
+    return isThisMonth(note.createdAt);
+  })
+ 
+
   return (
-    <div className="space-y-6 fade-in">
+    <div className="space-y-6 fade-in bg-indigo-50 rounded-lg p-4">
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Recent Folders</h2>
+          <h2 className="text-2xl font-semibold">Recent Folders</h2>
         </div>
-        <div className="flex gap-4 mb-4 text-sm">
+        <div className="flex gap-4 mb-5 text-sm">
             {["today", "week", "month"].map((type) => (
-              <button 
+              <button
                 key={type}
                 onClick={() => setFolderFilter(type as any)}
                 className={`pb-1 border-b-2 transition-all ${
-                  folderFilter === type ? "border-accent text-accent" : "border-transparent text-muted-foreground hover:text-foreground"
+                  folderFilter === type ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
                 >
                   {type === "today" ? "Today" : type === "week" ? "This Week" : "This Month"}
                 </button>
             ))}
           </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <AnimatePresence mode="wait">
+        <motion.div
+          key={folderFilter}
+          variants={listVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={{ duration: 0.25 }}
+          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
           {/* Folder Cards */}
-          {folders.map((folder) => (
+          {filteredFolders.map((folder) => (
             <div
               key={folder._id}
-              className="card cursor-pointer hover:shadow-soft-lg"
+              className="card cursor-pointer max-w-[250px] : hover:shadow-soft-lg "
               style={{ background: folder.color }}
             >
+              <Folder  className={'text-accent h-[50px] w-[50px]'} />
               <h3 className="font-semibold text-lg mb-2">{folder.name}</h3>
               <p className="text-xs opacity-60">
                 {new Date(folder.createdAt).toLocaleDateString("en-IN")}
@@ -141,7 +168,8 @@ const DashBoard = () => {
               <span className="mt-2 text-sm">New Folder</span>
             </div>
           </div>
-        </div>
+        </motion.div>
+        </AnimatePresence>
       </section>
 
       {/* Notes Section */}
@@ -149,10 +177,52 @@ const DashBoard = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">My Notes</h2>
         </div>
+        <div className="flex gap-4 mb-4 text-sm">
+            {["today", "week", "month"].map((type) => (
+              <button
+                key={type}
+                onClick={() => setNoteFilter(type as any)}
+                className={`pb-1 border-b-2 transition-all ${
+                  noteFilter === type ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+                >
+                  {type === "today" ? "Today" : type === "week" ? "This Week" : "This Month"}
+                </button>
+            ))}
+            <div className="flex items-center gap-3 text-sm mb-4 select-none ml-auto">
+            <button
+              onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1)
+              )
+            }
+            className="px-2 py-1 rounded hover:bg-secondary transition"
+              >
+                &lt;
+            </button>
+            <span className="font-medium">
+              {selectedMonth.toLocaleString("en-IN", {month: "long"})} {" "}
+              {selectedMonth.getFullYear()}
+            </span>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+              className="px-2 py-1 rounded hover:bg-secondary transition"
+              >
+                &gt;
+            </button>
+          </div>
+          </div>
+        
+        <AnimatePresence mode="wait">
+        <motion.div
+            key={noteFilter}
+            variants={listVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.25 }}
+            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Notes Card */}
-          {notes.map((note) => {
+
+          {finalNotes.map((note) => {
             const date = new Date(note.createdAt).toLocaleDateString("en-IN");
             return (
               <div
@@ -192,7 +262,8 @@ const DashBoard = () => {
               <span className="mt-2 text-sm">New Note</span>
             </div>
           </div>
-        </div>
+        </motion.div>
+        </AnimatePresence>
       </section>
     </div>
   );
