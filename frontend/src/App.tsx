@@ -18,6 +18,8 @@ function App() {
       <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
       </Route>
+      <Route path="/folder/:id" element={<FolderPage />} />
+      <Route path="/note/:id" element={<NotePage />} />
     </Routes>
     </AnimatePresence>
   );

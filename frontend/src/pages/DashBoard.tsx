@@ -3,6 +3,7 @@ import api from "../lib/api";
 import { Folder, FolderPlus, Timer } from "lucide-react";
 import image from "../assets/pen.png";
 import {motion, AnimatePresence} from 'framer-motion'
+import { useNavigation } from "react-router-dom";
 
 const isToday = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -62,6 +63,8 @@ const DashBoard = () => {
   const [noteFilter, setNoteFilter] = useState<"today" | "week" | "month">(
     "today"
   );
+
+  
 
    useEffect(() => {
     const fetchNotes = async () => {
@@ -150,11 +153,11 @@ const DashBoard = () => {
           {filteredFolders.map((folder) => (
             <div
               key={folder._id}
-              className="card cursor-pointer max-w-[250px] : hover:shadow-soft-lg "
+              className="card cursor-pointer w-full : hover:shadow-soft-lg "
               style={{ background: folder.color }}
             >
-              <Folder  className={'text-accent h-[50px] w-[50px]'} />
-              <h3 className="font-semibold text-lg mb-2">{folder.name}</h3>
+              <Folder  className={'h-[50px] w-[50px]'} />
+              <h3 className="font-semibold text-lg mt-3 mb-2">{folder.name}</h3>
               <p className="text-xs opacity-60">
                 {new Date(folder.createdAt).toLocaleDateString("en-IN")}
               </p>
@@ -227,7 +230,7 @@ const DashBoard = () => {
             return (
               <div
                 key={note._id}
-                className="card"
+                className="card max-w-[300px] w-full h-[240px] flex flex-col justify-between overflow-hidden"
                 style={{ background: note.color }}
               >
                 <div className="border-b cursor-pointer mb">
@@ -237,7 +240,7 @@ const DashBoard = () => {
                     <img src={image} className="h-4 w-4" alt="icon" />
                   </h3>
                 </div>
-                <p className="text-sm mt-2 opacity-80">{note.content}</p>
+                <p className="text-sm mt-2 opacity-80 line-clamp-4 wrap-break-word">{note.content}</p>
                 <p className="text-xs opacity-60 mt-3 flex gap-2">
                   <Timer size={14} />
                   <span>
