@@ -31,5 +31,21 @@ const notesSchema = await mongoose.Schema({
     }
 },{timestamps: true});
 
+function generateSoftColor() {
+    const hue = Math.floor(Math.random() * 360);
+    const saturation = 25 + Math.floor(Math.random() * 15);
+    const lightness = 75 + Math.floor(Math.random() * 10);
+
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+    // Pre-save hook to assign soft random color if not provided
+    notesSchema.pre("save", function (next) {
+        if(!this.color || this.color === "#ffffff") {
+            this.color = generateSoftColor();
+        }
+        next();
+    })
+
+
 const Notes = mongoose.model("Notes", notesSchema);
 export default Notes;

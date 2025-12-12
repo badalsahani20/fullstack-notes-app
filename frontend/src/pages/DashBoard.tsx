@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import api from "../lib/api";
 import { Folder, FolderPlus, Timer } from "lucide-react";
 import image from "../assets/pen.png";
-import {motion, AnimatePresence} from 'framer-motion'
-import { useNavigation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const isToday = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -58,15 +58,15 @@ const DashBoard = () => {
   const [error, setError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [folderFilter, setFolderFilter] = useState<"today" | "week" | "month">(
-    "today"
+    "month"
   );
   const [noteFilter, setNoteFilter] = useState<"today" | "week" | "month">(
-    "today"
+    "week"
   );
 
-  
+  const nav = useNavigate();
 
-   useEffect(() => {
+  useEffect(() => {
     const fetchNotes = async () => {
       try {
         setLoading(true);
@@ -105,167 +105,223 @@ const DashBoard = () => {
     return isThisMonth(folder.createdAt);
   });
 
-
   const monthFilteredNotes = notes.filter((note) => {
     const d = new Date(note.createdAt);
     return (
-      d.getMonth() === selectedMonth.getMonth() && d.getFullYear() === selectedMonth.getFullYear()
+      d.getMonth() === selectedMonth.getMonth() &&
+      d.getFullYear() === selectedMonth.getFullYear()
     );
   });
 
-  const finalNotes = monthFilteredNotes.filter((note) => {
-    if(noteFilter === "today") return isToday(note.createdAt);
-    if(noteFilter === "week") return isThisWeek(note.createdAt);
-    return isThisMonth(note.createdAt);
-  })
- 
+  // const finalNotes =
+  // selectedMonth.getMonth() === new Date().getMonth()
+  //   ? monthFilteredNotes.filter((note) => {
+  //       if (noteFilter === "today") return isToday(note.createdAt);
+  //       if (noteFilter === "week") return isThisWeek(note.createdAt);
+  //       return isThisMonth(note.createdAt);
+  //     })
+  //   : monthFilteredNotes;
+  const isCurrentMonth =
+    selectedMonth.getMonth() === new Date().getMonth() &&
+    selectedMonth.getFullYear() === new Date().getFullYear();
+  let finalNotes;
+  if (isCurrentMonth) {
+    // Normal behavior
+    finalNotes = notes.filter((note) => {
+      if (noteFilter === "today") return isToday(note.createdAt);
+      if (noteFilter === "week") return isThisWeek(note.createdAt);
+      if (noteFilter === "month") return isThisMonth(note.createdAt);
+      return true;
+    });
+  } else {
+    // Browsing other months → show notes of that month only
+    finalNotes = notes.filter((note) => {
+      const d = new Date(note.createdAt);
+      return (
+        d.getMonth() === selectedMonth.getMonth() &&
+        d.getFullYear() === selectedMonth.getFullYear()
+      );
+    });
+  }
 
   return (
-    <div className="space-y-6 fade-in bg-indigo-50 rounded-lg p-4">
+    <div className="space-y-5 fade-in bg-indigo-50 rounded-lg p-4 min-h-screen">
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-semibold">Recent Folders</h2>
         </div>
         <div className="flex gap-4 mb-5 text-sm">
-            {["today", "week", "month"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setFolderFilter(type as any)}
-                className={`pb-1 border-b-2 transition-all ${
-                  folderFilter === type ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-                >
-                  {type === "today" ? "Today" : type === "week" ? "This Week" : "This Month"}
-                </button>
-            ))}
-          </div>
-          <AnimatePresence mode="wait">
-        <motion.div
-          key={folderFilter}
-          variants={listVariants}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={{ duration: 0.25 }}
-          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-          {/* Folder Cards */}
-          {filteredFolders.map((folder) => (
-            <div
-              key={folder._id}
-              className="card cursor-pointer w-full : hover:shadow-soft-lg "
-              style={{ background: folder.color }}
+          {["today", "week", "month"].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFolderFilter(type as any)}
+              className={`pb-1 border-b-2 transition-all ${
+                folderFilter === type
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
-              <Folder  className={'h-[50px] w-[50px]'} />
-              <h3 className="font-semibold text-lg mt-3 mb-2">{folder.name}</h3>
-              <p className="text-xs opacity-60">
-                {new Date(folder.createdAt).toLocaleDateString("en-IN")}
-              </p>
-            </div>
+              {type === "today"
+                ? "Today"
+                : type === "week"
+                ? "This Week"
+                : "This Month"}
+            </button>
           ))}
+        </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={folderFilter}
+            variants={listVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.25 }}
+            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {/* Folder Cards */}
+            {filteredFolders.map((folder) => (
+              <div
+                key={folder._id}
+                onClick={() => nav(`/folder/${folder._id}`)}
+                className="card cursor-pointer w-full : hover:shadow-soft-lg "
+                style={{ background: folder.color }}
+              >
+                <Folder className={"h-[50px] w-[50px]"} />
+                <h3 className="font-semibold text-lg mt-3 mb-2">
+                  {folder.name}
+                </h3>
+                <p className="text-xs opacity-60">
+                  {new Date(folder.createdAt).toLocaleDateString("en-IN")}
+                </p>
+              </div>
+            ))}
 
-          {/* New Folder Button Card */}
-          <div className="card flex items-center justify-center cursor-pointer hover:bg-secondary/60">
-            <div className="flex flex-col items-center text-muted-foreground">
-              <FolderPlus size={28} />
-              <span className="mt-2 text-sm">New Folder</span>
+            {/* New Folder Button Card */}
+            <div className="card flex items-center justify-center cursor-pointer hover:bg-secondary/60">
+              <div className="flex flex-col items-center text-muted-foreground">
+                <FolderPlus size={28} />
+                <span className="mt-2 text-sm">New Folder</span>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
         </AnimatePresence>
       </section>
 
       {/* Notes Section */}
       <section>
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-semibold">My Notes</h2>
         </div>
         <div className="flex gap-4 mb-4 text-sm">
-            {["today", "week", "month"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setNoteFilter(type as any)}
-                className={`pb-1 border-b-2 transition-all ${
-                  noteFilter === type ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-                >
-                  {type === "today" ? "Today" : type === "week" ? "This Week" : "This Month"}
-                </button>
-            ))}
-            <div className="flex items-center gap-3 text-sm mb-4 select-none ml-auto">
+          {["today", "week", "month"].map((type) => (
             <button
-              onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1)
-              )
-            }
-            className="px-2 py-1 rounded hover:bg-secondary transition"
-              >
-                &lt;
+              key={type}
+              onClick={() => setNoteFilter(type as any)}
+              className={`pb-1 border-b-2 transition-all ${
+                noteFilter === type
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {type === "today"
+                ? "Today"
+                : type === "week"
+                ? "This Week"
+                : "This Month"}
+            </button>
+          ))}
+          {/* Month Selector */}
+          <div className="flex items-center text-sm mb-4 select-none ml-auto">
+            <button
+              onClick={() =>
+                setSelectedMonth(
+                  new Date(
+                    selectedMonth.getFullYear(),
+                    selectedMonth.getMonth() - 1
+                  )
+                )
+              }
+              className="px-2 py-1 rounded hover:bg-secondary transition"
+            >
+              &lt;
             </button>
             <span className="font-medium">
-              {selectedMonth.toLocaleString("en-IN", {month: "long"})} {" "}
+              {selectedMonth.toLocaleString("en-IN", { month: "long" })}{" "}
               {selectedMonth.getFullYear()}
             </span>
 
-            <button onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+            <button
+              onClick={() =>
+                setSelectedMonth(
+                  new Date(
+                    selectedMonth.getFullYear(),
+                    selectedMonth.getMonth() + 1
+                  )
+                )
+              }
               className="px-2 py-1 rounded hover:bg-secondary transition"
-              >
-                &gt;
+            >
+              &gt;
             </button>
           </div>
-          </div>
-        
+        </div>
+
         <AnimatePresence mode="wait">
-        <motion.div
+          <motion.div
             key={noteFilter}
             variants={listVariants}
             initial="initial"
             animate="animate"
             exit="exit"
             transition={{ duration: 0.25 }}
-            className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Notes Card */}
+            className="flex gap-4 flex-wrap"
+          >
+            {/* Notes Card */}
 
-          {finalNotes.map((note) => {
-            const date = new Date(note.createdAt).toLocaleDateString("en-IN");
-            return (
-              <div
-                key={note._id}
-                className="card max-w-[300px] w-full h-[240px] flex flex-col justify-between overflow-hidden"
-                style={{ background: note.color }}
-              >
-                <div className="border-b cursor-pointer mb">
-                  <p className="text-xs opacity-60">{date}</p>
-                  <h3 className="font-semibold mt-2 text-lg flex items-center justify-between">
-                    {note.title}{" "}
-                    <img src={image} className="h-4 w-4" alt="icon" />
-                  </h3>
+            {finalNotes.map((note) => {
+              const date = new Date(note.createdAt).toLocaleDateString("en-IN");
+              return (
+                <div
+                  key={note._id}
+                  className="card max-w-[300px] w-full h-[240px]  flex flex-col overflow-hidden"
+                  style={{ background: note.color }}
+                >
+                  <div className="border-b cursor-pointer mb">
+                    <p className="text-xs opacity-60">{date}</p>
+                    <h3 className="font-semibold mt-2 text-lg flex items-center justify-between">
+                      {note.title}{" "}
+                      <img src={image} className="h-4 w-4" alt="icon" />
+                    </h3>
+                  </div>
+                  <p className="text-sm mt-2 opacity-80 line-clamp-4 wrap-break-word">
+                    {note.content}
+                  </p>
+                  <p className="text-xs opacity-60 mt-3 flex gap-2">
+                    <Timer size={14} />
+                    <span>
+                      {new Date(note.createdAt)
+                        .toLocaleTimeString("en-IN")
+                        .toUpperCase()}
+                    </span>
+                    <span>
+                      {new Date(note.createdAt).toLocaleDateString("en-IN", {
+                        weekday: "long",
+                      })}
+                    </span>
+                  </p>
                 </div>
-                <p className="text-sm mt-2 opacity-80 line-clamp-4 wrap-break-word">{note.content}</p>
-                <p className="text-xs opacity-60 mt-3 flex gap-2">
-                  <Timer size={14} />
-                  <span>
-                    {new Date(note.createdAt)
-                      .toLocaleTimeString("en-IN")
-                      .toUpperCase()}
-                  </span>
-                  <span>
-                    {new Date(note.createdAt).toLocaleDateString("en-IN", {
-                      weekday: "long",
-                    })}
-                  </span>
-                </p>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* New Note Card */}
-          <div className="card flex border-dashed items-center justify-center cursor-pointer hover:background/60">
-            <div className="flex flex-col items-center text-muted-foreground">
-              <img src={image} className="h-8 w-8" alt="logo" />
-              <span className="mt-2 text-sm">New Note</span>
+            {/* New Note Card */}
+            <div className="card flex border-dashed items-center justify-center cursor-pointer hover:background/60">
+              <div className="flex flex-col items-center text-muted-foreground">
+                <img src={image} className="h-8 w-8" alt="logo" />
+                <span className="mt-2 text-sm">New Note</span>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
         </AnimatePresence>
       </section>
     </div>

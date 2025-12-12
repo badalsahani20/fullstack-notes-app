@@ -1,10 +1,18 @@
 import express from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
-import { createFolder, deleteFolder, getAllFolders, updateFolder } from "../controllers/folder.controller.js";
+import {
+  createFolder,
+  deleteFolder,
+  getAllFolders,
+  updateFolder,
+  getFolderById,
+} from "../controllers/folder.controller.js";
 
 const router = express.Router();
 
 router.get("/", authMiddleware, getAllFolders);
+
+router.get("/:id/notes", authMiddleware, getFolderById);
 
 router.post("/", authMiddleware, createFolder);
 

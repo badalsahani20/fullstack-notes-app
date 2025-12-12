@@ -18,7 +18,7 @@ export const createNote = async (req, res, next) => {
     const note = await Notes.create({
       user: req.user._id,
       title: req.body.title,
-      content: req.body.content,  
+      content: req.body.content,
     });
 
     res.status(201).json({message: "Note created", note});
@@ -26,6 +26,21 @@ export const createNote = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getNoteById = async (req,res,next) => {
+  try {
+    const note = await Notes.findOne({
+      _id: req.params.id,
+      user: req.user._id,
+    });
+    if(!note) {
+      return res.status(404).json({message: "Note not found"});
+    }
+    res.json(note);
+  } catch (error) {
+    next(error);
+  }
+}
 
 export const updateNote = async (req, res, next) => {
   try {
