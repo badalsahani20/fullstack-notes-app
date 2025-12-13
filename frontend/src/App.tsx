@@ -23,7 +23,7 @@ function App() {
           <Route path="/" element={<Dashboard />} />
       </Route>
       <Route path="/folder/:id" element={<FolderPage />} />
-      <Route path="/note/:id" element={<NotePage />} />
+      <Route path="/notes/:id" element={<NotePage />} />
       <Route path="/notes" element={<AllNotes />} />
 
     </Routes>

@@ -17,11 +17,10 @@ export const createNote = async (req, res, next) => {
   try {
     const note = await Notes.create({
       user: req.user._id,
-      title: req.body.title,
-      content: req.body.content,
+      content: req.body.content || "",
     });
 
-    res.status(201).json({message: "Note created", note});
+    res.status(201).json(note);
   } catch (error) {
     next(error);
   }

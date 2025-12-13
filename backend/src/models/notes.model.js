@@ -9,11 +9,11 @@ const notesSchema = await mongoose.Schema({
     },
     title: {
         type: String,
-        required: true,
+        default: "Untitled"
     },
     content: {
         type:String,
-        required: true,
+        default: ""
     },
     folder:{
         type: mongoose.Schema.Types.ObjectId,

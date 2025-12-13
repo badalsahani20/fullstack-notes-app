@@ -4,6 +4,7 @@ import { Folder, FolderPlus, Timer } from "lucide-react";
 import image from "../assets/pen.png";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { extractPreview, extractTitle } from "../utils/note";
 
 const isToday = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -66,6 +67,18 @@ const DashBoard = () => {
 
   const nav = useNavigate();
 
+  const handleCreateNote = async () => {
+    try {
+      const res = await api.post("/notes", {
+        content: "",
+      });
+      nav(`/notes/${res.data._id}`);
+    } catch (error: unknown) {
+      setError("Failed to create note.");
+      console.error(error);
+    }
+  }
+
   useEffect(() => {
     const fetchNotes = async () => {
       try {
@@ -105,13 +118,13 @@ const DashBoard = () => {
     return isThisMonth(folder.createdAt);
   });
 
-  const monthFilteredNotes = notes.filter((note) => {
-    const d = new Date(note.createdAt);
-    return (
-      d.getMonth() === selectedMonth.getMonth() &&
-      d.getFullYear() === selectedMonth.getFullYear()
-    );
-  });
+  // const monthFilteredNotes = notes.filter((note) => {
+  //   const d = new Date(note.createdAt);
+  //   return (
+  //     d.getMonth() === selectedMonth.getMonth() &&
+  //     d.getFullYear() === selectedMonth.getFullYear()
+  //   );
+  // });
 
   // const finalNotes =
   // selectedMonth.getMonth() === new Date().getMonth()
@@ -286,16 +299,17 @@ const DashBoard = () => {
                   key={note._id}
                   className="card max-w-[300px] w-full h-[240px]  flex flex-col overflow-hidden"
                   style={{ background: note.color }}
+                  onClick={() => nav(`/notes/${note._id}`)}
                 >
                   <div className="border-b cursor-pointer mb">
                     <p className="text-xs opacity-60">{date}</p>
                     <h3 className="font-semibold mt-2 text-lg flex items-center justify-between">
-                      {note.title}{" "}
+                      {extractTitle(note.title)}{" "}
                       <img src={image} className="h-4 w-4" alt="icon" />
                     </h3>
                   </div>
                   <p className="text-sm mt-2 opacity-80 line-clamp-4 wrap-break-word">
-                    {note.content}
+                    {extractPreview(note.content, 120)}
                   </p>
                   <p className="text-xs opacity-60 mt-3 flex gap-2">
                     <Timer size={14} />
@@ -316,7 +330,7 @@ const DashBoard = () => {
 
             {/* New Note Card */}
             <div className="card flex border-dashed items-center justify-center cursor-pointer hover:background/60">
-              <div className="flex flex-col items-center text-muted-foreground">
+              <div className="flex flex-col items-center text-muted-foreground" onClick={handleCreateNote}>
                 <img src={image} className="h-8 w-8" alt="logo" />
                 <span className="mt-2 text-sm">New Note</span>
               </div>
