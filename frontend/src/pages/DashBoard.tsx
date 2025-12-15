@@ -297,7 +297,7 @@ const DashBoard = () => {
               return (
                 <div
                   key={note._id}
-                  className="card max-w-[300px] w-full h-[240px]  flex flex-col overflow-hidden"
+                  className="card max-w-[300px] w-full h-[240px]  flex flex-col overflow-hidden cursor-pointer transition-all duration-300 ease-out hover:shadow-xl hover:brightness-95 active:brightness-90"
                   style={{ background: note.color }}
                   onClick={() => nav(`/notes/${note._id}`)}
                 >

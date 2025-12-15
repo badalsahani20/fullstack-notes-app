@@ -31,7 +31,10 @@ const TipTap = ({content, onChange} : TipTapProps) => {
   return (
     <div className="border rounded-md p-3">
       <EditorToolbar editor={editor} />
-      <EditorContent editor={editor} className="p-3 min-h-[200px]" />
+      <EditorContent editor={editor} className="p-3 [&_.ProseMirror]:text-[18px] [&_.ProseMirror]:mx-auto  [&_.ProseMirror]:max-w-[720px] [&_.ProseMirror]:w-full [&_.ProseMirror]:text-left [&_.ProseMirror]:leading-relaxed
+    [&_.ProseMirror]:space-y-2
+
+    [&_.ProseMirror]:outline-none min-h-[200px]" />
     </div>
   );
 };

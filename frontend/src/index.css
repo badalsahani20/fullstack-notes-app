@@ -112,3 +112,7 @@ html, body {
   padding-left: 1.5rem;
   margin: 1rem 0;
 }
+
+.ProseMirror:focus {
+  outline: none;
+}

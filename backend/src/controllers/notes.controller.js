@@ -1,4 +1,5 @@
 import Notes from "../models/notes.model.js";
+import mongoose from "mongoose";
 export const getAllNotes = async (req, res, next) => {
   try {
     const note = await Notes.find({ user: req.user._id }).sort({
@@ -42,6 +43,9 @@ export const getNoteById = async (req,res,next) => {
 }
 
 export const updateNote = async (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+  return res.status(400).json({ message: "Invalid note id" });
+}
   try {
     const note = await Notes.findOneAndUpdate(
       {
@@ -52,7 +56,7 @@ export const updateNote = async (req, res, next) => {
       { new: true }
     );
     if(!note) return res.status(404).json({message: "Note not found"});
-    res.status( 200).json({message: "Note updated", note}) //Updated status code
+    res.status( 200).json(note) //Updated status code
   } catch (error) {
     next(error);
   }

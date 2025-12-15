@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TipTap from "../components/TipTap";
 import { useParams } from "react-router-dom";
 import api from "../lib/api";
@@ -14,12 +14,16 @@ type Note = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+const AUTOSAVE_DELAY = 900; //ms
+
 const NotePage = () => {
   const { id } = useParams();
   const [note, setNote] = useState<Note | null>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const lastSavedContent = useRef<string | null>(null);
 
   //Save note
   const handleSave = async () => {
@@ -45,6 +49,7 @@ const NotePage = () => {
         setLoading(true);
         const res = await api.get(`notes/${id}`);
         setNote(res.data);
+        lastSavedContent.current = res.data.content;
       } catch (error: unknown) {
         setError("Failed to load note");
         console.error(error);
@@ -55,6 +60,33 @@ const NotePage = () => {
 
     fetchNote();
   }, [id]);
+
+  //Autosave
+  useEffect(() => {
+    if(!note || !note._id) return;
+    if(lastSavedContent.current === note.content) return;
+    if (saving) return;
+    const timeout = setTimeout(async () => {
+      try {
+        setSaving(true);
+        await api.put(`/notes/${note._id}`, {
+          content: note.content,
+          color: note.color,
+          folder: note.folder,
+          pinned: note.pinned
+        });
+
+        lastSavedContent.current = note.content;
+      } catch (error) {
+        console.error(error);
+        setError("Autosave failed");
+      } finally{
+        setSaving(false);
+      }
+    }, AUTOSAVE_DELAY);
+
+      return () => clearTimeout(timeout);
+  },[note?.content, note?.color, note?.pinned, note?.folder]);
 
   if (loading) return <div className="p-6">Loading…</div>;
   if (error) return <div className="p-6 text-red-600">{error}</div>;
