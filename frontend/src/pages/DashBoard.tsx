@@ -83,7 +83,7 @@ const DashBoard = () => {
     const fetchNotes = async () => {
       try {
         setLoading(true);
-        const res = await api.get("notes/");
+        const res = await api.get("/notes");
         if (!res) return setError("Failed to load notes. Try refreshing.");
         setNotes(res.data);
       } catch (err) {
@@ -100,7 +100,7 @@ const DashBoard = () => {
     const fetchFolders = async () => {
       try {
         setLoading(true);
-        const res = await api.get("folders/");
+        const res = await api.get("/folders");
         if (!res) return setError("Failed to load folders. Try refreshing...");
         setFolders(res.data);
       } catch (err) {

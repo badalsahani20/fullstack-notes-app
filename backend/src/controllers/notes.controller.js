@@ -1,87 +1,79 @@
-import Notes from "../models/notes.model.js";
+import * as NoteService from "../services/notes.service.js";
+import catchAsync from "../utils/catchAsync.js";
 import mongoose from "mongoose";
-export const getAllNotes = async (req, res, next) => {
-  try {
-    const note = await Notes.find({ user: req.user._id }).sort({
-      pinned: -1,
-      updatedAt: -1,
-    });
+export const getAllNotes = catchAsync(async (req, res, next) => {
+    const notes = await NoteService.findUserNotes(req.user._id);
 
-    if(!note || note.length === 0) return res.status(404).json({message: "No notes found. Create one!"});
-    res.status(201).json(note);
-  } catch (error) {
-    next(error);
-  }
-};
+    if(!notes || notes.length === 0) {
+      return res.status(404).json({message: "No notes found."});
+    }
+    res.status(200).json(notes);
+});
 
-export const createNote = async (req, res, next) => {
-  try {
-    const note = await Notes.create({
-      user: req.user._id,
-      content: req.body.content || "",
-    });
+export const createNote = catchAsync(async (req, res, next) => {
+    const { content, title, color, folder, createdAt} = req.body;
+    const note = await NoteService.createNewNote(req.user._id, {content, title, color, folder, createdAt});
 
     res.status(201).json(note);
-  } catch (error) {
-    next(error);
-  }
-};
+});
 
-export const getNoteById = async (req,res,next) => {
-  try {
-    const note = await Notes.findOne({
-      _id: req.params.id,
-      user: req.user._id,
-    });
+export const getNoteById = catchAsync(async (req,res,next) => {
+    const note = await NoteService.findNotesById(req.params.id, req.user._id);
     if(!note) {
-      return res.status(404).json({message: "Note not found"});
+      return res.status(404).json({message: "Note not found."});
     }
     res.json(note);
-  } catch (error) {
-    next(error);
-  }
-}
+})
 
-export const updateNote = async (req, res, next) => {
+export const updateNote = catchAsync(async (req, res, next) => {
   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
   return res.status(400).json({ message: "Invalid note id" });
 }
-  try {
-    const note = await Notes.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        user: req.user._id,
-      },
-      req.body,
-      { new: true }
-    );
-    if(!note) return res.status(404).json({message: "Note not found"});
-    res.status( 200).json(note) //Updated status code
-  } catch (error) {
-    next(error);
+  const { version, ...updateData } = req.body;
+  if (version === undefined) {
+   return res.status(400).json({
+      message: "Version is required for update"
+   });
+}
+  const result = await NoteService.updateNoteWithVersionCheck(
+    req.params.id,
+    req.user._id,
+    version,
+    updateData
+  );
+
+  if(!result) {
+    return res.status(404).json({ message: "Note not found" });
   }
-};
+  
+  if(result.conflict) {
+    return res.status(409).json({
+      message: "Conflict detected",
+      serverVersion: result.serverNote,
+    });
+  }
 
-export const deleteNote = async (req, res, next) => {
-    try {
-        const note = await Notes.findOneAndDelete({_id: req.params.id, user: req.user._id});
-        if(!note) return res.status(404).json({message: "Note not found"});
-        res.status(200).json({message: "Note deleted"});
-    } catch (error) {
-        next(error);
-    }
-}
+    res.status(200).json(result.updatedNote);
+});
 
-export const togglePin = async (req, res, next) => {
-    try {
-        const note = await Notes.findOne({_id:req.params.id, user: req.user._id});
-        if(!note) {
-            return res.status(404).json({message: "Note not found"});
-        }
-        note.pinned = !note.pinned;
-        await note.save();
-        res.status(200).json({message: "Note pinned successfully" , note});
-    } catch (error) {
-        next(error);
+export const deleteNote = catchAsync(async (req, res, next) => {
+    const { version } = req.body;
+
+    const result = await NoteService.removeNote(req.params.id, req.user._id, version);
+    if(!result) return res.status(404).json({message: "Note not found"});
+    if(result.conflict) {
+      return res.status(409).json({
+        message: "Conflict detected: Note was updated on another device",
+        serverNote: result.serverNote,
+      });
     }
-}
+    res.status(200).json({message: "Note Moved to Trash" });
+})
+
+export const togglePin = catchAsync(async (req, res, next) => {
+    const note = await NoteService.flipPinStatus(req.params.id,req.user._id);
+    if(!note) {
+        return res.status(404).json({message: "Note not found"});
+    }
+    res.status(200).json({message: "Pin status toggled" , note});
+})

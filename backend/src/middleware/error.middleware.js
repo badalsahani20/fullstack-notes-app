@@ -1,31 +1,35 @@
 const errorMiddleware = (err, req, res, next) => {
-  let error = err;
+  if(process.env.NODE_ENV !== "production") {
+    console.error(`Error: ${err.message}` );
+    console.error(err.stack);
+  }
 
-  console.error(err.stack);
+  // 2. Default error state
+  let statusCode = err.statusCode || 500;
+  let message = err.message || "Server Error";
 
   // Mongoose bad ObjectId
-  if (err.name === "CastError" && err.kind === "ObjectId") {
-    error = new Error("Resource not found");
-    error.statusCode = 404;
+  if (err.name === "CastError") {
+    message = `Resource not found (Invalid ID format)`;
+    statusCode = 404;
   }
 
   // Duplicate key
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue);
-    error = new Error(`Duplicate ${field} entered`);
-    error.statusCode = 400;
+    const field = Object.keys(err.keyValue || {});
+    message = `Duplicate value for: ${field}. Please use another value!`;
+    statusCode = 400;
   }
 
   // Validation error
   if (err.name === "ValidationError") {
-    const message = Object.values(err.errors).map((v) => v.message).join(", ");
-    error = new Error(message);
-    error.statusCode = 400;
+    message = Object.values(err.errors).map((v) => v.message).join(", ");
+    statusCode = 400;
   }
 
-  res.status(error.statusCode || 500).json({
+  res.status(statusCode).json({
     success: false,
-    error: error.message || "Server Error",
+    message: message,
   });
 };
 

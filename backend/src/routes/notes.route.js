@@ -3,17 +3,18 @@ import authMiddleware from "../middleware/auth.middleware.js";
 import { createNote, deleteNote, getAllNotes, togglePin, updateNote, getNoteById } from "../controllers/notes.controller.js";
 
 const router = express.Router();
+router.use(authMiddleware);
 
-router.get("/", authMiddleware, getAllNotes);
+router.get("/", getAllNotes);
 
-router.post("/", authMiddleware, createNote);
+router.post("/", createNote);
 
-router.get("/:id", authMiddleware, getNoteById);
+router.get("/:id", getNoteById);
 
-router.put("/:id", authMiddleware, updateNote);
+router.put("/:id", updateNote);
 
-router.delete("/:id", authMiddleware, deleteNote);
+router.delete("/:id", deleteNote);
 
-router.patch("/:id/pin", authMiddleware, togglePin);
+router.patch("/:id/pin", togglePin);
 
 export default router;

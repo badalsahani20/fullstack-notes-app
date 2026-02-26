@@ -1,7 +1,7 @@
-import { Timestamp } from "bson";
 import mongoose from "mongoose";
+import { generateSoftColor } from "../utils/colorUtils.js";
 
-const notesSchema = await mongoose.Schema({
+const notesSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -28,23 +28,33 @@ const notesSchema = await mongoose.Schema({
     color: {
         type: String,
         default: "#ffffff"
+    },
+    version: {
+        type: Number,
+        default: 0
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false
     }
 },{timestamps: true});
 
-function generateSoftColor() {
-    const hue = Math.floor(Math.random() * 360);
-    const saturation = 25 + Math.floor(Math.random() * 15);
-    const lightness = 75 + Math.floor(Math.random() * 10);
+notesSchema.index({ user: 1, pinned: -1, updatedAt: -1 });
+notesSchema.index({ user: 1, folder: 1, updatedAt: -1 });
+notesSchema.index({ title: "text", content: "text" });
 
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-}
     // Pre-save hook to assign soft random color if not provided
-    notesSchema.pre("save", function (next) {
-        if(!this.color || this.color === "#ffffff") {
-            this.color = generateSoftColor();
-        }
-        next();
-    })
+notesSchema.pre("save", function (next) {
+    if(!this.color || this.color === "#ffffff") {
+        this.color = generateSoftColor();
+    }
+    next();
+});
+
+notesSchema.pre(/^find/, function(next) {
+    this.where({ isDeleted: {$ne: true} });
+    next();
+})
 
 
 const Notes = mongoose.model("Notes", notesSchema);
