@@ -77,3 +77,18 @@ export const togglePin = catchAsync(async (req, res, next) => {
     }
     res.status(200).json({message: "Pin status toggled" , note});
 })
+
+export const searchAllNotes = catchAsync(async (req, res, next) => {
+  const { q, folderId } = req.query;
+  if(!q || q.trim() === "") {
+    return res.status(400).json({ message: "Search query is required"});
+  }
+
+  const notes = await NoteService.searchNote(req.user._id, q, folderId);
+
+  res.status(200).json({
+    success: true,
+    count: notes.length,
+    notes
+  });
+});

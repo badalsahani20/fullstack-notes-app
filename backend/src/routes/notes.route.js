@@ -1,9 +1,11 @@
 import express from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
-import { createNote, deleteNote, getAllNotes, togglePin, updateNote, getNoteById } from "../controllers/notes.controller.js";
+import { createNote, deleteNote, getAllNotes, togglePin, updateNote, getNoteById, searchAllNotes } from "../controllers/notes.controller.js";
 
 const router = express.Router();
 router.use(authMiddleware);
+
+router.get("/search", searchAllNotes);
 
 router.get("/", getAllNotes);
 

@@ -41,7 +41,14 @@ const notesSchema = new mongoose.Schema({
 
 notesSchema.index({ user: 1, pinned: -1, updatedAt: -1 });
 notesSchema.index({ user: 1, folder: 1, updatedAt: -1 });
-notesSchema.index({ title: "text", content: "text" });
+notesSchema.index({ user: 1, isDeleted: 1, title: "text", content: "text"},
+    {
+        weights: {
+            title: 5,
+            content: 1
+        }
+    }
+);
 
     // Pre-save hook to assign soft random color if not provided
 notesSchema.pre("save", function (next) {

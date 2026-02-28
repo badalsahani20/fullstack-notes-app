@@ -1,5 +1,6 @@
 import Notes from "../models/notes.model.js";
 import Folder from "../models/folder.model.js";
+// import { $regex } from "sift";
 export const findUserNotes = async (userId) => {
     return await Notes.find({ user: userId, isDeleted: false}).sort({
         pinned: -1,
@@ -84,6 +85,45 @@ export const flipPinStatus = async (noteId, userId) => {
     );
 }
 
+export const searchNote = async(userId, query, folderId = null) => {
+
+    const searchRegex = new RegExp(query, 'i');
+
+    //The base filter
+    const queryFilter = {
+        user: userId,
+        isDeleted: false,
+        $or:[
+            { title: { $regex: searchRegex }},
+            { content: { $regex: searchRegex }},
+            { $text: { $search: query }}
+        ]
+    };
+
+    const baseFilter = { user: userId, isDeleted: false };
+
+    //If folderId provided
+    if(folderId && folderId !== null && folderId !== 'undefined'){
+        baseFilter.folder = folderId;
+    }
+
+    let notes = await Notes.find({...baseFilter, $text: {$search: query}})
+    .select({ score: {$meta: "textScore" }})
+    .sort({ score: {$meta: "textScore" }});
+
+    //Fallback
+    if(notes.length === 0) {
+        const searchRegex = new RegExp(query, 'i');
+        notes = await Notes.find({
+            ...baseFilter,
+            $or: [
+                {title: { $regex: searchRegex }},
+                {content: { $regex: searchRegex }}
+            ]
+        }).sort({updatedAt: -1});
+    }
+    return notes;
+}
 
 export const restoreNote = async (noteId, userId) => {
     return await Notes.findOneAndUpdate(
