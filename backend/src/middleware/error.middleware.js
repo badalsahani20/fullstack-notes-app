@@ -1,6 +1,6 @@
 const errorMiddleware = (err, req, res, next) => {
-  if(process.env.NODE_ENV !== "production") {
-    console.error(`Error: ${err.message}` );
+  if (process.env.NODE_ENV !== "production") {
+    console.error(`Error: ${err.message}`);
     console.error(err.stack);
   }
 
@@ -14,6 +14,13 @@ const errorMiddleware = (err, req, res, next) => {
     statusCode = 404;
   }
 
+  // Add this near your other Mongoose handlers
+  if (err.statusCode === 409) {
+    message =
+      err.message ||
+      "Conflict detected: Data has been modified by another device.";
+  }
+
   // Duplicate key
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue || {});
@@ -23,8 +30,14 @@ const errorMiddleware = (err, req, res, next) => {
 
   // Validation error
   if (err.name === "ValidationError") {
-    message = Object.values(err.errors).map((v) => v.message).join(", ");
+    message = Object.values(err.errors)
+      .map((v) => v.message)
+      .join(", ");
     statusCode = 400;
+  }
+
+  if (err.statusCode === 403) {
+    res.clearCookie("refreshToken");
   }
 
   res.status(statusCode).json({

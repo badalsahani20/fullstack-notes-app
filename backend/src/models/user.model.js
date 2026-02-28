@@ -20,6 +20,19 @@ const userSchema = new mongoose.Schema({
         minlength: [6, "Password must be at least 6 characters"],
         select: false,
     },
+    refreshToken: [
+        {
+            token: {
+                type: String,
+                required: true,
+            },
+            createdAt: {
+                type: Date,
+                default: Date.now,
+                expires: 7 * 24 * 60 * 60, // 7 days
+            }
+        },
+    ],
 } , {timestamps: true});
 
 userSchema.pre("save", async function(next) {
@@ -28,12 +41,27 @@ userSchema.pre("save", async function(next) {
     try {
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-        next();0
+        next();
     } catch (error) {
         next(error);
     }
 })
 
+userSchema.methods.generateAccessToken = function () {
+    return jwt.sign(
+        {id: this._id},
+        process.env.ACCESS_SECRET,
+        { expiresIn: process.env.ACCESS_EXPIRE || "15m" }
+    );
+};
+
+userSchema.methods.generateRefreshToken = function () {
+    return jwt.sign(
+        { id: this._id },
+        process.env.REFRESH_SECRET,
+        { expiresIn: process.env.REFRESH_EXPIRE || "7d" }
+    )
+}
 userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 }

@@ -28,11 +28,17 @@ export const loginUser = catchAsync(async (req, res, next) => {
   }
 
   //Call the service to handle login logic
-  const { user, token } = await AuthService.loginUser(email, password);
+  const { user, accessToken, refreshToken } = await AuthService.loginUser(email, password);
 
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  })
   res.status(200).json({
     success: true,
-    token,
+    accessToken,
     user: {
       id: user._id,
       name: user.name,
@@ -55,4 +61,28 @@ export const loginUser = catchAsync(async (req, res, next) => {
 export const getAllUsers = catchAsync(async (req, res, next) => {
   const users = await User.find().select("-password");
   res.json(users);
+});
+
+export const refreshToken = catchAsync(async (req, res, next) => {
+  const refreshTokenFromCookie = req.cookies.refreshToken;
+
+  const { newAccessToken, newRefreshToken } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
+
+  res.cookie("refreshToken", newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+
+  res.json({ accessToken: newAccessToken });
+})
+
+export const logoutUser = catchAsync(async (req, res, next) => {
+  const refreshTokenFromCookie = req.cookies.refreshToken;
+  
+  await AuthService.logoutUser(refreshTokenFromCookie);
+  res.clearCookie("refreshToken");
+
+  res.json({ message: "Logged out successfully" });
 });

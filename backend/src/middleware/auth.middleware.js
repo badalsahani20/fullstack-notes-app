@@ -17,8 +17,8 @@ const authMiddleware = async (req, res, next) => {
     
     //Verification
     try {
-      const decode = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decode.id.setlect("-password"));  
+      const decode = jwt.verify(token, process.env.ACCESS_SECRET);
+      const user = await User.findById(decode.id).select("-password");
 
       if (!user) {
         return res.status(401).json({ message: "User no longer exists" });

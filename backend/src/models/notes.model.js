@@ -37,7 +37,7 @@ const notesSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     }
-},{timestamps: true});
+},{timestamps: true, versionKey: false});
 
 notesSchema.index({ user: 1, pinned: -1, updatedAt: -1 });
 notesSchema.index({ user: 1, folder: 1, updatedAt: -1 });

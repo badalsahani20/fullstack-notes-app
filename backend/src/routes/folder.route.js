@@ -22,3 +22,4 @@ router.put("/:id", authMiddleware, updateFolder);
 router.delete("/:id", authMiddleware, deleteFolder);
 
 export default router;
+
