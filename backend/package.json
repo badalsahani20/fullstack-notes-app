@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@google/genai": "^1.43.0",
+    "@google/generative-ai": "^0.24.1",
     "accepts": "^2.0.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",
@@ -19,6 +21,7 @@
     "cors": "^2.8.5",
     "debug": "^4.4.3",
     "depd": "^2.0.0",
+    "diff": "^8.0.3",
     "dotenv": "^17.2.3",
     "dunder-proto": "^1.0.1",
     "ecdsa-sig-formatter": "^1.0.11",
@@ -106,8 +109,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node -r dotenv/config server.js",
+    "dev": "nodemon -r dotenv/config server.js"
   },
   "keywords": [],
   "author": "",

@@ -36,7 +36,13 @@ const notesSchema = new mongoose.Schema({
     isDeleted: {
         type: Boolean,
         default: false
-    }
+    },
+    grammarErrors: [{
+        start: Number,
+        end: Number,
+        original: String,
+        suggestion: String
+    }]
 },{timestamps: true, versionKey: false});
 
 notesSchema.index({ user: 1, pinned: -1, updatedAt: -1 });
@@ -52,7 +58,7 @@ notesSchema.index({ user: 1, isDeleted: 1, title: "text", content: "text"},
 
     // Pre-save hook to assign soft random color if not provided
 notesSchema.pre("save", function (next) {
-    if(!this.color || this.color === "#ffffff") {
+    if(this.isNew && (!this.color || this.color === "#ffffff")) {
         this.color = generateSoftColor();
     }
     next();

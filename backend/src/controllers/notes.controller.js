@@ -34,12 +34,13 @@ export const updateNote = catchAsync(async (req, res, next) => {
    return res.status(400).json({
       message: "Version is required for update"
    });
-}
+} 
+  const finalUpdateData = {...updateData, grammarError: [] };
   const result = await NoteService.updateNoteWithVersionCheck(
     req.params.id,
     req.user._id,
     version,
-    updateData
+    finalUpdateData
   );
 
   if(!result) {

@@ -1,13 +1,16 @@
 import express from "express";
 import connectDB from "./config/db.js";
 import dotenv from "dotenv";
+dotenv.config();
 import cors from "cors";
 import userRoute from "./src/routes/auth.route.js";
 import notesRoute from "./src/routes/notes.route.js";
 import folderRoute from "./src/routes/folder.route.js";
 import errorMiddleware from "./src/middleware/error.middleware.js";
+import aiRoute from "./src/routes/aiRoute.js"
+// import { message } from "statuses";
 
-dotenv.config();
+
 const app = express();
 
 app.use(express.json());
@@ -18,6 +21,7 @@ connectDB();
 app.use("/api/users", userRoute);
 app.use("/api/notes", notesRoute);
 app.use("/api/folders", folderRoute);
+app.use("/api/ai", aiRoute);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
@@ -25,3 +29,12 @@ app.listen(PORT, () => {
 });
 
 app.use(errorMiddleware);
+
+app.use((err, req, res, next) => {
+    console.error("GLOBAL ERROR: ", err.message);
+
+    res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message || "Internal Server Error"
+    });
+})
