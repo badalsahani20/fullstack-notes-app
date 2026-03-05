@@ -1,32 +1,27 @@
-import { Routes, Route, useLocation } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/DashBoard";
-import Layout from "./components/Layout";
+import { Routes, Route, useLocation, BrowserRouter } from "react-router-dom";
+// import Login from "./pages/Login";
+// import Register from "./pages/Register";
+// import Dashboard from "./pages/DashBoard";
+// import Layout from "./components/Layout";
 import { AnimatePresence } from "framer-motion";
-import FolderPage from "./pages/FolderPage";
-import NotePage from "./pages/NotePage";
-import AllNotes from "./pages/AllNotes";
+import Layout from "./components/MainLayout";
+import MainLayout from "./components/MainLayout";
+// import FolderPage from "./pages/FolderPage";
+// import NotePage from "./pages/NotePage";
+// import AllNotes from "./pages/AllNotes";
 
 
 function App() {
-  const location = useLocation();
+  //Temp Home placeholder
+  const TempHome = () => <h1 className="text-3xl font-bold">Welcome back!</h1>;
   return (
     <AnimatePresence mode="wait">
-    {/* <Layout /> */}
-    <Routes location={location} key={location.pathname}>
-      {/* public routes */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      {/* protected routes */}
-      <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-      </Route>
-      <Route path="/folder/:id" element={<FolderPage />} />
-      <Route path="/notes/:id" element={<NotePage />} />
-      <Route path="/notes" element={<AllNotes />} />
-
-    </Routes>
+      <Routes>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<TempHome />} />
+          {/* We will add AllNotes and NotePage routes here soon */}
+        </Route>
+      </Routes>
     </AnimatePresence>
   );
 }

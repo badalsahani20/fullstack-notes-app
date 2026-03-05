@@ -1,7 +1,27 @@
-export const getToken = () => localStorage.getItem("token");
+import api from "./api";
 
-export const setToken = (token: string) => localStorage.setItem("token", token);
+export interface User {
+    id: string;
+    email: string;
+    name?: string;
+}
 
-export const clearToken = () => localStorage.removeItem("token");
+// * Validate the session by calling the /me endpoint.
+export const checkAuth = async (): Promise<User | null> => {
+    try {
+        const response = await api.get("/auth/me");
+        return response.data;
+    } catch (error) {
+        return null;
+    }
+}
 
-export const isAuthed = () => Boolean(getToken());
+// * Logs out by calling the backend to clear the HttpOnly cookies.
+export const logout = async () => {
+    try {
+        await api.post("/auth/logout");
+        window.location.href = "/login";
+    } catch (error) {
+        console.error("Logout failed", error);
+    }
+}
