@@ -1,5 +1,4 @@
 import Notes from "../models/notes.model.js";
-import Folder from "../models/folder.model.js";
 // import { $regex } from "sift";
 export const findUserNotes = async (userId) => {
     return await Notes.find({ user: userId, isDeleted: false}).sort({
@@ -15,10 +14,10 @@ export const createNewNote = async (userId, noteData) => {
     });
 };
 
-export const updateNoteById = async (noteId, userId, updateData) => {
+export const updateNoteById = async (noteId, userId, updateData, clientVersion) => {
     return await Notes.findOneAndUpdate(
-        { _id: noteId, user: userId },
-        updateData,
+        { _id: noteId, user: userId, version: clientVersion },
+        { $set: updateData, $inc: {version: 1}},
         {new: true}
     );
 };
@@ -125,13 +124,4 @@ export const searchNote = async(userId, query, folderId = null) => {
     return notes;
 }
 
-export const restoreNote = async (noteId, userId) => {
-    return await Notes.findOneAndUpdate(
-        { _id: noteId, user: userId, isDeleted: true },
-        { isDeleted: false,
-            $inc: {version: 1} 
-        },
-        { new: true }
-    );
-}
 

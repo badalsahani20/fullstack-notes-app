@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -8,8 +8,14 @@ import SideBar from "./SideBar";
 import AiAuditPanel from "./AiAuditPanel";
 // import TopNavBar from "./TopHeader";
 import TopHeader from "./TopHeader";
+import { useAuthStore } from "@/store/useAuthStore";
+import NavigationDock from "./NavigationDock";
 
 const MainLayout: React.FC = () => {
+  const {user} = useAuthStore();
+  if(!user) {
+    return <Navigate to="/login" replace />
+  }
   return (
     <div className="h-screen w-full bg-zinc-950 flex flex-col text-zinc-100 overflow-hidden p-2">
       <TopHeader />
@@ -34,6 +40,7 @@ const MainLayout: React.FC = () => {
           <div className="flex flex-col h-full rounded-xl bg-zinc-900 border border-zinc-800/50 overflow-hidden">  
             <main className="flex-1 p-8 pt-2 overflow-y-auto custom-scrollbar max-w-5xl mx-auto w-full">
               <Outlet />
+              <NavigationDock />
             </main>
           </div>
         </ResizablePanel>

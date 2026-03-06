@@ -26,14 +26,33 @@ export const emptyTrash = catchAsync(async (req, res, next) => {
     });
 })
 
+
 export const restoreNote = catchAsync(async (req, res, next) => {
-    const note = await NoteService.restoreNote(req.params.id, req.user._id);
-    if (!note) {
-        return res.status(404).json({ message: "Deleted note not found" });
-    }
-    res.status(200).json({
-        success: true,
-        message: "Note Restored",
-        note
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const restoredNote = await TrashService.restoreNote(id, userId);
+  if(!restoreNote) {
+    return res.status(404).json({
+      success: false,
+      message: "Note not found or not in trash"
     });
-});
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Note restored!",
+    note: restoreNote
+  });
+})
+
+export const restoreFolder = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const folder = await TrashService.restoreFolderAndNotes(id, req.user._id);
+
+  res.status(200).json({
+    success: true,
+    message: "Folder and notes restored successfully",
+    folder,
+  });
+})

@@ -66,9 +66,9 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
 export const refreshToken = catchAsync(async (req, res, next) => {
   const refreshTokenFromCookie = req.cookies.refreshToken;
 
-  const { newAccessToken, newRefreshToken, user } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
+  const { accessToken, refreshToken, user } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
 
-  res.cookie("refreshToken", newRefreshToken, {
+  res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "Lax",
@@ -77,7 +77,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    accessToken: newAccessToken,
+    accessToken,
     user: {
       id: user._id,
       name: user.name,

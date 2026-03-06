@@ -30,10 +30,10 @@ const TopHeader = () => {
         </div>
       </div>
       <div className="flex items-center gap-4 min-w-[200px] justify-end">
-        <button className="hidden md:block px-4 py-1.5 bg-white text-black text-sm font-bold rounded-full hover:scale-105 transition-transform">
+        {/* <button className="hidden md:block px-4 py-1.5 bg-white text-black text-sm font-bold rounded-full hover:scale-105 transition-transform">
           Explore Premium
-        </button>
-        <SideBarHeader /> 
+        </button> */}
+        <SideBarHeader />
       </div>
     </div>
   )

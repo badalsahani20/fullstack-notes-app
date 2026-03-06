@@ -57,7 +57,9 @@ export const refreshAccessToken = async (refreshTokenFromCookie) => {
     try {
         decoded = jwt.verify(refreshTokenFromCookie, process.env.REFRESH_SECRET);
     } catch (error) {
-        throw new Error("Invalid refresh token");
+        const err = new Error("Invalid refresh token");
+        err.statusCode = 401;
+        throw err;
     }
 
     const user = await User.findById(decoded.id);
@@ -85,7 +87,7 @@ export const refreshAccessToken = async (refreshTokenFromCookie) => {
         throw error;
     }
     //Rotation
-    user.refreshToken = user.refreshToken.filter((t) => t.token !== hashedToken);
+    user.refreshToken = user.refreshToken.filter(t => t.token !== hashedToken);
 
     const newAccessToken = user.generateAccessToken();
     const newRefreshToken = user.generateRefreshToken();
@@ -93,10 +95,13 @@ export const refreshAccessToken = async (refreshTokenFromCookie) => {
     const newHashedToken = crypto.createHash("sha256").update(newRefreshToken).digest("hex");
 
     user.refreshToken.push({ token: newHashedToken });
+    if(user.refreshToken.length > 5) {
+        user.refreshToken.shift();
+    }
     await user.save();
 
     // return {user: user accessToken: newAccessToken, refreshToken: newRefreshToken };
-    return { user, newAccessToken, newRefreshToken };
+    return { user, accessToken:newAccessToken, refreshToken:newRefreshToken };
 }
 
 export const logoutUser = async (refreshTokenFromCookie) => {

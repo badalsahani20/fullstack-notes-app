@@ -35,10 +35,10 @@ export const updateNote = catchAsync(async (req, res, next) => {
       message: "Version is required for update"
    });
 } 
-  const finalUpdateData = {...updateData, grammarError: [] };
+  const finalUpdateData = {...updateData, grammarErrors: [] };
   const result = await NoteService.updateNoteWithVersionCheck(
     req.params.id,
-    req.user._id,
+    req.user.id,
     version,
     finalUpdateData
   );
@@ -93,3 +93,22 @@ export const searchAllNotes = catchAsync(async (req, res, next) => {
     notes
   });
 });
+
+export const restoreNote = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const restoredNote = await NoteService.restoreNote(id, userId);
+  if(!restoreNote) {
+    return res.status(404).json({
+      success: false,
+      message: "Note not found or not in trash"
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Note restored!",
+    note: restoreNote
+  });
+})

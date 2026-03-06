@@ -98,13 +98,4 @@ export const deleteFolder = catchAsync(async (req, res, next) => {
     res.status(200).json({ message: "Folder and all associated notes deleted" });
 });
 
-export const restoreFolder = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  const folder = await FolderService.restoreFolderAndNotes(id, req.user._id);
 
-  res.status(200).json({
-    success: true,
-    message: "Folder and notes restored successfully",
-    folder,
-  });
-})

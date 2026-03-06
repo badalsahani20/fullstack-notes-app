@@ -30,3 +30,41 @@ export const getTrashItems = async (userId) => {
     return { notes, folders };
 }
 
+export const restoreNote = async (noteId, userId) => {
+    return await Notes.findOneAndUpdate(
+        { _id: noteId, user: userId, isDeleted: true},
+        {isDeleted: false, $inc: { version: 1 }},
+        { new: true }
+    );
+};
+
+export const restoreFolderAndNotes = async (folderId, userId) => {
+  //Find the deleted folder
+  const folder = await Folder.findOne({
+    _id: folderId,
+    user: userId,
+    isDeleted: true,
+  });
+  if (!folder) {
+    const error = new Error("Deleted folder not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  //Flip the folder back to active
+  folder.isDeleted = false;
+  folder.version += 1; // Increment version so offline devices sync the restore
+  await folder.save();
+
+  //Restore the notes in the folder
+  await Notes.updateMany(
+    { folder: folderId, user: userId, isDeleted: true },
+    {
+        $set: { isDeleted: false },
+        $inc: { version: 1 }
+    }
+  );
+  return folder;
+};
+
+

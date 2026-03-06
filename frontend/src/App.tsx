@@ -1,14 +1,8 @@
-import { Routes, Route, useLocation, BrowserRouter } from "react-router-dom";
-// import Login from "./pages/Login";
-// import Register from "./pages/Register";
-// import Dashboard from "./pages/DashBoard";
-// import Layout from "./components/Layout";
+import { Routes, Route,  } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import Layout from "./components/MainLayout";
 import MainLayout from "./components/MainLayout";
-// import FolderPage from "./pages/FolderPage";
-// import NotePage from "./pages/NotePage";
-// import AllNotes from "./pages/AllNotes";
+import Login from "./pages/Login";
+
 
 
 function App() {
@@ -17,9 +11,10 @@ function App() {
   return (
     <AnimatePresence mode="wait">
       <Routes>
+        <Route path="/login" element={<Login />} />
+        
         <Route element={<MainLayout />}>
           <Route path="/" element={<TempHome />} />
-          {/* We will add AllNotes and NotePage routes here soon */}
         </Route>
       </Routes>
     </AnimatePresence>
