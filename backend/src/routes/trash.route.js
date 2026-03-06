@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get("/", authMiddleware, getTrash);
+router.get("/", getTrash);
 router.delete("/empty", emptyTrash);
 
 //Restore 

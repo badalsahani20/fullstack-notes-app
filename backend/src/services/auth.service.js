@@ -95,8 +95,8 @@ export const refreshAccessToken = async (refreshTokenFromCookie) => {
     user.refreshToken.push({ token: newHashedToken });
     await user.save();
 
-    // return { accessToken: newAccessToken, refreshToken: newRefreshToken };
-    return { newAccessToken, newRefreshToken };
+    // return {user: user accessToken: newAccessToken, refreshToken: newRefreshToken };
+    return { user, newAccessToken, newRefreshToken };
 }
 
 export const logoutUser = async (refreshTokenFromCookie) => {
@@ -113,3 +113,17 @@ export const logoutUser = async (refreshTokenFromCookie) => {
         { $pull: { refreshToken: { token: hashedToken } } }
     );
 };
+
+export const getUserById = async (userId) => {
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+        const error = new Error("User not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    return user;
+}
+
+export const fetchAllUsers = async () => {
+    return User.find().select("-password");
+}

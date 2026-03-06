@@ -33,7 +33,7 @@ export const loginUser = catchAsync(async (req, res, next) => {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    sameSite: "Lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   })
   res.status(200).json({
@@ -59,23 +59,31 @@ export const loginUser = catchAsync(async (req, res, next) => {
 });
 
 export const getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find().select("-password");
-  res.json(users);
+  const users = await AuthService.fetchAllUsers();
+  res.status(200).json({ success: true, users});
 });
 
 export const refreshToken = catchAsync(async (req, res, next) => {
   const refreshTokenFromCookie = req.cookies.refreshToken;
 
-  const { newAccessToken, newRefreshToken } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
+  const { newAccessToken, newRefreshToken, user } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
 
   res.cookie("refreshToken", newRefreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    sameSite: "Lax",
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 
-  res.json({ accessToken: newAccessToken });
+  res.status(200).json({
+    success: true,
+    accessToken: newAccessToken,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    }
+  })
 })
 
 export const logoutUser = catchAsync(async (req, res, next) => {
@@ -85,4 +93,17 @@ export const logoutUser = catchAsync(async (req, res, next) => {
   res.clearCookie("refreshToken");
 
   res.json({ message: "Logged out successfully" });
+});
+
+export const getMe = catchAsync(async (req, res, next) => {
+  const user = await AuthService.getUserById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+    },
+  });
 });
