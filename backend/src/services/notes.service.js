@@ -53,7 +53,7 @@ export const findNotesById = async (noteId, userId) => {
 
 export const removeNote = async (noteId, userId, clientVersion) => {
     // 1. Find the note first to check the version
-    const existingNote = await Notes.findOne({ _id: noteId, user: userId });
+    const existingNote = await Notes.findById({ _id: noteId, user: userId });
     if (!existingNote) {
         return null; // Note not found
     }

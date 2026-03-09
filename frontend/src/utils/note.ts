@@ -11,3 +11,4 @@ export function extractPreview(html: string, limit: number): string {
         .trim();
     return text.slice(0, limit) + (text.length > limit ? "..." : "");
 }
+
