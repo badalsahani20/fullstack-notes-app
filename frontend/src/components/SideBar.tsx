@@ -1,17 +1,11 @@
-// src/components/ActivityBar.tsx
-import { FileText, Star, Archive, Trash2, Notebook, Settings } from "lucide-react";
+import { Star, Archive, Trash2, Notebook, Settings, FileText } from "lucide-react";
 import NavItem from "./navItem";
-import FolderList from "./folderCard";
-// import { ScrollArea } from "@/components/ui/scroll-area";
 
 const ActivityBar = () => {
   return (
-    <aside className="w-20 h-full bg-[#111111] border-r border-white/5 flex flex-col">
-      
-      {/* Scroll container */}
-      <div className="flex-1 py-1">
-
-        <nav className="flex flex-col w-full">
+    <aside className="flex h-full w-20 flex-col border-r border-white/10 bg-[#141a29]/95 backdrop-blur-md">
+      <div className="flex-1 py-3">
+        <nav className="flex w-full flex-col gap-1">
           <NavItem to="/" icon={FileText} label="Notes" />
           <NavItem to="/folders" icon={Notebook} label="Notebooks" />
           <NavItem to="/favorites" icon={Star} label="Favorites" />
@@ -19,14 +13,16 @@ const ActivityBar = () => {
           <NavItem to="/trash" icon={Trash2} label="Trash" />
         </nav>
 
-        <div className="w-10 h-px bg-zinc-800/50 my-4 mx-auto" />
-
+        <div className="mx-auto my-4 h-px w-10 bg-white/10" />
       </div>
 
-      <div className="mt-auto pb-2 flex justify-center">
-        <Settings className="text-zinc-500 hover:text-white cursor-pointer transition-colors" size={20} />
+      <div className="mt-auto flex justify-center pb-3">
+        <button className="rounded-lg border border-transparent p-2 text-zinc-400 transition hover:border-white/10 hover:bg-white/5 hover:text-zinc-100">
+          <Settings size={18} />
+        </button>
       </div>
     </aside>
   );
 };
+
 export default ActivityBar;

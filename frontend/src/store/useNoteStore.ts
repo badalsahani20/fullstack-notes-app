@@ -17,11 +17,9 @@ interface NoteState {
   notes: Note[];
   trash: Note[];
   activeNote: Note | null;
-
   loading: boolean;
   isSaving: boolean;
   error: string | null;
-
   fetchNotes: (folderId?: string | null) => Promise<void>;
   fetchTrash: () => Promise<void>;
   setActiveNote: (note: Note | null) => void;
@@ -31,6 +29,33 @@ interface NoteState {
   togglePinning: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
 }
+
+type UnknownNote = Partial<Note> & { id?: string };
+
+const normalizeNote = (value: unknown): Note | null => {
+  if (!value || typeof value !== "object") return null;
+
+  const maybe = value as UnknownNote;
+  const normalizedId = typeof maybe._id === "string" ? maybe._id : typeof maybe.id === "string" ? maybe.id : null;
+  if (!normalizedId) return null;
+
+  return {
+    _id: normalizedId,
+    title: typeof maybe.title === "string" ? maybe.title : "Untitled Note",
+    content: typeof maybe.content === "string" ? maybe.content : "",
+    folder: typeof maybe.folder === "string" || maybe.folder === null ? maybe.folder : null,
+    color: typeof maybe.color === "string" ? maybe.color : "#1d2436",
+    pinned: typeof maybe.pinned === "boolean" ? maybe.pinned : false,
+    version: typeof maybe.version === "number" ? maybe.version : 0,
+    isDeleted: typeof maybe.isDeleted === "boolean" ? maybe.isDeleted : false,
+    updatedAt: typeof maybe.updatedAt === "string" ? maybe.updatedAt : new Date().toISOString(),
+  };
+};
+
+const normalizeNoteList = (value: unknown): Note[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map(normalizeNote).filter((note): note is Note => Boolean(note));
+};
 
 export const useNoteStore = create<NoteState>((set, get) => ({
   notes: [],
@@ -46,9 +71,10 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       const url = folderId ? `/folders/${folderId}/notes` : "/notes/";
       const res = await api.get(url);
       const data = res.data.notes || res.data;
-      set({ notes: Array.isArray(data) ? data : [] });
+      set({ notes: normalizeNoteList(data) });
     } catch (error) {
       set({ error: "Failed to load notes" });
+      console.error(error);
     } finally {
       set({ loading: false });
     }
@@ -57,12 +83,12 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   fetchTrash: async () => {
     set({ loading: true });
     try {
-      // Ensure this matches your backend route exactly
-      const res = await api.get("/trash/"); 
+      const res = await api.get("/trash/");
       const data = res.data.notes || res.data;
-      set({ trash: Array.isArray(data) ? data : [] });
+      set({ trash: normalizeNoteList(data) });
     } catch (error) {
       set({ error: "Failed to load trash notes" });
+      console.error(error);
     } finally {
       set({ loading: false });
     }
@@ -74,20 +100,28 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     try {
       const res = await api.post("/notes/", {
         title: "Untitled Note",
+        content: "",
         folder: folderId,
       });
 
-      const newNote = res.data.note || res.data;
-      set({ notes: [newNote, ...get().notes] });
+      const rawNote = res.data.note || res.data;
+      const newNote = normalizeNote(rawNote);
+      if (!newNote) {
+        set({ error: "Failed to create note" });
+        return null;
+      }
+
+      set({ notes: [newNote, ...get().notes], activeNote: newNote });
       return newNote;
     } catch (error) {
       set({ error: "Failed to create note" });
+      console.error(error);
       return null;
     }
   },
 
   updateNote: async (noteId, updates) => {
-    const currentNote = get().activeNote;
+    const currentNote = get().notes.find((n) => n._id === noteId) || get().activeNote;
     if (!currentNote) return;
 
     set({ isSaving: true });
@@ -97,20 +131,26 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         version: currentNote.version,
       });
 
-      const { updatedNote, conflict, serverNote } = res.data;
+      const { updatedNote: rawUpdatedNote, conflict } = res.data;
       if (conflict) {
         set({ error: "Conflict detected! Please refresh", isSaving: false });
-        // Optional: set activeNote to serverNote to show the difference
+        return;
+      }
+
+      const updatedNote = normalizeNote(rawUpdatedNote ?? res.data.note ?? res.data);
+      if (!updatedNote) {
+        set({ isSaving: false, error: "Save failed: invalid server response" });
         return;
       }
 
       set({
         notes: get().notes.map((n) => (n._id === noteId ? updatedNote : n)),
-        activeNote: updatedNote,
+        activeNote: get().activeNote?._id === noteId ? updatedNote : get().activeNote,
         isSaving: false,
       });
     } catch (error) {
       set({ isSaving: false, error: "Save failed" });
+      console.error(error);
     }
   },
 
@@ -136,11 +176,12 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   togglePinning: async (noteId) => {
     try {
       const res = await api.patch(`/notes/${noteId}/pin`);
-      const updatedNote = res.data.note || res.data;
+      const updatedNote = normalizeNote(res.data.note || res.data);
+      if (!updatedNote) return;
+
       set({
         notes: get().notes.map((n) => (n._id === noteId ? updatedNote : n)),
-        // If the pinned note is currently active, update it too
-        activeNote: get().activeNote?._id === noteId ? updatedNote : get().activeNote
+        activeNote: get().activeNote?._id === noteId ? updatedNote : get().activeNote,
       });
     } catch (error) {
       console.error("Pinning failed", error);
@@ -151,11 +192,11 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     set({ loading: true });
     try {
       const res = await api.patch(`/trash/restore/note/${noteId}`);
-      const restoredNote = res.data.note || res.data;
+      const restoredNote = normalizeNote(res.data.note || res.data);
 
       set((state) => ({
         trash: state.trash.filter((n) => n._id !== noteId),
-        notes: [restoredNote, ...state.notes],
+        notes: restoredNote ? [restoredNote, ...state.notes] : state.notes,
         loading: false,
       }));
     } catch (error) {

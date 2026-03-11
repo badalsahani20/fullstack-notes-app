@@ -1,4 +1,3 @@
-// src/components/HomeEmptyState.tsx
 import { Edit3, CheckSquare, Paperclip, Mic, Video, Image as ImageIcon } from "lucide-react";
 import { useNoteStore } from "@/store/useNoteStore";
 
@@ -15,22 +14,25 @@ const HomeEmptyState = () => {
   ];
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center bg-[#0B0B0B] px-4">
-      <h1 className="text-3xl font-semibold text-zinc-200 mb-10 tracking-tight">
-        Start jotting down your ideas
-      </h1>
+    <div className="relative flex h-full w-full flex-col items-center justify-center px-5">
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_20%,rgba(39,197,154,0.15),transparent_35%),radial-gradient(circle_at_85%_75%,rgba(87,139,255,0.14),transparent_40%)]" />
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-lg w-full">
-        {quickActions.map((action) => (
-          <button
-            key={action.label}
-            onClick={action.onClick}
-            className="flex items-center justify-center gap-3 p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 hover:bg-zinc-800/50 hover:border-emerald-500/30 transition-all group"
-          >
-            <action.icon size={20} className="text-zinc-500 group-hover:text-emerald-500 transition-colors" />
-            <span className="text-sm font-medium text-zinc-400 group-hover:text-zinc-200">{action.label}</span>
-          </button>
-        ))}
+      <div className="relative z-10 w-full max-w-2xl rounded-3xl border border-white/10 bg-[#111a2b]/70 p-8 backdrop-blur-md">
+        <h1 className="mb-2 text-center text-3xl font-semibold text-zinc-100">Capture your next great idea</h1>
+        <p className="mb-8 text-center text-sm text-zinc-400">Choose a quick action to start a note in seconds.</p>
+
+        <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-3">
+          {quickActions.map((action) => (
+            <button
+              key={action.label}
+              onClick={action.onClick}
+              className="group flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.08]"
+            >
+              <action.icon size={18} className="text-zinc-400 transition group-hover:text-primary" />
+              <span className="text-sm font-medium text-zinc-300 group-hover:text-zinc-100">{action.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

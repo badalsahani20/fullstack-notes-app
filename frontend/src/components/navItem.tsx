@@ -1,5 +1,3 @@
-// src/components/navItem.tsx
-// src/components/navItem.tsx
 import type { LucideIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -10,27 +8,23 @@ interface NavItemProps {
   label: string;
 }
 
-// src/components/navItem.tsx
 const NavItem = ({ to, icon: Icon, label }: NavItemProps) => {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
         cn(
-          "flex flex-col items-center justify-center w-full py-3 gap-1.5 transition-colors",
+          "group relative mx-2 flex flex-col items-center justify-center gap-1.5 rounded-xl py-3 transition",
           isActive
-            ? "text-violet-500 bg-emerald-500/10 hover:text-white"
-            : "text-violet-100 hover:text-zinc-200 hover:bg-zinc-800/50"
+            ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
+            : "text-zinc-400 hover:bg-white/5 hover:text-zinc-100"
         )
       }
     >
-      <Icon size={22} />
-
-      <span className="text-[10px] font-medium text-center">
-        {label}
-      </span>
+      <Icon size={20} className="transition group-hover:scale-105" />
+      <span className="text-[10px] font-semibold tracking-wide">{label}</span>
     </NavLink>
   );
 };
 
-export default NavItem
+export default NavItem;

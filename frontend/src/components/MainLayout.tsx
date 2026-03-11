@@ -6,24 +6,27 @@ import FoldersPanel from "./folderPanel";
 const MainLayout = () => {
   const location = useLocation();
   const { folderId } = useParams();
+  const isFocusMode = new URLSearchParams(location.search).get("focus") === "1";
 
-  const showFolders = location.pathname.startsWith("/folders") || folderId;
+  const showFolders = !isFocusMode && (location.pathname.startsWith("/folders") || folderId);
   const showNotes =
-    location.pathname === "/" || folderId || location.pathname.startsWith("/favorites");
+    !isFocusMode &&
+    (location.pathname === "/" ||
+      folderId ||
+      location.pathname.startsWith("/favorites") ||
+      location.pathname.startsWith("/note/"));
 
   return (
-    <div className="flex h-screen w-full bg-[#0B0B0B] overflow-hidden">
-      
+    <div className="flex h-screen w-full overflow-hidden">
       <ActivityBar />
 
       {showFolders && <FoldersPanel />}
 
       {showNotes && <NotesListPanel />}
 
-      <main className="flex-1 bg-[#0F0F0F] relative">
+      <main className="relative flex-1 overflow-hidden border-l border-white/5 bg-gradient-to-b from-[#1b2132]/70 via-[#171c2a]/65 to-[#131826]/80">
         <Outlet />
       </main>
-
     </div>
   );
 };

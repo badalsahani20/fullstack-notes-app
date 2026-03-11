@@ -1,28 +1,20 @@
 type PanelLayoutProps = {
-  title: string
-  actions?: React.ReactNode
-  children: React.ReactNode
-}
-const PanelLayout = ({ title, actions, children } : PanelLayoutProps) => {
+  title: string;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+};
+
+const PanelLayout = ({ title, actions, children }: PanelLayoutProps) => {
   return (
-    <aside className="w-80 h-full bg-[#181818] border-r border-white/5 flex flex-col">
-      
-      <div className="p-4 flex items-center justify-between border-b border-white/5">
-        <h2 className="font-bold tracking-[0.2em] text-white">
-          {title}
-        </h2>
-
-        <div className="flex gap-2">
-          {actions}
-        </div>
+    <aside className="flex h-full w-80 flex-col border-r border-white/8 bg-[#171d2c]/90 backdrop-blur-md">
+      <div className="flex items-center justify-between border-b border-white/8 px-4 py-3">
+        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-200">{title}</h2>
+        <div className="flex items-center gap-2">{actions}</div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
-        {children}
-      </div>
-
+      <div className="custom-scrollbar flex-1 space-y-2 overflow-y-auto p-3">{children}</div>
     </aside>
   );
 };
 
-export default PanelLayout
+export default PanelLayout;
