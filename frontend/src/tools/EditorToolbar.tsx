@@ -5,9 +5,12 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   editor: Editor;
+  fontSize: number;
+  onDecreaseFontSize: () => void;
+  onIncreaseFontSize: () => void;
 };
 
-const EditorToolbar = ({ editor }: Props) => {
+const EditorToolbar = ({ editor, fontSize, onDecreaseFontSize, onIncreaseFontSize }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -47,6 +50,13 @@ const EditorToolbar = ({ editor }: Props) => {
       </button>
       <button onClick={() => editor.chain().focus().toggleStrike().run()} className={btn(editor.isActive("strike"))}>
         Strike
+      </button>
+      <button onClick={onDecreaseFontSize} className={btn(false)} title="Decrease text size">
+        A-
+      </button>
+      <span className="rounded-md border border-white/10 bg-black/20 px-2 py-1 text-xs font-semibold text-zinc-300">{fontSize}px</span>
+      <button onClick={onIncreaseFontSize} className={btn(false)} title="Increase text size">
+        A+
       </button>
       <button
         onClick={() => editor.chain().focus().toggleBulletList().run()}

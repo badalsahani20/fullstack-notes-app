@@ -52,24 +52,26 @@ const relativeLuminance = ({ r, g, b }: Rgb) => {
   return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 };
 
-const contrastRatio = (l1: number, l2: number) => {
-  const light = Math.max(l1, l2);
-  const dark = Math.min(l1, l2);
-  return (light + 0.05) / (dark + 0.05);
-};
+// const contrastRatio = (l1: number, l2: number) => {
+//   const light = Math.max(l1, l2);
+//   const dark = Math.min(l1, l2);
+//   return (light + 0.05) / (dark + 0.05);
+// };
 
 export function getContrastText(bgColor: string) {
   const rgb = parseColorToRgb(bgColor);
-  if (!rgb) return FALLBACK_LIGHT;
+  if (!rgb) return FALLBACK_DARK;
 
   const bgLum = relativeLuminance(rgb);
-  const lightLum = relativeLuminance({ r: 248, g: 250, b: 252 });
-  const darkLum = relativeLuminance({ r: 17, g: 24, b: 39 });
 
-  const lightContrast = contrastRatio(bgLum, lightLum);
-  const darkContrast = contrastRatio(bgLum, darkLum);
+  const DARK_THRESHOLD = 0.35; 
+  // backgrounds darker than this use light text
 
-  return darkContrast >= lightContrast ? FALLBACK_DARK : FALLBACK_LIGHT;
+  if (bgLum < DARK_THRESHOLD) {
+    return FALLBACK_LIGHT;
+  }
+
+  return FALLBACK_DARK;
 }
 
 export function getContrastTextPalette(bgColor: string) {

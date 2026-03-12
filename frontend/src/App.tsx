@@ -16,6 +16,7 @@ function App() {
           <Route path="/folders" element={<HomeEmptyState />} />
           <Route path="/trash" element={<HomeEmptyState />} />
           <Route path="/note/:noteId" element={<NoteEditor />} />
+          <Route path="/folders/:folderId/note/:noteId" element={<NoteEditor />} />
           <Route path="/folders/:folderId" element={<NoteEditor />} />
         </Route>
       </Routes>

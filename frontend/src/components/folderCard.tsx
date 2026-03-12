@@ -1,14 +1,15 @@
 import type { Folder } from "../store/useFolderStore";
 import { cn } from "@/lib/utils";
-import { Folder as FolderIcon } from "lucide-react";
+import { Folder as FolderIcon, Trash2 } from "lucide-react";
 
 type FolderCardProps = {
   folder?: Folder;
   isActive: boolean;
   onClick: () => void;
+  onDelete: () => void;
 };
 
-const FolderCard = ({ folder, isActive, onClick }: FolderCardProps) => {
+const FolderCard = ({ folder, isActive, onClick, onDelete }: FolderCardProps) => {
   if (!folder) return null;
 
   const initial = folder.name?.charAt(0)?.toUpperCase() ?? "N";
@@ -30,6 +31,17 @@ const FolderCard = ({ folder, isActive, onClick }: FolderCardProps) => {
         <FolderIcon size={14} className="text-zinc-400" />
         <h3 className="truncate text-sm font-semibold text-zinc-100">{folder.name || "Untitled"}</h3>
       </div>
+      <button
+        type="button"
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
+        className="absolute right-3 top-3 rounded-md border border-transparent p-1 text-zinc-400 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300"
+        aria-label={`Delete ${folder.name || "folder"}`}
+      >
+        <Trash2 size={14} />
+      </button>
     </div>
   );
 };

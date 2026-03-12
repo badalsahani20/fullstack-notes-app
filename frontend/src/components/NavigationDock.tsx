@@ -13,7 +13,7 @@ const NavigationDock = () => {
       const targetFolderId = folderId || null;
       const newNote = await createNote(targetFolderId);
       if(newNote) {
-        navigate(`/note/${newNote._id}`)
+        navigate(targetFolderId ? `/folders/${targetFolderId}/note/${newNote._id}` : `/note/${newNote._id}`)
       }
     }
 

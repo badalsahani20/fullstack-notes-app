@@ -118,10 +118,15 @@
 
 .ProseMirror {
   min-height: 52vh;
-  padding: 1rem 0 2rem;
+  padding: 1.2rem 0.4rem 2.4rem;
+  font-size: var(--editor-font-size, 18px);
   color: var(--editor-text, rgba(236, 241, 255, 0.95));
   line-height: 1.7;
   caret-color: var(--editor-caret, #000000);
+}
+
+.editor-content-shell {
+  width: 100%;
 }
 
 .ProseMirror:focus {
@@ -146,6 +151,27 @@
 .ProseMirror ol {
   margin: 0.8rem 0;
   padding-left: 1.35rem;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  overflow: hidden;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid color-mix(in oklab, var(--editor-text, #dbe6ff) 35%, transparent);
+  min-width: 6rem;
+  padding: 0.55rem 0.65rem;
+  vertical-align: top;
+}
+
+.ProseMirror table th {
+  background: color-mix(in oklab, var(--editor-text, #dbe6ff) 14%, transparent);
+  font-weight: 700;
 }
 
 

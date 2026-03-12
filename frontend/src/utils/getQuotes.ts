@@ -1,0 +1,56 @@
+export const WRITER_QUOTES = [
+  { text: "The faintest ink is more powerful than the strongest memory.", author: "Chinese Proverb" },
+  { text: "Write what should not be forgotten.", author: "Isabel Allende" },
+  { text: "You can make anything by writing.", author: "C. S. Lewis" },
+  { text: "A word after a word after a word is power.", author: "Margaret Atwood" },
+  { text: "Start writing, no matter what. The water does not flow until the faucet is turned on.", author: "Louis L'Amour" },
+
+  { text: "An idea that is not written down is lost.", author: "Richard Branson" },
+  { text: "The palest ink is better than the best memory.", author: "Chinese Proverb" },
+  { text: "Ideas are easy. Execution is everything.", author: "John Doerr" },
+  { text: "Creativity is intelligence having fun.", author: "Albert Einstein" },
+  { text: "The scariest moment is always just before you start.", author: "Stephen King" },
+
+  { text: "You don't start out writing good stuff. You start out writing crap and thinking it's good.", author: "Octavia E. Butler" },
+  { text: "Writing is thinking on paper.", author: "William Zinsser" },
+  { text: "I write to discover what I know.", author: "Flannery O'Connor" },
+  { text: "Description begins in the writer's imagination but should finish in the reader's.", author: "Stephen King" },
+  { text: "Don't tell me the moon is shining; show me the glint of light on broken glass.", author: "Anton Chekhov" },
+
+  { text: "Fill your paper with the breathings of your heart.", author: "William Wordsworth" },
+  { text: "The art of writing is the art of discovering what you believe.", author: "Gustave Flaubert" },
+  { text: "There is no greater agony than bearing an untold story inside you.", author: "Maya Angelou" },
+  { text: "A writer is someone for whom writing is more difficult than it is for other people.", author: "Thomas Mann" },
+  { text: "You fail only if you stop writing.", author: "Ray Bradbury" },
+
+  { text: "The secret of getting started is breaking your complex overwhelming tasks into small manageable tasks.", author: "Mark Twain" },
+  { text: "If you want to be a writer, you must do two things above all others: read a lot and write a lot.", author: "Stephen King" },
+  { text: "Almost all good writing begins with terrible first efforts.", author: "Anne Lamott" },
+  { text: "A good writer possesses not only his own spirit but also the spirit of his friends.", author: "Friedrich Nietzsche" },
+  { text: "Writing is an exploration. You start from nothing and learn as you go.", author: "E. L. Doctorow" },
+
+  { text: "You cannot edit a blank page.", author: "Jodi Picoult" },
+  { text: "Write drunk, edit sober.", author: "Ernest Hemingway" },
+  { text: "The role of a writer is not to say what we all can say, but what we are unable to say.", author: "Anaïs Nin" },
+  { text: "Easy reading is damn hard writing.", author: "Nathaniel Hawthorne" },
+  { text: "A professional writer is an amateur who didn't quit.", author: "Richard Bach" },
+
+  { text: "Creativity takes courage.", author: "Henri Matisse" },
+  { text: "Every artist was first an amateur.", author: "Ralph Waldo Emerson" },
+  { text: "The best way to have a good idea is to have a lot of ideas.", author: "Linus Pauling" },
+  { text: "Inspiration exists, but it has to find you working.", author: "Pablo Picasso" },
+  { text: "Ideas come from curiosity.", author: "Walt Disney" },
+
+  { text: "Nothing will work unless you do.", author: "Maya Angelou" },
+  { text: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+  { text: "Done is better than perfect.", author: "Sheryl Sandberg" },
+  { text: "Small daily improvements over time lead to stunning results.", author: "Robin Sharma" },
+  { text: "You can make anything by writing.", author: "C. S. Lewis" },
+  { text: "The scariest moment is always just before you start.", author: "Stephen King" },
+  
+  { text: "Start writing, no matter what. The water does not flow until the faucet is turned on.", author: "Louis L'Amour" },
+  { text: "A word after a word after a word is power.", author: "Margaret Atwood" },
+  { text: "There is no greater agony than bearing an untold story inside you.", author: "Maya Angelou" },
+  { text: "I write to discover what I know.", author: "Flannery O'Connor" },
+  { text: "Fill your paper with the breathings of your heart.", author: "William Wordsworth" },
+];

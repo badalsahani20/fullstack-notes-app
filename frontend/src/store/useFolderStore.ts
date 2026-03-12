@@ -6,28 +6,36 @@ export interface Folder {
     name: string;
     color?: string;
     version: number;
+    pinned: boolean;
+    isDeleted: false;
+    updatedAt: string;
 }
 
 interface FolderState {
     folders: Folder[];
     loading: boolean;
+    error: string | null;
     activeFolderId: string | null;
     fetchFolders: () => Promise<void>;
     addFolder: (name: string) => Promise<void>;
+    updateFolder: (id: string, updates: Partial<Pick<Folder, "name" | "color">>) => Promise<void>;
+    deleteFolder: (id: string) => Promise<void>;
     setActiveFolder: (id: string | null) => void;
 }
 
 export const useFolderStore = create<FolderState>((set, get) => ({
     folders: [],
     loading: false,
+    error: null,
     activeFolderId: null,
 
     fetchFolders: async () => {
-        set({ loading: true });
+        set({ loading: true, error: null });
         try {
             const res = await api.get('/folders');
             set({ folders: res.data });
         } catch (err) {
+            set({ error: "Failed to fetch folders" });
             console.error("Failed to fetch folders", err);
         }finally{
             set({ loading: false });
@@ -36,10 +44,64 @@ export const useFolderStore = create<FolderState>((set, get) => ({
 
     addFolder: async (name: string) => {
         try {
+            set({ error: null });
             const res = await api.post('/folders', { name });
             set({ folders: [...get().folders, res.data.folder ] });
         } catch (error) {
+            set({ error: "Error creating folder" });
             console.log("Error creating folder", error);
+        }
+    },
+
+    updateFolder: async (id, updates) => {
+        const currentFolder = get().folders.find((folder) => folder._id === id);
+        if (!currentFolder) return;
+
+        try {
+            set({ error: null });
+            const res = await api.put(`/folders/${id}`, {
+                ...updates,
+                version: currentFolder.version,
+            });
+
+            const updatedFolder = res.data.folder;
+            if (!updatedFolder) return;
+
+            set({
+                folders: get().folders.map((folder) => (folder._id === id ? updatedFolder : folder)),
+                activeFolderId: get().activeFolderId === id ? updatedFolder._id : get().activeFolderId,
+            });
+        } catch (error: any) {
+            if (error?.response?.status === 409) {
+                set({ error: "Conflict detected: folder was updated elsewhere. Refresh and try again." });
+                return;
+            }
+            set({ error: "Error updating folder" });
+            console.log("Error updating folder", error);
+        }
+    },
+
+    deleteFolder: async (id) => {
+        const folderToDelete = get().folders.find((folder) => folder._id === id);
+        if (!folderToDelete) return;
+
+        try {
+            set({ error: null });
+            await api.delete(`/folders/${id}`, {
+                data: { version: folderToDelete.version },
+            });
+
+            set({
+                folders: get().folders.filter((folder) => folder._id !== id),
+                activeFolderId: get().activeFolderId === id ? null : get().activeFolderId,
+            });
+        } catch (error: any) {
+            if (error?.response?.status === 409) {
+                set({ error: "Conflict detected: folder changed on another device. Refresh and try delete again." });
+                return;
+            }
+            set({ error: "Error deleting folder" });
+            console.log("Error deleting folder", error);
         }
     },
 

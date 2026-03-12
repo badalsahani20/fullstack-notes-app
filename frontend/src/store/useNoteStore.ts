@@ -13,8 +13,16 @@ export interface Note {
   updatedAt: string;
 }
 
+const ALL_NOTES_CACHE_KEY = "__all__";
+const NOTES_CACHE_TTL_MS = 60_000;
+
+const getNotesCacheKey = (folderId?: string | null) => folderId ?? ALL_NOTES_CACHE_KEY;
+
 interface NoteState {
   notes: Note[];
+  notesCache: Record<string, Note[]>;
+  notesFetchedAt: Record<string, number>;
+  currentNotesViewKey: string;
   trash: Note[];
   activeNote: Note | null;
   loading: boolean;
@@ -59,6 +67,9 @@ const normalizeNoteList = (value: unknown): Note[] => {
 
 export const useNoteStore = create<NoteState>((set, get) => ({
   notes: [],
+  notesCache: {},
+  notesFetchedAt: {},
+  currentNotesViewKey: ALL_NOTES_CACHE_KEY,
   trash: [],
   activeNote: null,
   loading: false,
@@ -66,12 +77,36 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   error: null,
 
   fetchNotes: async (folderId = null) => {
-    set({ loading: true });
+    const cacheKey = getNotesCacheKey(folderId);
+    set({ currentNotesViewKey: cacheKey });
+
+    const cachedNotes = get().notesCache[cacheKey];
+    const cachedAt = get().notesFetchedAt[cacheKey] ?? 0;
+    if (cachedNotes) {
+      set({ notes: cachedNotes, loading: false, error: null });
+      if (Date.now() - cachedAt < NOTES_CACHE_TTL_MS) {
+        return;
+      }
+    } else {
+      set({ loading: true, error: null });
+    }
+
     try {
       const url = folderId ? `/folders/${folderId}/notes` : "/notes/";
       const res = await api.get(url);
       const data = res.data.notes || res.data;
-      set({ notes: normalizeNoteList(data) });
+      const normalizedNotes = normalizeNoteList(data);
+      set((state) => ({
+        notes: state.currentNotesViewKey === cacheKey ? normalizedNotes : state.notes,
+        notesCache: {
+          ...state.notesCache,
+          [cacheKey]: normalizedNotes,
+        },
+        notesFetchedAt: {
+          ...state.notesFetchedAt,
+          [cacheKey]: Date.now(),
+        },
+      }));
     } catch (error) {
       set({ error: "Failed to load notes" });
       console.error(error);
@@ -111,7 +146,26 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         return null;
       }
 
-      set({ notes: [newNote, ...get().notes], activeNote: newNote });
+      const targetKey = getNotesCacheKey(newNote.folder);
+      set((state) => {
+        const nextNotesCache = { ...state.notesCache };
+        const nextFetchedAt = { ...state.notesFetchedAt };
+
+        nextNotesCache[targetKey] = [newNote, ...(nextNotesCache[targetKey] ?? [])];
+        nextFetchedAt[targetKey] = Date.now();
+
+        if (targetKey !== ALL_NOTES_CACHE_KEY) {
+          nextNotesCache[ALL_NOTES_CACHE_KEY] = [newNote, ...(nextNotesCache[ALL_NOTES_CACHE_KEY] ?? [])];
+          nextFetchedAt[ALL_NOTES_CACHE_KEY] = Date.now();
+        }
+
+        return {
+          notes: [newNote, ...state.notes],
+          activeNote: newNote,
+          notesCache: nextNotesCache,
+          notesFetchedAt: nextFetchedAt,
+        };
+      });
       return newNote;
     } catch (error) {
       set({ error: "Failed to create note" });
@@ -144,9 +198,19 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       }
 
       set({
-        notes: get().notes.map((n) => (n._id === noteId ? updatedNote : n)),
-        activeNote: get().activeNote?._id === noteId ? updatedNote : get().activeNote,
         isSaving: false,
+      });
+
+      set((state) => {
+        const nextNotesCache = Object.fromEntries(
+          Object.entries(state.notesCache).map(([key, list]) => [key, list.map((n) => (n._id === noteId ? updatedNote : n))])
+        );
+
+        return {
+          notes: state.notes.map((n) => (n._id === noteId ? updatedNote : n)),
+          activeNote: state.activeNote?._id === noteId ? updatedNote : state.activeNote,
+          notesCache: nextNotesCache,
+        };
       });
     } catch (error) {
       set({ isSaving: false, error: "Save failed" });
@@ -163,10 +227,17 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         data: { version: noteToDelete.version },
       });
 
-      set({
-        notes: get().notes.filter((n) => n._id !== noteId),
-        trash: [{ ...noteToDelete, isDeleted: true }, ...get().trash],
-        activeNote: get().activeNote?._id === noteId ? null : get().activeNote,
+      set((state) => {
+        const nextNotesCache = Object.fromEntries(
+          Object.entries(state.notesCache).map(([key, list]) => [key, list.filter((n) => n._id !== noteId)])
+        );
+
+        return {
+          notes: state.notes.filter((n) => n._id !== noteId),
+          notesCache: nextNotesCache,
+          trash: [{ ...noteToDelete, isDeleted: true }, ...state.trash],
+          activeNote: state.activeNote?._id === noteId ? null : state.activeNote,
+        };
       });
     } catch (error) {
       console.error("Deletion failed", error);
@@ -197,6 +268,19 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       set((state) => ({
         trash: state.trash.filter((n) => n._id !== noteId),
         notes: restoredNote ? [restoredNote, ...state.notes] : state.notes,
+        notesCache: restoredNote
+          ? {
+              ...state.notesCache,
+              [getNotesCacheKey(restoredNote.folder)]: [
+                restoredNote,
+                ...(state.notesCache[getNotesCacheKey(restoredNote.folder)] ?? []),
+              ],
+              [ALL_NOTES_CACHE_KEY]:
+                restoredNote.folder === null
+                  ? [restoredNote, ...(state.notesCache[ALL_NOTES_CACHE_KEY] ?? [])]
+                  : [restoredNote, ...(state.notesCache[ALL_NOTES_CACHE_KEY] ?? [])],
+            }
+          : state.notesCache,
         loading: false,
       }));
     } catch (error) {

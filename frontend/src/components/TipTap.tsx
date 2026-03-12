@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { FontFamily } from "@tiptap/extension-text-style";
 import StarterKit from "@tiptap/starter-kit";
+import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import EditorBubbleMenu from "./editorBubbleMenu";
 import EditorToolbar from "../tools/EditorToolbar";
 
@@ -14,6 +16,7 @@ type TipTapProps = {
 };
 
 const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
+  const [editorFontSize, setEditorFontSize] = useState(18);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -22,12 +25,34 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
       FontFamily.configure({
         types: ["textStyle"],
       }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
   });
+
+  const handleEditorKeyDown = (event: ReactKeyboardEvent) => {
+    if (!editor || event.key !== "Tab") return;
+    event.preventDefault();
+
+    if (editor.isActive("bulletList") || editor.isActive("orderedList")) {
+      if (event.shiftKey) {
+        editor.chain().focus().liftListItem("listItem").run();
+        return;
+      }
+      editor.chain().focus().sinkListItem("listItem").run();
+      return;
+    }
+
+    editor.chain().focus().insertContent("    ").run();
+  };
 
   useEffect(() => {
     if (!onEditorReady) return;
@@ -42,11 +67,24 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
     return <div>Loading editor...</div>;
   }
 
+  const decreaseFontSize = () => {
+    setEditorFontSize((size) => Math.max(14, size - 1));
+  };
+
+  const increaseFontSize = () => {
+    setEditorFontSize((size) => Math.min(28, size + 1));
+  };
+
   return (
-    <div className="relative">
-      <EditorToolbar editor={editor} />
+    <div className="relative mx-auto w-full max-w-4xl" style={{ ["--editor-font-size" as string]: `${editorFontSize}px` }}>
+      <EditorToolbar
+        editor={editor}
+        fontSize={editorFontSize}
+        onDecreaseFontSize={decreaseFontSize}
+        onIncreaseFontSize={increaseFontSize}
+      />
       <EditorBubbleMenu editor={editor} />
-      <EditorContent editor={editor} spellCheck={true} />
+      <EditorContent className="editor-content-shell" editor={editor} spellCheck={true} onKeyDown={handleEditorKeyDown} />
     </div>
   );
 };

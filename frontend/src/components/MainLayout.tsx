@@ -2,6 +2,7 @@ import { Outlet, useLocation, useParams } from "react-router-dom";
 import ActivityBar from "./SideBar";
 import NotesListPanel from "./NotesListPanel";
 import FoldersPanel from "./folderPanel";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
 
 const MainLayout = () => {
   const location = useLocation();
@@ -20,13 +21,31 @@ const MainLayout = () => {
     <div className="flex h-screen w-full overflow-hidden">
       <ActivityBar />
 
-      {showFolders && <FoldersPanel />}
+      <ResizablePanelGroup orientation="horizontal" className="flex-1">
+        {showFolders && (
+          <>
+            <ResizablePanel defaultSize="20%" minSize="16%" maxSize="30%">
+              <FoldersPanel />
+            </ResizablePanel>
+            <ResizableHandle withHandle className="bg-white/10 hover:bg-white/20" />
+          </>
+        )}
 
-      {showNotes && <NotesListPanel />}
+        {showNotes && (
+          <>
+            <ResizablePanel defaultSize="17%" minSize="16%" maxSize="45%">
+              <NotesListPanel />
+            </ResizablePanel>
+            <ResizableHandle withHandle className="bg-white/10 hover:bg-white/20" />
+          </>
+        )}
 
-      <main className="relative flex-1 overflow-hidden border-l border-white/5 bg-gradient-to-b from-[#1b2132]/70 via-[#171c2a]/65 to-[#131826]/80">
-        <Outlet />
-      </main>
+        <ResizablePanel defaultSize={showFolders || showNotes ? "52%" : "100%"} minSize="35%">
+          <main className="relative h-full overflow-hidden border-l border-white/5 bg-gradient-to-b from-[#1b2132]/70 via-[#171c2a]/65 to-[#131826]/80">
+            <Outlet />
+          </main>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 };
