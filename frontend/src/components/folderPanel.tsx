@@ -1,201 +1,223 @@
-import { Search, Plus } from "lucide-react";
-import PanelLayout from "./panelLayout";
-import { useFolderStore } from "@/store/useFolderStore";
-import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import FolderCard from "./folderCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import {
+  Archive,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Folder,
+  Plane,
+  Star,
+  Trash2,
+  UtensilsCrossed,
+} from "lucide-react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useFolderStore, type Folder as FolderType } from "@/store/useFolderStore";
+import { useNoteStore } from "@/store/useNoteStore";
 
-const SKIP_FOLDER_DELETE_CONFIRM_KEY = "notesify.skipFolderDeleteConfirm";
+type IconComponent = ComponentType<{ size?: number; className?: string }>;
+
+const ALL_NOTES_CACHE_KEY = "__all__";
+
+const getFolderIcon = (name: string): IconComponent => {
+  if (/travel/i.test(name)) return Plane;
+  if (/recipe/i.test(name)) return UtensilsCrossed;
+  return Folder;
+};
+
+const TopLink = ({
+  label,
+  count,
+  active,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active?: boolean;
+  icon: IconComponent;
+  onClick: () => void;
+}) => {
+  return (
+    <button type="button" onClick={onClick} className={`sidebar-link-row ${active ? "sidebar-link-row-active" : ""}`}>
+      <span className="sidebar-link-main">
+        <Icon size={15} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
+        <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{label}</span>
+      </span>
+      <span className="sidebar-count-pill">{count}</span>
+    </button>
+  );
+};
+
+const FolderRow = ({
+  folder,
+  count,
+  active,
+  expanded,
+  onToggle,
+  onClick,
+}: {
+  folder: FolderType;
+  count: number;
+  active: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  onClick: () => void;
+}) => {
+  const Icon = getFolderIcon(folder.name);
+
+  return (
+    <button type="button" onClick={onClick} className={`sidebar-tree-row sidebar-tree-row-item ${active ? "sidebar-tree-row-active" : ""}`}>
+      <span className="sidebar-link-main">
+        <span
+          className="sidebar-folder-chevron"
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggle();
+          }}
+        >
+          {expanded ? <ChevronDown size={14} className="text-[var(--muted-text)]" /> : <ChevronRight size={14} className="text-[var(--muted-text)]" />}
+        </span>
+        <Icon size={15} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
+        <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{folder.name}</span>
+      </span>
+      <span className="sidebar-count-pill">{count}</span>
+    </button>
+  );
+};
+
+const NoteChildRow = ({
+  title,
+  active,
+  onClick,
+}: {
+  title: string;
+  active: boolean;
+  onClick: () => void;
+}) => {
+  return (
+    <button type="button" onClick={onClick} className={`sidebar-note-child ${active ? "sidebar-note-child-active" : ""}`}>
+      <span className="sidebar-link-main">
+        <FileText size={14} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
+        <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{title || "Untitled Note"}</span>
+      </span>
+    </button>
+  );
+};
 
 const FoldersPanel = () => {
-  const { folders, addFolder, deleteFolder, fetchFolders } = useFolderStore();
-  const { folderId } = useParams();
+  const { folders, fetchFolders } = useFolderStore();
+  const { fetchNotes, fetchTrash, notesCache, trash } = useNoteStore();
+  const { folderId, noteId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [pendingDeleteFolderId, setPendingDeleteFolderId] = useState<string | null>(null);
-  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [foldersOpen, setFoldersOpen] = useState(true);
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
-  const handleCreate = () => {
-    setCreateDialogOpen(true);
-  };
-
-  const performDelete = async (id: string) => {
-    setIsDeleting(true);
-    await deleteFolder(id);
-    if (folderId === id) {
-      navigate("/folders");
-    }
-    setIsDeleting(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (skipDeleteConfirm) {
-      await performDelete(id);
-      return;
-    }
-
-    setPendingDeleteFolderId(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleCreateFolderSubmit = async () => {
-    const normalized = newFolderName.trim();
-    if (!normalized) return;
-    setIsCreating(true);
-    await addFolder(normalized);
-    setIsCreating(false);
-    setCreateDialogOpen(false);
-    setNewFolderName("");
-  };
-
-  const confirmDeleteFolder = async () => {
-    if (!pendingDeleteFolderId) return;
-    if (skipDeleteConfirm) {
-      window.localStorage.setItem(SKIP_FOLDER_DELETE_CONFIRM_KEY, "true");
-    } else {
-      window.localStorage.removeItem(SKIP_FOLDER_DELETE_CONFIRM_KEY);
-    }
-    await performDelete(pendingDeleteFolderId);
-    setPendingDeleteFolderId(null);
-    setDeleteDialogOpen(false);
-  };
-
-  const cancelDeleteFolder = () => {
-    setPendingDeleteFolderId(null);
-    setDeleteDialogOpen(false);
-  };
+  const isFavoritesRoute = location.pathname.startsWith("/favorites");
+  const isArchiveRoute = location.pathname.startsWith("/archive");
+  const isTrashRoute = location.pathname.startsWith("/trash");
+  const isAllNotesRoute = !folderId && !isFavoritesRoute && !isArchiveRoute && !isTrashRoute;
 
   useEffect(() => {
     fetchFolders();
-  }, [folderId, fetchFolders]);
+    fetchNotes(null);
+    fetchTrash();
+  }, [fetchFolders, fetchNotes, fetchTrash]);
+
+  const allNotes = useMemo(() => notesCache[ALL_NOTES_CACHE_KEY] ?? [], [notesCache]);
+
+  const countsByFolder = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const note of allNotes) {
+      if (!note.folder) continue;
+      counts.set(note.folder, (counts.get(note.folder) ?? 0) + 1);
+    }
+
+    return counts;
+  }, [allNotes]);
+
+  const favoritesCount = useMemo(() => allNotes.filter((note) => note.pinned).length, [allNotes]);
+
+  const sortedFolders = useMemo(() => [...folders].sort((a, b) => a.name.localeCompare(b.name)), [folders]);
 
   useEffect(() => {
-    const savedPreference = window.localStorage.getItem(SKIP_FOLDER_DELETE_CONFIRM_KEY);
-    setSkipDeleteConfirm(savedPreference === "true");
-  }, []);
+    if (!folderId) return;
+    setExpandedFolders((current) => ({ ...current, [folderId]: true }));
+  }, [folderId]);
 
-  const pendingFolder = folders.find((folder) => folder._id === pendingDeleteFolderId);
-  const pendingFolderName = pendingFolder?.name || "this notebook";
+  const toggleFolder = async (id: string) => {
+    const nextExpanded = !expandedFolders[id];
+    setExpandedFolders((current) => ({ ...current, [id]: nextExpanded }));
+    if (nextExpanded && !notesCache[id]) {
+      await fetchNotes(id);
+    }
+  };
 
   return (
-    <>
-      <PanelLayout
-        title="Notebooks"
-        actions={
-          <>
-            <button className="rounded-lg border border-transparent p-1.5 text-zinc-400 transition hover:border-white/10 hover:bg-white/5 hover:text-zinc-100" aria-label="Search notebooks">
-              <Search size={18} />
-            </button>
-            <button
-              onClick={handleCreate}
-              className="rounded-lg border border-transparent p-1.5 text-zinc-300 transition hover:border-white/10 hover:bg-white/5 hover:text-primary"
-              aria-label="Create notebook"
-            >
-              <Plus size={18} />
-            </button>
-          </>
-        }
-      >
-        {folders.length === 0 ? (
-          <div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-white/10 bg-white/[0.02]">
-            <p className="text-xs text-zinc-400">No notebooks yet. Create your first one.</p>
-          </div>
-        ) : (
-          folders
-            .filter((f): f is NonNullable<typeof f> => f != null)
-            .map((folder) => (
-              <FolderCard
-                key={folder._id}
-                folder={folder}
-                isActive={folderId === folder._id}
-                onClick={() => navigate(`/folders/${folder._id}`)}
-                onDelete={() => handleDelete(folder._id)}
-              />
-            ))
-        )}
-      </PanelLayout>
+    <aside className="desktop-pane sidebar-panel">
+      <div className="sidebar-content custom-scrollbar mt-1">
+        <div className="sidebar-static-links">
+          <TopLink label="All Notes" count={allNotes.length} active={isAllNotesRoute} icon={FileText} onClick={() => navigate("/")} />
+          <TopLink label="Favorites" count={favoritesCount} active={isFavoritesRoute} icon={Star} onClick={() => navigate("/favorites")} />
+        </div>
 
-      <Dialog
-        open={createDialogOpen}
-        onOpenChange={(open) => {
-          setCreateDialogOpen(open);
-          if (!open) setNewFolderName("");
-        }}
-      >
-        <DialogContent className="max-w-md border-white/10 bg-[#101a2b] text-zinc-100">
-          <DialogHeader>
-            <DialogTitle>Create notebook</DialogTitle>
-            <DialogDescription className="text-zinc-400">Give your notebook a name.</DialogDescription>
-          </DialogHeader>
-          <Input
-            value={newFolderName}
-            onChange={(event) => setNewFolderName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void handleCreateFolderSubmit();
-              }
-            }}
-            placeholder="Notebook name"
-            className="border-white/15 bg-white/[0.02] text-zinc-100 placeholder:text-zinc-500"
-            autoFocus
-          />
-          <DialogFooter className="mt-4 gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} disabled={isCreating}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateFolderSubmit} disabled={isCreating || !newFolderName.trim()}>
-              {isCreating ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <div className="sidebar-divider" />
 
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteDialogOpen(open);
-          if (!open) {
-            setPendingDeleteFolderId(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md border-white/10 bg-[#101a2b] text-zinc-100">
-          <DialogHeader>
-            <DialogTitle>Delete notebook?</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              This will delete "{pendingFolderName}" and all notes inside it.
-            </DialogDescription>
-          </DialogHeader>
+        <div className="sidebar-folders">
+          <button type="button" className="sidebar-folders-header" onClick={() => setFoldersOpen((current) => !current)}>
+            <span className="sidebar-section-title">Folders</span>
+            <ChevronDown size={15} className={`transition-transform ${foldersOpen ? "rotate-0" : "-rotate-90"}`} />
+          </button>
 
-          <label className="mt-2 flex items-center gap-2 text-sm text-zinc-300">
-            <input
-              type="checkbox"
-              checked={skipDeleteConfirm}
-              onChange={(event) => setSkipDeleteConfirm(event.target.checked)}
-              className="h-4 w-4 rounded border border-zinc-500 bg-transparent accent-primary"
-            />
-            Don't ask again
-          </label>
+          {foldersOpen ? (
+            <div className="mt-3 space-y-1">
+              {sortedFolders.map((folder) => {
+                const expanded = expandedFolders[folder._id] ?? false;
+                const folderNotes = notesCache[folder._id] ?? [];
 
-          <DialogFooter className="mt-4 gap-2 sm:justify-end">
-            <Button variant="outline" onClick={cancelDeleteFolder} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button onClick={confirmDeleteFolder} disabled={isDeleting}>
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+                return (
+                  <div key={folder._id} className="space-y-1">
+                    <FolderRow
+                      folder={folder}
+                      count={countsByFolder.get(folder._id) ?? 0}
+                      active={folderId === folder._id}
+                      expanded={expanded}
+                      onToggle={() => void toggleFolder(folder._id)}
+                      onClick={() => navigate(`/folders/${folder._id}`)}
+                    />
+
+                    <div className={`sidebar-folder-children ${expanded ? "sidebar-folder-children-open" : ""}`}>
+                      <div className="sidebar-folder-children-inner space-y-1">
+                        {folderNotes.length > 0 ? (
+                          folderNotes.map((note) => (
+                            <NoteChildRow
+                              key={note._id}
+                              title={note.title}
+                              active={noteId === note._id}
+                              onClick={() => navigate(`/folders/${folder._id}/note/${note._id}`)}
+                            />
+                          ))
+                        ) : (
+                          <div className="sidebar-empty-folder">0 notes</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="sidebar-divider" />
+
+        <div className="sidebar-bottom-links">
+          <TopLink label="Archive" count={0} active={isArchiveRoute} icon={Archive} onClick={() => navigate("/archive")} />
+          <TopLink label="Trash" count={trash.length} active={isTrashRoute} icon={Trash2} onClick={() => navigate("/trash")} />
+        </div>
+      </div>
+    </aside>
   );
 };
 

@@ -14,15 +14,15 @@ const NavItem = ({ to, icon: Icon, label }: NavItemProps) => {
       to={to}
       className={({ isActive }) =>
         cn(
-          "group relative mx-2 flex flex-col items-center justify-center gap-1.5 rounded-xl py-3 transition",
+          "group relative mx-auto flex h-10 w-10 items-center justify-center rounded-md transition",
           isActive
-            ? "bg-primary/15 text-primary shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"
-            : "text-zinc-400 hover:bg-white/5 hover:text-zinc-100"
+            ? "bg-[#2563eb] text-white shadow-none"
+            : "text-(--muted-text) hover:bg-white/5 hover:text-[#d1d5db]"
         )
       }
+      title={label}
     >
-      <Icon size={20} className="transition group-hover:scale-105" />
-      <span className="text-[10px] font-semibold tracking-wide">{label}</span>
+      <Icon size={16} className="transition group-hover:scale-105" />
     </NavLink>
   );
 };

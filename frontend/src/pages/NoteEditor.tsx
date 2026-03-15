@@ -1,21 +1,26 @@
-import { useMemo, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Star } from "lucide-react";
 import { useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
 import { useNoteStore } from "@/store/useNoteStore";
+import { useFolderStore } from "@/store/useFolderStore";
 import TipTap from "@/components/TipTap";
 import AiAuditPanel from "@/components/AiAuditPanel";
+import EmptyEditorState from "@/components/EmptyEditorState";
 import { getRelativeUpdatedLabel } from "@/utils/getRelativeUpdatedLabel";
-import { getContrastTextPalette } from "@/utils/getContrastText";
 
 const NoteEditor = () => {
-  const { noteId } = useParams();
-  const { notes, updateNote } = useNoteStore();
+  const { noteId, folderId } = useParams();
+  const { notes, updateNote, togglePinning } = useNoteStore();
+  const { folders } = useFolderStore();
 
   const note = notes.find((n) => n?._id === noteId);
+  const folder = folders.find((item) => item._id === (note?.folder || folderId));
   const [draftTitle, setDraftTitle] = useState("");
   const [nowMs, setNowMs] = useState(Date.now());
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const debouncedUpdate = useMemo(
     () =>
@@ -53,60 +58,55 @@ const NoteEditor = () => {
     }
   };
 
-  if (!note)
-    return (
-      <div className="flex h-full items-center justify-center text-zinc-400">
-        Select a note to start writing
-      </div>
-    );
-
-  const palette = getContrastTextPalette(note.color || "#1d2436");
+  if (!note) {
+    return <EmptyEditorState />;
+  }
 
   return (
-    <div className="relative flex h-full w-full flex-col" style={{ color: palette.text, backgroundColor: note.color }}>
-      <div className="relative border-b px-8 pb-3 pt-5" style={{ borderColor: palette.divider }}>
-        <div className="mx-auto max-w-3xl">
-          <input
-            className="w-full bg-transparent text-center text-2xl font-bold tracking-tight outline-none md:text-3xl"
-            style={{ color: palette.text, caretColor: "#000000" }}
-            value={draftTitle}
-            placeholder="Untitled Note"
-            onChange={(e) => setDraftTitle(e.target.value)}
-            onBlur={commitTitle}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                (e.currentTarget as HTMLInputElement).blur();
-              }
-            }}
-          />
+    <div className="flex h-full min-h-0">
+      <section className="flex min-w-0 flex-1 flex-col">
+        <div className="desktop-editor-header">
+          <div className="editor-title-row">
+            <input
+              className="editor-title-input"
+              value={draftTitle}
+              placeholder="Untitled Note"
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLInputElement).blur();
+                }
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={() => togglePinning(note._id)}
+              className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
+            >
+              <Star size={15} fill={note.pinned ? "currentColor" : "none"} />
+              {note.pinned ? "Starred" : "Starred"}
+            </button>
+            <button type="button" onClick={() => setAiOpen(true)} className="editor-ask-ai-button">
+              <Sparkles size={15} />
+              Ask AI
+            </button>
+          </div>
+
+          <div className="editor-title-meta">
+            <span>{folder?.name || "AI Notes"}</span>
+            <span>{getRelativeUpdatedLabel(note.updatedAt, nowMs)}</span>
+          </div>
         </div>
 
-        <div className="absolute bottom-2 right-8 text-[10px] font-semibold tracking-[0.08em]" style={{ color: palette.muted }}>
-          {getRelativeUpdatedLabel(note.updatedAt, nowMs)}
+        <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
+          <TipTap key={note._id} content={note.content} onChange={handleContentChange} onEditorReady={setEditorInstance} />
         </div>
-      </div>
+      </section>
 
-      <div
-        className="custom-scrollbar flex-1 overflow-y-auto px-8"
-        style={{
-          background: note.color || "#1d2436",
-          color: palette.text,
-          ["--editor-text" as string]: palette.text,
-          ["--editor-muted" as string]: palette.muted,
-          ["--editor-placeholder" as string]: palette.placeholder,
-          ["--editor-caret" as string]: "#000000",
-        }}
-      >
-        <TipTap
-          key={note._id}
-          content={note.content}
-          onChange={handleContentChange}
-          onEditorReady={setEditorInstance}
-        />
-      </div>
-
-      <AiAuditPanel noteId={note._id} noteContent={note.content} editor={editorInstance} />
+      {aiOpen ? <AiAuditPanel noteId={note._id} noteContent={note.content} editor={editorInstance} onClose={() => setAiOpen(false)} /> : null}
     </div>
   );
 };

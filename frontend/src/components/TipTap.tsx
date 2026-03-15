@@ -1,5 +1,4 @@
 import { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -16,7 +15,6 @@ type TipTapProps = {
 };
 
 const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
-  const [editorFontSize, setEditorFontSize] = useState(18);
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -67,22 +65,9 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
     return <div>Loading editor...</div>;
   }
 
-  const decreaseFontSize = () => {
-    setEditorFontSize((size) => Math.max(14, size - 1));
-  };
-
-  const increaseFontSize = () => {
-    setEditorFontSize((size) => Math.min(28, size + 1));
-  };
-
   return (
-    <div className="relative mx-auto w-full max-w-4xl" style={{ ["--editor-font-size" as string]: `${editorFontSize}px` }}>
-      <EditorToolbar
-        editor={editor}
-        fontSize={editorFontSize}
-        onDecreaseFontSize={decreaseFontSize}
-        onIncreaseFontSize={increaseFontSize}
-      />
+    <div className="editor-shell relative mx-auto w-full max-w-4xl" style={{ ["--editor-font-size" as string]: `18px` }}>
+      <EditorToolbar editor={editor} />
       <EditorBubbleMenu editor={editor} />
       <EditorContent className="editor-content-shell" editor={editor} spellCheck={true} onKeyDown={handleEditorKeyDown} />
     </div>

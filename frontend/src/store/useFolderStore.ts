@@ -1,4 +1,5 @@
 import { create  } from "zustand";
+import type { AxiosError } from "axios";
 import api from "@/lib/api";
 
 export interface Folder {
@@ -17,7 +18,7 @@ interface FolderState {
     error: string | null;
     activeFolderId: string | null;
     fetchFolders: () => Promise<void>;
-    addFolder: (name: string) => Promise<void>;
+    addFolder: (name: string) => Promise<Folder | null>;
     updateFolder: (id: string, updates: Partial<Pick<Folder, "name" | "color">>) => Promise<void>;
     deleteFolder: (id: string) => Promise<void>;
     setActiveFolder: (id: string | null) => void;
@@ -46,10 +47,17 @@ export const useFolderStore = create<FolderState>((set, get) => ({
         try {
             set({ error: null });
             const res = await api.post('/folders', { name });
-            set({ folders: [...get().folders, res.data.folder ] });
+            const folder = res.data.folder as Folder | undefined;
+            if (!folder) {
+                set({ error: "Error creating folder" });
+                return null;
+            }
+            set({ folders: [...get().folders, folder ] });
+            return folder;
         } catch (error) {
             set({ error: "Error creating folder" });
             console.log("Error creating folder", error);
+            return null;
         }
     },
 
@@ -71,8 +79,8 @@ export const useFolderStore = create<FolderState>((set, get) => ({
                 folders: get().folders.map((folder) => (folder._id === id ? updatedFolder : folder)),
                 activeFolderId: get().activeFolderId === id ? updatedFolder._id : get().activeFolderId,
             });
-        } catch (error: any) {
-            if (error?.response?.status === 409) {
+        } catch (error) {
+            if ((error as AxiosError)?.response?.status === 409) {
                 set({ error: "Conflict detected: folder was updated elsewhere. Refresh and try again." });
                 return;
             }
@@ -95,8 +103,8 @@ export const useFolderStore = create<FolderState>((set, get) => ({
                 folders: get().folders.filter((folder) => folder._id !== id),
                 activeFolderId: get().activeFolderId === id ? null : get().activeFolderId,
             });
-        } catch (error: any) {
-            if (error?.response?.status === 409) {
+        } catch (error) {
+            if ((error as AxiosError)?.response?.status === 409) {
                 set({ error: "Conflict detected: folder changed on another device. Refresh and try delete again." });
                 return;
             }

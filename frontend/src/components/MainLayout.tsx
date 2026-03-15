@@ -1,51 +1,43 @@
-import { Outlet, useLocation, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import ActivityBar from "./SideBar";
 import NotesListPanel from "./NotesListPanel";
 import FoldersPanel from "./folderPanel";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui/resizable";
+import AppHeader from "./AppHeader";
 
 const MainLayout = () => {
   const location = useLocation();
-  const { folderId } = useParams();
   const isFocusMode = new URLSearchParams(location.search).get("focus") === "1";
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
 
-  const showFolders = !isFocusMode && (location.pathname.startsWith("/folders") || folderId);
-  const showNotes =
-    !isFocusMode &&
-    (location.pathname === "/" ||
-      folderId ||
-      location.pathname.startsWith("/favorites") ||
-      location.pathname.startsWith("/note/"));
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <ActivityBar />
+    <div className="app-shell">
+      <div className="app-window">
+        <AppHeader theme={theme} onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))} />
 
-      <ResizablePanelGroup orientation="horizontal" className="flex-1">
-        {showFolders && (
-          <>
-            <ResizablePanel defaultSize="20%" minSize="16%" maxSize="30%">
-              <FoldersPanel />
-            </ResizablePanel>
-            <ResizableHandle withHandle className="bg-white/10 hover:bg-white/20" />
-          </>
-        )}
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <ActivityBar />
 
-        {showNotes && (
-          <>
-            <ResizablePanel defaultSize="17%" minSize="16%" maxSize="45%">
-              <NotesListPanel />
-            </ResizablePanel>
-            <ResizableHandle withHandle className="bg-white/10 hover:bg-white/20" />
-          </>
-        )}
+          {!isFocusMode ? (
+            <>
+              <div className="desktop-folder-column">
+                <FoldersPanel />
+              </div>
+              <div className="desktop-notes-column">
+                <NotesListPanel />
+              </div>
+            </>
+          ) : null}
 
-        <ResizablePanel defaultSize={showFolders || showNotes ? "52%" : "100%"} minSize="35%">
-          <main className="relative h-full overflow-hidden border-l border-white/5 bg-gradient-to-b from-[#1b2132]/70 via-[#171c2a]/65 to-[#131826]/80">
+          <main className="desktop-main-panel flex-1">
             <Outlet />
           </main>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        </div>
+      </div>
     </div>
   );
 };

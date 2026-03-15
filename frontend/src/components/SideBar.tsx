@@ -1,24 +1,31 @@
-import { Star, Archive, Trash2, Notebook, Settings, FileText } from "lucide-react";
+import {
+  CircleHelp,
+  FileText,
+  Folder,
+  Settings,
+  Star,
+  Users,
+} from "lucide-react";
 import NavItem from "./navItem";
 
 const ActivityBar = () => {
   return (
-    <aside className="flex h-full w-20 flex-col border-r border-white/10 bg-[#141a29]/95 backdrop-blur-md">
-      <div className="flex-1 py-3">
-        <nav className="flex w-full flex-col gap-1">
+    <aside className="desktop-rail">
+      <div className="flex-1 py-4 dark:bg-zinc-900">
+        <nav className="flex w-full flex-col gap-2">
           <NavItem to="/" icon={FileText} label="Notes" />
-          <NavItem to="/folders" icon={Notebook} label="Notebooks" />
           <NavItem to="/favorites" icon={Star} label="Favorites" />
-          <NavItem to="/archive" icon={Archive} label="Archive" />
-          <NavItem to="/trash" icon={Trash2} label="Trash" />
+          <NavItem to="/folders" icon={Folder} label="Folders" />
+          <NavItem to="/shared" icon={Users} label="People" />
         </nav>
-
-        <div className="mx-auto my-4 h-px w-10 bg-white/10" />
       </div>
 
-      <div className="mt-auto flex justify-center pb-3">
-        <button className="rounded-lg border border-transparent p-2 text-zinc-400 transition hover:border-white/10 hover:bg-white/5 hover:text-zinc-100">
-          <Settings size={18} />
+      <div className="flex flex-col items-center gap-2 pb-4 dark:bg-zinc-900">
+        <button className="desktop-icon-button desktop-rail-utility" type="button" aria-label="Help">
+          <CircleHelp size={15} />
+        </button>
+        <button className="desktop-icon-button desktop-rail-utility" type="button" aria-label="Settings">
+          <Settings size={15} />
         </button>
       </div>
     </aside>

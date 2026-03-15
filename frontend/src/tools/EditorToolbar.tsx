@@ -1,28 +1,27 @@
-import { Maximize2, Minimize2 } from "lucide-react";
+import {
+  Bold,
+  CheckSquare,
+  Image,
+  Italic,
+  Link2,
+  List,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 
 type Props = {
   editor: Editor;
-  fontSize: number;
-  onDecreaseFontSize: () => void;
-  onIncreaseFontSize: () => void;
 };
 
-const EditorToolbar = ({ editor, fontSize, onDecreaseFontSize, onIncreaseFontSize }: Props) => {
+const EditorToolbar = ({ editor }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const isFocusMode = searchParams.get("focus") === "1";
-
-  const btn = (active: boolean) =>
-    cn(
-      "rounded-md border px-2.5 py-1 text-xs font-semibold tracking-wide transition",
-      active
-        ? "border-primary/60 bg-primary/20 text-primary"
-        : "border-white/10 bg-white/5 text-zinc-300 hover:border-white/20 hover:bg-white/10"
-    );
+  const toolbarButtonClass = (active = false) => cn("editor-toolbar-button", active && "editor-toolbar-button-active");
 
   const toggleFocusMode = () => {
     const next = new URLSearchParams(location.search);
@@ -37,51 +36,35 @@ const EditorToolbar = ({ editor, fontSize, onDecreaseFontSize, onIncreaseFontSiz
   };
 
   return (
-    <div className="sticky top-0 z-20 mb-2 flex flex-wrap items-center gap-2 border-b border-white/8 bg-[#12192a]/75 px-2 py-2 backdrop-blur-md">
-      <button onClick={toggleFocusMode} className={btn(isFocusMode)} title={isFocusMode ? "Exit focus mode" : "Focus editor"}>
-        {isFocusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-      </button>
-
-      <button onClick={() => editor.chain().focus().toggleBold().run()} className={btn(editor.isActive("bold"))}>
-        Bold
-      </button>
-      <button onClick={() => editor.chain().focus().toggleItalic().run()} className={btn(editor.isActive("italic"))}>
-        Italic
-      </button>
-      <button onClick={() => editor.chain().focus().toggleStrike().run()} className={btn(editor.isActive("strike"))}>
-        Strike
-      </button>
-      <button onClick={onDecreaseFontSize} className={btn(false)} title="Decrease text size">
-        A-
-      </button>
-      <span className="rounded-md border border-white/10 bg-black/20 px-2 py-1 text-xs font-semibold text-zinc-300">{fontSize}px</span>
-      <button onClick={onIncreaseFontSize} className={btn(false)} title="Increase text size">
-        A+
-      </button>
-      <button
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        className={btn(editor.isActive("bulletList"))}
-      >
-        List
-      </button>
-      <button
-        onClick={() => editor.chain().focus().setParagraph().run()}
-        className={btn(editor.isActive("paragraph"))}
-      >
-        Body
-      </button>
-      <button
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        className={btn(editor.isActive("heading", { level: 1 }))}
-      >
-        H1
-      </button>
-      <button
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        className={btn(editor.isActive("heading", { level: 2 }))}
-      >
-        H2
-      </button>
+    <div className="editor-toolbar flex flex-col">
+      <div className="editor-toolbar-group">
+        <button type="button" onClick={toggleFocusMode} className={toolbarButtonClass(isFocusMode)} title="Toggle focus mode">
+          {isFocusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+        </button>
+        <button type="button" title="Bold" onClick={() => editor.chain().focus().toggleBold().run()} className={toolbarButtonClass(editor.isActive("bold"))}>
+          <Bold size={14} />
+        </button>
+        <button type="button" title="Italic" onClick={() => editor.chain().focus().toggleItalic().run()} className={toolbarButtonClass(editor.isActive("italic"))}>
+          <Italic size={14} />
+        </button>
+        <button
+          type="button"
+          title="bullet-points"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={toolbarButtonClass(editor.isActive("bulletList"))}
+        >
+          <List size={14} />
+        </button>
+        <button title="check square" type="button" aria-label="CheckSquare" className={toolbarButtonClass(false)}>
+          <CheckSquare size={14} />
+        </button>
+        <button title="add link" type="button" className={toolbarButtonClass(false)}>
+          <Link2 size={14} />
+        </button>
+        <button type="button" title="add image" className={toolbarButtonClass(false)}>
+          <Image size={14} />
+        </button>
+      </div>
     </div>
   );
 };

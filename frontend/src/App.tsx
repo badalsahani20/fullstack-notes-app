@@ -14,6 +14,9 @@ function App() {
         <Route element={<MainLayout />}>
           <Route index element={<HomeEmptyState />} />
           <Route path="/folders" element={<HomeEmptyState />} />
+          <Route path="/favorites" element={<HomeEmptyState />} />
+          <Route path="/favorites/note/:noteId" element={<NoteEditor />} />
+          <Route path="/archive" element={<HomeEmptyState />} />
           <Route path="/trash" element={<HomeEmptyState />} />
           <Route path="/note/:noteId" element={<NoteEditor />} />
           <Route path="/folders/:folderId/note/:noteId" element={<NoteEditor />} />

@@ -11,7 +11,7 @@ export const checkAuth = async (): Promise<User | null> => {
     try {
         const response = await api.get("/auth/me");
         return response.data;
-    } catch (error) {
+    } catch {
         return null;
     }
 }
