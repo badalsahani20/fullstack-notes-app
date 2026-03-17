@@ -29,6 +29,7 @@ interface NoteState {
   isSaving: boolean;
   error: string | null;
   fetchNotes: (folderId?: string | null) => Promise<void>;
+  fetchNotesForCache: (folderId: string) => Promise<void>;
   fetchTrash: () => Promise<void>;
   setActiveNote: (note: Note | null) => void;
   createNote: (folderId?: string | null) => Promise<Note | null>;
@@ -112,6 +113,36 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       console.error(error);
     } finally {
       set({ loading: false });
+    }
+  },
+
+  fetchNotesForCache: async (folderId: string) => {
+    const cacheKey = getNotesCacheKey(folderId);
+    
+    const cachedNotes = get().notesCache[cacheKey];
+    const cachedAt = get().notesFetchedAt[cacheKey] ?? 0;
+    
+    if (cachedNotes && (Date.now() - cachedAt < NOTES_CACHE_TTL_MS)) {
+        return;
+    }
+
+    try {
+      const url = `/folders/${folderId}/notes`;
+      const res = await api.get(url);
+      const data = res.data.notes || res.data;
+      const normalizedNotes = normalizeNoteList(data);
+      set((state) => ({
+        notesCache: {
+          ...state.notesCache,
+          [cacheKey]: normalizedNotes,
+        },
+        notesFetchedAt: {
+          ...state.notesFetchedAt,
+          [cacheKey]: Date.now(),
+        },
+      }));
+    } catch (error) {
+      console.error("Failed to load notes for cache", error);
     }
   },
 

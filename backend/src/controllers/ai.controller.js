@@ -2,7 +2,7 @@ import crypto from "crypto";
 import Notes from "../models/notes.model.js";
 import AiAssistCache from "../models/aiAssistCache.model.js";
 import catchAsync from "../utils/catchAsync.js";
-import { checkGrammar, runAiAssist } from "../services/ai.service.js";
+import { checkGrammar, chatWithAi, runAiAssist } from "../services/ai.service.js";
 
 const stripHtml = (html = "") =>
   html
@@ -119,6 +119,41 @@ export const aiAssistController = catchAsync(async (req, res) => {
     data: {
       ...result,
       sourceType,
+    },
+  });
+});
+
+
+export const chatWithAiController = catchAsync( async (req, res) => {
+  const { message, history = [], summary = "", noteContext = "", contextChanged = false } = req.body;
+
+  if (!message || !message.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: "Message is required",
+    });
+  }
+
+  if (!Array.isArray(history)) {
+    return res.status(400).json({
+      success: false,
+      message: "History must be an array",
+    });
+  }
+
+  const result = await chatWithAi({
+    message,
+    history,
+    summary,
+    noteContext,
+    contextChanged,
+  });
+
+  res.status(200).json({
+    success: true,
+    data: {
+      reply: result.reply,
+      history: result.history,
     },
   });
 });

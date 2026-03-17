@@ -1,47 +1,27 @@
 import { diffWords } from "diff";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { mapDiffsToError } from "../utils/mapDiffsToError.js";
+import { client } from "../utils/groqClient.js";
+import { summarizeHistory } from "../utils/summarizeHistory.js";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const NOTE_CONTEXT_PREFIX = "__NOTE_CONTEXT__:";
 
-const ensureApiKey = () => {
+const ensureGeminiApiKey = () => {
   if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is missing from environment variables");
+    throw new Error(`GEMINI api key is missing from environment variables`);
   }
 };
 
-export const mapDiffsToError = (diffs) => {
-  let currPos = 0;
-  const errors = [];
-
-  diffs.forEach((part, index) => {
-    if (part.removed) {
-      const nextPart = diffs[index + 1];
-      const suggestion = nextPart && nextPart.added ? nextPart.value : null;
-
-      errors.push({
-        start: currPos,
-        end: currPos + part.value.length,
-        original: part.value,
-        suggestion,
-      });
-
-      currPos += part.value.length;
-    } else if (part.added) {
-      const prevPart = diffs[index - 1];
-      if (!prevPart || !prevPart.removed) {
-        errors.push({ start: currPos, end: currPos, original: "", suggestion: part.value });
-      }
-    } else {
-      currPos += part.value.length;
-    }
-  });
-
-  return errors;
+const ensureGroqApiKey = () => {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("GROQ api key is missing from environment variables");
+  }
 };
 
 export const checkGrammar = async (text) => {
-  ensureApiKey();
+  ensureGeminiApiKey();
 
   const prompt = `You are a professional editor. Fix grammar, spelling, punctuation, and awkward phrasing while preserving meaning. Return only corrected text.\n\nText:\n${text}`;
 
@@ -73,7 +53,7 @@ const actionPrompts = {
 };
 
 export const runAiAssist = async ({ action, text }) => {
-  ensureApiKey();
+  ensureGeminiApiKey();
 
   if (!text || !text.trim()) {
     throw new Error("Text is required for AI assist");
@@ -109,3 +89,62 @@ export const runAiAssist = async ({ action, text }) => {
     throw error;
   }
 };
+
+export const chatWithAi = async ({
+  message,
+  history = [],
+  summary = "",
+  noteContext = "",
+}) => {
+  ensureGroqApiKey();
+  if (!message || !message.trim()) {
+    throw new Error("Message is required for AI assist");
+  }
+
+  if (history.length > 20 && !summary) {
+    summary = await summarizeHistory(history);
+    history = history.slice(-5);
+  }
+  
+  const trimmedHistory = history.slice(-6);
+  const safeContext = noteContext?.slice(0, 1500);
+  const messages = [
+    {
+      role: "system",
+      content: `
+You are Iris, an expert AI assistant integrated into Notesify, a professional note-taking application built by Badal Sahani. Your primary goal is to help the user synthesize, improve, and understand their notes.
+
+Core Directives:
+- Be concise and highly structured. Use bullet points and bold text for readability.
+- When explaining technical concepts, Data Structures, Algorithms, or full-stack code (like Java, React, or SQL), prioritize clarity and provide brief, accurate code snippets if relevant.
+- Always assume the context of the conversation is related to the user's current active note unless stated otherwise.
+- Never output markdown headers (like # or ##) that will clash with the user's existing document structure.
+- If asked to rewrite text, maintain the user's original technical accuracy but improve the flow.
+`,
+    },
+    safeContext && { role: "system", content: `Relevant content from the user's note:\n ${safeContext}`},
+    summary && { role: "system", content: `Conversation summary: \n${summary}`},
+    ...trimmedHistory,
+    { role: "user", content: message },
+  ].filter(Boolean);
+  try {
+    const response = await client.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages,
+    });
+
+    const reply = response.choices[0].message.content;
+
+    return {
+      reply,
+      history: [
+        ...trimmedHistory,
+        { role: "user", content: message },
+        { role: "assistant", content: reply },
+      ],
+    };
+  } catch (error) {
+    throw new Error(`Groq Chat Error: ${error.message}`);
+  }
+};
+

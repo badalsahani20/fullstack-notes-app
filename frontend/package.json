@@ -31,6 +31,7 @@
     "lodash.debounce": "^4.0.8",
     "lucide-react": "^0.552.0",
     "motion": "^12.35.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.2",
     "radix-ui": "^1.4.3",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

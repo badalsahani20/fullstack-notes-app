@@ -61,6 +61,7 @@ const aiAssistCacheSchema = new mongoose.Schema(
         default: "",
       },
     },
+    createdAt: { type: Date, default: Date.now, expires: 86400}
   },
   { timestamps: true, versionKey: false }
 );

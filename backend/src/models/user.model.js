@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
     name:{
         type: String,
         trim: true,
-        required: true,
+        required: false,
     },
     email:{
         type:String,
@@ -16,9 +16,19 @@ const userSchema = new mongoose.Schema({
     },
     password:{
         type: String,
-        required: [true, "Password is required"],
+        // required: [true, "Password is required"],
         minlength: [6, "Password must be at least 6 characters"],
         select: false,
+    },
+    googleId: {
+        type: String,
+        index: true
+    },
+    avatar: String,
+    provider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local"
     },
     refreshToken: [
         {
@@ -36,7 +46,7 @@ const userSchema = new mongoose.Schema({
 } , {timestamps: true});
 
 userSchema.pre("save", async function(next) {
-    if(!this.isModified("password")) return next();
+    if(!this.isModified("password") || !this.password) return next();
 
     try {
         const salt = await bcrypt.genSalt(10);
@@ -63,16 +73,10 @@ userSchema.methods.generateRefreshToken = function () {
     )
 }
 userSchema.methods.comparePassword = async function (candidatePassword) {
+    if (!this.password) return false;
     return await bcrypt.compare(candidatePassword, this.password);
 }
 
-userSchema.methods.getSignedJwtToken = function() {
-    return jwt.sign(
-        { id: this._id },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE || "1d" }
-    );
-}
 
 const User = mongoose.model("User", userSchema);
 export default User;

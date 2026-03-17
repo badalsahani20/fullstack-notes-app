@@ -25,6 +25,12 @@ export const loginUser = async (email, password) => {
         throw error;
     }
 
+    if (!user.password && user.provider === "google") {
+        const error = new Error("This account was created using Google. Please log in with Google.");
+        error.statusCode = 400;
+        throw error;
+    }
+
     const isMatch = await user.comparePassword(password);
     if(!isMatch) {
         const error = new Error("Invalid credentials");
@@ -131,4 +137,45 @@ export const getUserById = async (userId) => {
 
 export const fetchAllUsers = async () => {
     return User.find().select("-password");
+}
+
+export const findOrCreateGoogleUser = async (profile) => {
+    const email = profile?.emails[0]?.value;
+
+    if (!email) {
+        throw new Error("Google account did not provide an email");
+    }
+
+    let user = await User.findOne({
+        $or: [
+            { googleId: profile.id },
+            { email }
+        ]
+    });
+
+    if ( !user ) {
+        user = await User.create({
+            googleId: profile.id,
+            email,
+            name: profile.displayName || email.split("@")[0],
+            avatar: profile.photos?.[0]?.value || "",
+            provider: "google"
+        });
+    } else if (!user.googleId) {
+        //existing email user linking google account
+        user.googleId = profile.id;
+        user.provider = "google";
+        if (!user.name) {
+            user.name = profile.displayName || email.split("@")[0];
+        }
+        await user.save();
+    }
+
+    // if an existing user log in but their name is still empty
+    if (user && !user.name) {
+        user.name = profile.displayName || email.split("@")[0];
+        await user.save();
+    }
+
+    return user;
 }

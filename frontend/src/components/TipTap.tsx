@@ -1,4 +1,4 @@
-import { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import React, { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -74,4 +74,4 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
   );
 };
 
-export default TipTap;
+export default React.memo(TipTap);

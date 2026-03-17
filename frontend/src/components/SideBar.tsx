@@ -7,14 +7,16 @@ import {
   Users,
 } from "lucide-react";
 import NavItem from "./navItem";
+import { useParams } from "react-router-dom";
 
 const ActivityBar = () => {
+  const { noteId } = useParams();
   return (
     <aside className="desktop-rail">
       <div className="flex-1 py-4 dark:bg-zinc-900">
         <nav className="flex w-full flex-col gap-2">
-          <NavItem to="/" icon={FileText} label="Notes" />
-          <NavItem to="/favorites" icon={Star} label="Favorites" />
+          <NavItem to={noteId ? `/note/${noteId}` : "/"} icon={FileText} label="Notes" />
+          <NavItem to={noteId ? `/favorites/note/${noteId}` : "/favorites"} icon={Star} label="Favorites" />
           <NavItem to="/folders" icon={Folder} label="Folders" />
           <NavItem to="/shared" icon={Users} label="People" />
         </nav>

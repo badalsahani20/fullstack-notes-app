@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Plus, Search } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -151,30 +152,49 @@ const NotesListPanel = () => {
 
         <div className="custom-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 pb-4">
           {filteredNotes.length === 0 ? (
-            <div className="empty-pane-message">
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="empty-pane-message"
+            >
               {location.pathname === "/favorites"
                 ? "Star a note to keep it here."
                 : "No notes match this view yet. Create one to start filling the workspace."}
-            </div>
+            </motion.div>
           ) : (
-            filteredNotes.map((note) => (
-              <NoteCard
-                key={note._id}
-                note={note}
-                isActive={noteId === note._id}
-                onClick={() =>
-                  navigate(
-                    folderId
-                      ? `/folders/${folderId}/note/${note._id}`
-                      : isFavoritesRoute
-                        ? `/favorites/note/${note._id}`
-                        : `/note/${note._id}`
-                  )
-                }
-                onDelete={handleDeleteNote}
-                onTogglePin={togglePinning}
-              />
-            ))
+            <motion.div
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.04 },
+                },
+              }}
+              initial="hidden"
+              animate="show"
+              className="flex flex-col gap-1.5"
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredNotes.map((note) => (
+                  <NoteCard
+                    key={note._id}
+                    note={note}
+                    isActive={noteId === note._id}
+                    onClick={() =>
+                      navigate(
+                        folderId
+                          ? `/folders/${folderId}/note/${note._id}`
+                          : isFavoritesRoute
+                            ? `/favorites/note/${note._id}`
+                            : `/note/${note._id}`
+                      )
+                    }
+                    onDelete={handleDeleteNote}
+                    onTogglePin={togglePinning}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </div>
       </aside>

@@ -9,6 +9,7 @@ import folderRoute from "./src/routes/folder.route.js";
 import aiRoute from "./src/routes/aiRoute.js"
 import cookieParser from "cookie-parser";
 import trashRoute from "./src/routes/trash.route.js";
+import passport from "./config/passport.js";
 // import { message } from "statuses";
 
 
@@ -22,7 +23,7 @@ app.use(cors({
 }));
 
 connectDB();
-
+app.use(passport.initialize());
 app.use("/api/users", userRoute);
 app.use("/api/notes", notesRoute);
 app.use("/api/folders", folderRoute);

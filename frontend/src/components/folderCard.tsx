@@ -1,6 +1,6 @@
 import type { Folder } from "../store/useFolderStore";
 import { cn } from "@/lib/utils";
-import { Folder as FolderIcon, Trash2 } from "lucide-react";
+import { Folder as FolderIcon, Notebook, Trash2 } from "lucide-react";
 
 type FolderCardProps = {
   folder?: Folder;
@@ -28,7 +28,7 @@ const FolderCard = ({ folder, isActive, onClick, onDelete }: FolderCardProps) =>
         <span className="text-sm font-bold">{initial}</span>
       </div>
       <div className="flex items-center gap-2">
-        <FolderIcon size={14} className="text-zinc-400" />
+        <Notebook size={14} className="text-zinc-400" />
         <h3 className="truncate text-sm font-semibold text-zinc-100">{folder.name || "Untitled"}</h3>
       </div>
       <button

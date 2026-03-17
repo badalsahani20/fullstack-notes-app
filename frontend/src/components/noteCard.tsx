@@ -1,4 +1,5 @@
 import { Star, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/store/useNoteStore";
 import { getRelativeUpdatedLabel } from "@/utils/getRelativeUpdatedLabel";
@@ -22,9 +23,17 @@ const NoteCard = ({ note, isActive, onClick, onDelete, onTogglePin }: NoteCardPr
   const preview = toPreviewText(note.content || "");
 
   return (
-    <article
+    <motion.article
+      layout
+      variants={{
+        hidden: { opacity: 0, y: 15, scale: 0.98 },
+        show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 350, damping: 25 } },
+      }}
+      initial="hidden"
+      animate="show"
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
       onClick={onClick}
-      className={cn("note-list-row", isActive && "note-list-row-active")}
+      className={cn("note-list-row cursor-pointer", isActive && "note-list-row-active")}
       style={{ borderLeftColor: isActive ? "var(--accent-strong)" : "transparent" }}
     >
       <div className="flex min-w-0 flex-1 gap-3">
@@ -63,7 +72,7 @@ const NoteCard = ({ note, isActive, onClick, onDelete, onTogglePin }: NoteCardPr
       >
         <Trash2 size={14} />
       </button>
-    </article>
+    </motion.article>
   );
 };
 

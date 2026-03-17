@@ -1,13 +1,14 @@
 import User from "../models/user.model.js";
 import * as AuthService from "../services/auth.service.js";
 import catchAsync from "../utils/catchAsync.js";
+import crypto from "crypto";
 
 export const registerUser = catchAsync(async (req, res, next) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password) {
+  if (!email || !password) {
     return res
       .status(400)
-      .json({ message: "Please provide name, email and password" });
+      .json({ message: "Please provide email and password" });
   }
 
   //Call the service to handle registration logic
@@ -15,7 +16,7 @@ export const registerUser = catchAsync(async (req, res, next) => {
   res.status(201).json({
     success: true,
     message: "User registered successfully",
-    user: { id: user._id, name: user.name, email: user.email },
+    user: { id: user._id, name: user?.name, email: user.email },
   });
 });
 
@@ -107,3 +108,24 @@ export const getMe = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+export const googleCallback = catchAsync(async (req, res) => {
+  const user = req.user;
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
+  const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+  user.refreshToken.push({ token: hashedRefreshToken });
+  await user.save();
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+
+  res.redirect(
+    `${process.env.FRONTEND_URL}/oauth-success?token=${accessToken}&id=${user._id}&name=${user.name || ""}&email=${user.email}`
+  );
+})

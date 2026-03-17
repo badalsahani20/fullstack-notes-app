@@ -6,18 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
+import Google from "../assets/google.svg";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  // const [name, setName] = useState("");
   const { setAuth } = useAuthStore();
   const nav = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await api.post("/users/login", { email, password, name: name || undefined });
+      const res = await api.post("/users/login", { email, password });
       if (res.data) {
         setAuth(
           {
@@ -33,6 +34,10 @@ const Login = () => {
       console.log("Login error", error);
     }
   };
+
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:5500/api/users/google";
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-4">
@@ -70,18 +75,13 @@ const Login = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Name (optional)</label>
-              <Input
-                type="text"
-                className="border-white/12 bg-[#0f1625]"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
             <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
               Sign In
+            </Button>
+
+            <Button type="button" onClick={handleGoogleLogin} className="w-full mt-3 flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-200">
+                <img title="google" src={Google} width={18} />
+                Continue with Google
             </Button>
           </form>
 
