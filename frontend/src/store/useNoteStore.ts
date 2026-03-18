@@ -38,6 +38,7 @@ interface NoteState {
   softDeleteNote: (noteId: string) => Promise<void>;
   togglePinning: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
+  permanentDeleteNote: (noteId: string) => Promise<void>;
 }
 
 type UnknownNote = Partial<Note> & { id?: string };
@@ -319,6 +320,16 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     } catch (error) {
       console.error("Restore failed", error);
       set({ loading: false, error: "Could not restore note" });
+    }
+  },
+  permanentDeleteNote: async (noteId) => {
+    try {
+      await api.delete(`/trash/note/${noteId}`);
+      set((state) => ({
+        trash: state.trash.filter((n) => n._id !== noteId),
+      }));
+    } catch (error) {
+      console.error("Permanent deletion failed", error);
     }
   },
 }));

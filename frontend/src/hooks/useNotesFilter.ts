@@ -18,7 +18,7 @@ import type { Folder } from "@/store/useFolderStore";
  * @param folders  - Full folder list from the store
  * @param query    - Current search string from the search input
  */
-export const useNotesFilter = (notes: Note[], folders: Folder[], query: string) => {
+export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, trash: Note[] = []) => {
   const location = useLocation();
   const { folderId } = useParams();
 
@@ -34,14 +34,14 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string) 
 
   // ── Filtered note list ───────────────────────────────────────────────────────
   const filteredNotes = useMemo(() => {
-    // Step 1: filter by route context
+    // On the trash route, show the trash array (already all isDeleted: true)
     const base = isTrashRoute
-      ? notes.filter((note) => note.isDeleted)
+      ? trash
       : isFavoritesRoute
         ? notes.filter((note) => note.pinned && !note.isDeleted)
         : notes.filter((note) => !note.isDeleted);
 
-    // Step 2: apply search query (strips HTML tags before matching)
+    // Apply text search
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return base;
 
@@ -51,7 +51,7 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string) 
         .toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [isFavoritesRoute, isTrashRoute, notes, query]);
+  }, [isFavoritesRoute, isTrashRoute, notes, query, trash]);
 
   // ── Display strings ──────────────────────────────────────────────────────────
 

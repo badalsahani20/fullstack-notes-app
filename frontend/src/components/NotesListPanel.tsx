@@ -16,7 +16,8 @@ const isRenderableNote = (value: unknown): value is Note => {
 };
 
 const NotesListPanel = () => {
-  const { notes, fetchNotes, createNote, softDeleteNote, togglePinning } = useNoteStore();
+  const { notes, fetchNotes, createNote, softDeleteNote, togglePinning, restoreNote, permanentDeleteNote } = useNoteStore();
+  const { trash, fetchTrash } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { noteId, folderId } = useParams();
   const navigate = useNavigate();
@@ -45,13 +46,18 @@ const NotesListPanel = () => {
     }
   }, [fetchFolders, folders.length]);
 
+  useEffect(() => {
+    fetchTrash();
+  }, [fetchTrash]);
+
   const {
     filteredNotes,
     panelTitle,
     breadcrumbRoot,
     currentFolderName,
     isFavoritesRoute,
-  } = useNotesFilter(safeNotes, folders, query);
+    isTrashRoute,
+  } = useNotesFilter(safeNotes, folders, query, trash);
 
   const handleCreateNote = async () => {
     const newNote = await createNote(folderId || null);
@@ -127,7 +133,9 @@ const NotesListPanel = () => {
                     key={note._id}
                     note={note}
                     isActive={noteId === note._id}
+                    isTrashView={isTrashRoute}
                     onClick={() => {
+                      if (isTrashRoute) return; // no editor for trashed notes
                       const basePath = folderId
                         ? `/folders/${folderId}/note/${note._id}`
                         : isFavoritesRoute
@@ -136,6 +144,8 @@ const NotesListPanel = () => {
                       navigate(`${basePath}${location.search}`);
                     }}
                     onDelete={handleDeleteNote}
+                    onRestore={(id: string) => restoreNote(id)}
+                    onPermanentDelete={(id: string) => permanentDeleteNote(id)}
                     onTogglePin={togglePinning}
                   />
                 ))}

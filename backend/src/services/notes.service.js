@@ -124,4 +124,6 @@ export const searchNote = async(userId, query, folderId = null) => {
     return notes;
 }
 
-
+export const permanentlyRemoveNote = async (noteId, userId) => {
+    return await Notes.findOneAndDelete({ _id: noteId, user: userId, isDeleted: true });
+};

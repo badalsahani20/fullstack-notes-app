@@ -32,7 +32,7 @@ export const restoreNote = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
 
   const restoredNote = await TrashService.restoreNote(id, userId);
-  if(!restoreNote) {
+  if (!restoredNote) {
     return res.status(404).json({
       success: false,
       message: "Note not found or not in trash"
@@ -42,7 +42,7 @@ export const restoreNote = catchAsync(async (req, res, next) => {
   res.status(200).json({
     success: true,
     message: "Note restored!",
-    note: restoreNote
+    note: restoredNote
   });
 })
 
