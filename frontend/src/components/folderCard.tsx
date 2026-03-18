@@ -1,6 +1,6 @@
 import type { Folder } from "../store/useFolderStore";
 import { cn } from "@/lib/utils";
-import { Folder as FolderIcon, Notebook, Trash2 } from "lucide-react";
+import { Notebook, Trash2 } from "lucide-react";
 
 type FolderCardProps = {
   folder?: Folder;

@@ -14,7 +14,7 @@ export const ImageUploadExtension = Image.extend({
             new Plugin ({
                 key: new PluginKey("imageDropPaste"),
                 props: {
-                    handlePaste(view, event, slice) {
+                    handlePaste(view, event, _slice) {
                         const items = Array.from(event.clipboardData?.items || []);
                         const imageItems = items.filter((item) => item.type.includes("image"));
 
@@ -39,7 +39,7 @@ export const ImageUploadExtension = Image.extend({
                         });
                         return true;
                     },
-                    handleDrop(view, event, slice, moved) {
+                    handleDrop(view, event, _slice, moved) {
                         if(moved || !event.dataTransfer || !event.dataTransfer.files.length) return false;
                         const files = Array.from(event.dataTransfer.files).filter((file) => file.type.includes("image"));
                         if(files.length === 0) return false;
