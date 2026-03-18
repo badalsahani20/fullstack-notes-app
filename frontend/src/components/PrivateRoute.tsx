@@ -26,12 +26,16 @@ const PrivateRoute = () => {
     api
       .get("/users/me")
       .then((res) => {
-        // Re-hydrate user in case of stale localStorage data
         const u = res.data.user || res.data;
         setAuth({ id: u._id || u.id, name: u.name, email: u.email }, accessToken);
       })
-      .catch(() => {
-        clearAuth();
+      .catch((err) => {
+        // Only force logout on explicit "token invalid/expired" (401)
+        // Network errors, timeouts, or 5xx (e.g. Render cold start) should
+        // keep the stored session alive — the token may still be valid.
+        if (err?.response?.status === 401) {
+          clearAuth();
+        }
       })
       .finally(() => {
         setChecking(false);
