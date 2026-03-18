@@ -18,7 +18,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: true,
+    origin: ["https://notesify-eta.vercel.app", "http://localhost:5173"],
     credentials: true,
 }));
 
