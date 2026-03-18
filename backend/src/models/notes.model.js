@@ -42,7 +42,15 @@ const notesSchema = new mongoose.Schema({
         end: Number,
         original: String,
         suggestion: String
-    }]
+    }],
+    chatHistory: {
+        type: [{
+            id: String,
+            role: String,
+            content: String
+        }],
+        default: []
+    }
 },{timestamps: true, versionKey: false});
 
 notesSchema.index({ user: 1, pinned: -1, updatedAt: -1 });

@@ -11,6 +11,7 @@ export interface Note {
   version: number;
   isDeleted: boolean;
   updatedAt: string;
+  chatHistory?: { id: string; role: 'user' | 'assistant'; content: string }[];
 }
 
 const ALL_NOTES_CACHE_KEY = "__all__";
@@ -58,6 +59,7 @@ const normalizeNote = (value: unknown): Note | null => {
     version: typeof maybe.version === "number" ? maybe.version : 0,
     isDeleted: typeof maybe.isDeleted === "boolean" ? maybe.isDeleted : false,
     updatedAt: typeof maybe.updatedAt === "string" ? maybe.updatedAt : new Date().toISOString(),
+    chatHistory: Array.isArray(maybe.chatHistory) ? maybe.chatHistory : [],
   };
 };
 

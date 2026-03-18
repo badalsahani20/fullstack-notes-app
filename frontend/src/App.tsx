@@ -4,10 +4,13 @@ import Login from "./pages/Login";
 import NoteEditor from "./pages/NoteEditor";
 import HomeEmptyState from "./components/HomeEmptySpace";
 import OAuthSuccess from "./pages/OAuthSuccess";
+import { Toaster } from "sonner";
 
 function App() {
   return (
-    <Routes>
+    <>
+      <Toaster position="bottom-right" />
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/oauth-success" element={<OAuthSuccess />} />
 
@@ -24,7 +27,8 @@ function App() {
         <Route path="/folders/:folderId/note/:noteId" element={<NoteEditor />} />
         <Route path="/folders/:folderId" element={<NoteEditor />} />
       </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

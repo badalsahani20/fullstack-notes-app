@@ -6,6 +6,7 @@
   "dependencies": {
     "@google/genai": "^1.43.0",
     "@google/generative-ai": "^0.24.1",
+    "@upstash/redis": "^1.37.0",
     "accepts": "^2.0.0",
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.0",

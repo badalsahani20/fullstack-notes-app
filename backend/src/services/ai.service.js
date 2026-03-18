@@ -97,6 +97,7 @@ export const chatWithAi = async ({
   noteContext = "",
 }) => {
   ensureGroqApiKey();
+
   if (!message || !message.trim()) {
     throw new Error("Message is required for AI assist");
   }
@@ -105,7 +106,7 @@ export const chatWithAi = async ({
     summary = await summarizeHistory(history);
     history = history.slice(-5);
   }
-  
+
   const trimmedHistory = history.slice(-6);
   const safeContext = noteContext?.slice(0, 1500);
   const messages = [
@@ -122,8 +123,14 @@ Core Directives:
 - If asked to rewrite text, maintain the user's original technical accuracy but improve the flow.
 `,
     },
-    safeContext && { role: "system", content: `Relevant content from the user's note:\n ${safeContext}`},
-    summary && { role: "system", content: `Conversation summary: \n${summary}`},
+    safeContext && {
+      role: "system",
+      content: `Relevant content from the user's note:\n ${safeContext}`,
+    },
+    summary && {
+      role: "system",
+      content: `Conversation summary: \n${summary}`,
+    },
     ...trimmedHistory,
     { role: "user", content: message },
   ].filter(Boolean);
@@ -147,4 +154,3 @@ Core Directives:
     throw new Error(`Groq Chat Error: ${error.message}`);
   }
 };
-

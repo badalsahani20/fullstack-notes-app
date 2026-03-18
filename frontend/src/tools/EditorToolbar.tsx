@@ -11,6 +11,9 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
+import { uploadImage } from "@/utils/uploadImage";
+import { useRef } from "react";
+import { toast } from "sonner";
 
 type Props = {
   editor: Editor;
@@ -20,9 +23,29 @@ const EditorToolbar = ({ editor }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const isFocusMode = searchParams.get("focus") === "1";
+  const focusParam = searchParams.get("focus");
+  const isFocusMode = focusParam === "1" || focusParam === "2";
   const toolbarButtonClass = (active = false) => cn("editor-toolbar-button", active && "editor-toolbar-button-active");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if(!file) return;
+
+    const toastId = toast.loading("Uploading image...");
+    try {
+      const url = await uploadImage(file);
+      editor.chain().focus().setImage({ src: url}).run();
+      toast.success("Image uploaded!", { id: toastId });
+    } catch (error) {
+      console.error("Failed to upload image", error);
+      toast.error("Failed to upload image", { id: toastId });
+    } finally {
+      // Clear the input so selecting the same file again triggers the onChange event
+      event.target.value = "";
+    }
+  }
+  
   const toggleFocusMode = () => {
     const next = new URLSearchParams(location.search);
     if (isFocusMode) {
@@ -61,8 +84,9 @@ const EditorToolbar = ({ editor }: Props) => {
         <button title="add link" type="button" className={toolbarButtonClass(false)}>
           <Link2 size={14} />
         </button>
-        <button type="button" title="add image" className={toolbarButtonClass(false)}>
+        <button type="button" title="add image" className={toolbarButtonClass(false)} onClick={() => fileInputRef.current?.click()}>
           <Image size={14} />
+          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
         </button>
       </div>
     </div>

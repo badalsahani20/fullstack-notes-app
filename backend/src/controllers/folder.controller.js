@@ -1,6 +1,8 @@
 import * as FolderService from "../services/folder.service.js";
 import catchAsync from "../utils/catchAsync.js";
-export const createFolder = catchAsync(async (req, res, next) => {
+import { redis } from "../../config/redis.js";
+
+export const createFolder = catchAsync(async (req, res) => {
 
    const { name, color, version, createdAt } = req.body;
 
@@ -16,6 +18,9 @@ export const createFolder = catchAsync(async (req, res, next) => {
       createdAt
     });
 
+    // Invalidate cache
+    await redis.del(`folders:${req.user._id}`);
+
     res.status(201).json({
       success: true,
       message: "Folder Created",
@@ -24,12 +29,22 @@ export const createFolder = catchAsync(async (req, res, next) => {
   
 });
 
-export const getAllFolders = catchAsync(async (req, res, next) => {
-    const folders = await FolderService.getUserFolders(req.user._id);
+export const getAllFolders = catchAsync(async (req, res) => {
+  const userId = req.user._id;
+  const cacheKey = `folders:${userId}`;
+
+  const cachedFolders = await redis.get(cacheKey);
+  if(cachedFolders) {
+    return res.json(cachedFolders);
+  }
+  
+    const folders = await FolderService.getUserFolders(userId);
+    await redis.set(cacheKey, folders, { ex: 3600 });
+
     res.json(folders);
 });
 
-export const getFolderById = catchAsync(async (req, res, next) => {
+export const getFolderById = catchAsync(async (req, res) => {
     const folder = await FolderService.getFolderById(
       req.params.id,
       req.user._id,
@@ -40,7 +55,7 @@ export const getFolderById = catchAsync(async (req, res, next) => {
     });
 });
 
-export const getNotesByFolder = catchAsync(async (req, res, next) => {
+export const getNotesByFolder = catchAsync(async (req, res) => {
     const notes = await FolderService.getNotesByFolder(
       req.params.id,
       req.user._id,
@@ -53,7 +68,7 @@ export const getNotesByFolder = catchAsync(async (req, res, next) => {
     });
 });
 
-export const updateFolder = catchAsync(async (req, res, next) => {
+export const updateFolder = catchAsync(async (req, res) => {
     const { id } = req.params;
     const { version, ...updateData } = req.body;
 
@@ -73,6 +88,9 @@ export const updateFolder = catchAsync(async (req, res, next) => {
       });
     }
 
+    // Invalidate cache
+    await redis.del(`folders:${req.user._id}`);
+
     //Successful update
     res.status(200).json({
       message: "Folder updated",
@@ -80,7 +98,7 @@ export const updateFolder = catchAsync(async (req, res, next) => {
 });
 });
 
-export const deleteFolder = catchAsync(async (req, res, next) => {
+export const deleteFolder = catchAsync(async (req, res) => {
     const { id } = req.params;
     const { version } = req.body;// Sent from frontend to prevent accidental deletes
 
@@ -95,6 +113,10 @@ export const deleteFolder = catchAsync(async (req, res, next) => {
         serverFolder: result.serverFolder,
       })
     }
+
+    // Invalidate cache
+    await redis.del(`folders:${req.user._id}`);
+
     res.status(200).json({ message: "Folder and all associated notes deleted" });
 });
 

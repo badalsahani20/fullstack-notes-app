@@ -1,9 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { AxiosError } from "axios";
-import { Check, CheckCheck, Copy, X } from "lucide-react";
+import { Check, CheckCheck, Copy, X, Square, Type, FileText, Wand2 } from "lucide-react";
+import { toast } from "sonner";
 import api from "@/lib/api";
+import ReactMarkdown from "react-markdown";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useNoteStore } from "@/store/useNoteStore";
 
 type AiAction = "grammar" | "summarize" | "explain" | "rewrite";
 
@@ -104,6 +108,9 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const { notes, updateNote } = useNoteStore();
+  const activeNote = useMemo(() => notes.find((n: any) => n._id === noteId), [notes, noteId]);
+
   const [guideOpen, setGuideOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -113,8 +120,39 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
     },
   ]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryMessage[]>([]);
+  
+  // Initialize from database
+  useEffect(() => {
+    if (activeNote?.chatHistory && activeNote.chatHistory.length > 0) {
+      setMessages([
+        { id: "welcome", role: "assistant", text: "Ask about the current note or use the quickActions below to refine it." },
+        ...activeNote.chatHistory.map((m: any) => ({ id: m.id || `${Date.now()}-${Math.random()}`, role: m.role, text: m.content as string }))
+      ]);
+      setChatHistory(activeNote.chatHistory.map((m: any) => ({ role: m.role as "system" | "user" | "assistant", content: m.content })));
+    }
+  }, [noteId]); // Only run on mount or note change, not on every activeNote update
+
   const messageListRef = useRef<HTMLDivElement | null>(null);
   const lastSentContextRef = useRef("");
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Dynamically track selection changes for the UI context indicator
+  useEffect(() => {
+    if (!editor) return;
+
+    const handleSelectionUpdate = () => {
+      const { range } = getSelection(editor);
+      setSelectionRange(range);
+    };
+
+    editor.on("selectionUpdate", handleSelectionUpdate);
+    // Initial check
+    handleSelectionUpdate();
+
+    return () => {
+      editor.off("selectionUpdate", handleSelectionUpdate);
+    };
+  }, [editor]);
 
   const plainNoteText = useMemo(() => stripHtml(noteContent), [noteContent]);
 
@@ -163,6 +201,13 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
     }
   }, []);
 
+  const stopRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
+
   const runAction = async (action: AiAction) => {
     const { text: selectedText, range } = getSelection(editor);
     const sourceText = selectedText || plainNoteText;
@@ -182,6 +227,8 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
       },
     ]);
 
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoadingAction(action);
       const res = await api.post("/ai/assist", {
@@ -189,6 +236,8 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
         action,
         selectedText: selectedText || undefined,
         noteText: sourceText,
+      }, {
+        signal: abortControllerRef.current.signal
       });
 
       const data = res.data?.data ?? null;
@@ -203,8 +252,23 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
         },
       ]);
     } catch (error) {
-      const message =
-        (error as AxiosError<{ message?: string }>)?.response?.data?.message || "AI action failed. Please try again.";
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'CanceledError') {
+        setMessages((current) => [...current, { id: `${Date.now()}-assistant-cancelled`, role: "assistant", text: "Request cancelled." }]);
+        setResult(null);
+        return;
+      }
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const message = axiosError?.response?.data?.message || "AI action failed. Please try again.";
+      const status = axiosError?.response?.status;
+      
+      const isRateLimit = status === 429 || /quota|rate limit|too many requests/i.test(message);
+      if (isRateLimit) {
+        toast.error("AI Daily Limit Reached", {
+          description: "You've hit the free tier limit for AI requests. Please try again later.",
+          duration: 5000,
+        });
+      }
+
       setResult(null);
       setMessages((current) => [...current, { id: `${Date.now()}-assistant-error`, role: "assistant", text: message }]);
     } finally {
@@ -247,6 +311,7 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
     setChatInput("");
 
     try {
+      abortControllerRef.current = new AbortController();
       setIsSendingChat(true);
       const { history, message, noteContext, contextChanged } = buildChatHistory(trimmed);
       const res = await api.post("/ai/chat", {
@@ -254,23 +319,49 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
         history,
         noteContext,
         contextChanged,
+      }, {
+        signal: abortControllerRef.current.signal
       });
 
       const reply = res.data?.data?.reply?.trim() || "No reply returned.";
       const nextHistory = Array.isArray(res.data?.data?.history) ? res.data.data.history : history;
       setChatHistory(nextHistory);
+      
+      const assistantMessage: Message = {
+         id: `${Date.now()}-chat-assistant`,
+         role: "assistant",
+         text: reply,
+      };
+
       setResult(null);
-      setMessages((current) => [
-        ...current,
-        {
-          id: `${Date.now()}-chat-assistant`,
-          role: "assistant",
-          text: reply,
-        },
-      ]);
+      setMessages((current) => [...current, assistantMessage]);
+
+      // Save to database (limit to 50 most recent to prevent BSON size bloat)
+      const dbHistory = [
+        ...(activeNote?.chatHistory || []),
+        { id: userMessage.id, role: "user", content: userMessage.text },
+        { id: assistantMessage.id, role: "assistant", content: assistantMessage.text }
+      ].slice(-50);
+      void updateNote(noteId, { chatHistory: dbHistory as any });
+
     } catch (error) {
-      const message =
-        (error as AxiosError<{ message?: string }>)?.response?.data?.message || "Chat request failed. Please try again.";
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'CanceledError') {
+        setChatInput(trimmed); // Give them their draft back
+        setMessages((current) => current.slice(0, -1)); // Remove the user's optimistic sent message UI
+        return;
+      }
+      const axiosError = error as AxiosError<{ message?: string }>;
+      const message = axiosError?.response?.data?.message || "Chat request failed. Please try again.";
+      const status = axiosError?.response?.status;
+      
+      const isRateLimit = status === 429 || /quota|rate limit|too many requests/i.test(message);
+      if (isRateLimit) {
+        toast.error("AI Daily Limit Reached", {
+          description: "You've hit the free tier limit for AI requests. Please try again later.",
+          duration: 5000,
+        });
+      }
+
       setChatHistory((current) => [...current, { role: "user", content: trimmed }]);
       setMessages((current) => [
         ...current,
@@ -338,8 +429,18 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
 
           return (
             <div key={message.id} className={`assistant-message assistant-message-${message.role}`}>
-              <div>
-                {isStreamed ? streamedMessageText : message.text}
+              <div className="max-w-full overflow-hidden">
+                {isStreamed ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-full overflow-hidden prose-p:leading-relaxed prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-800 prose-pre:max-w-full prose-pre:overflow-x-auto break-words">
+                    <ReactMarkdown>{String(streamedMessageText || "")}</ReactMarkdown>
+                  </div>
+                ) : message.role === "assistant" ? (
+                  <div className="prose prose-sm dark:prose-invert max-w-full overflow-hidden prose-p:leading-relaxed prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-800 prose-pre:max-w-full prose-pre:overflow-x-auto break-words">
+                    <ReactMarkdown>{String(message.text || "")}</ReactMarkdown>
+                  </div>
+                ) : (
+                  message.text
+                )}
                 {message.id === streamingMessageId && isStreaming ? <span className="assistant-cursor" /> : null}
               </div>
               {message.role === "assistant" && !isStreaming && result?.suggestion && index === messages.length - 1 ? (
@@ -365,21 +466,49 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
       </div>
 
       <div className="assistant-compose">
-        <div className="assistant-quick-actions assistant-quick-actions-floating">
-          {(Object.keys(actionMeta) as AiAction[]).map((action) => (
-            <button
-              key={action}
-              type="button"
-              onClick={() => runAction(action)}
-              disabled={loadingAction !== null || isSendingChat}
-              className={`assistant-quick-pill ${loadingAction === action ? "assistant-quick-pill-active" : ""}`}
-              title={actionMeta[action].prompt}
-            >
-              {actionMeta[action].label}
-            </button>
-          ))}
-        </div>
-        <div className="assistant-compose-shell ">
+        <div className="assistant-compose-shell">
+          <div className="px-3 py-1.5 border-b border-[var(--divider)] flex items-center justify-between gap-2 text-xs font-medium text-[var(--muted-text)] bg-[var(--surface-muted)]">
+            <div className="flex items-center gap-2">
+              {selectionRange ? (
+                <>
+                <Type size={12} className="text-[var(--accent-strong)]" />
+                <span className="text-[var(--text-strong)]">Selection</span> context
+                </>
+              ) : (
+                <>
+                <FileText size={12} />
+                Note context
+                </>
+              )}
+            </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={loadingAction !== null || isSendingChat}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-[var(--surface-ghost)] text-[var(--text-strong)] transition-colors disabled:opacity-50"
+                  title="Quick Actions"
+                >
+                  <Wand2 size={12} className={loadingAction ? "animate-pulse text-[var(--accent-strong)]" : "text-[var(--accent-strong)]"} />
+                  {loadingAction ? actionMeta[loadingAction].label : "Actions"}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-md">
+                {(Object.keys(actionMeta) as AiAction[]).map((action) => (
+                  <DropdownMenuItem
+                    key={action}
+                    onClick={() => runAction(action)}
+                    className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-100 text-sm py-1.5 transition-colors"
+                    title={actionMeta[action].prompt}
+                  >
+                    {actionMeta[action].label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <textarea
             className="assistant-compose-input custom-scrollbar"
             value={chatInput}
@@ -395,14 +524,25 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose }: AiAuditPanelProp
             }}
           />
           <div className="assistant-compose-footer">
-            <button
-              type="button"
-              className="assistant-send-button"
-              onClick={() => void sendChatMessage()}
-              disabled={!chatInput.trim() || isSendingChat}
-            >
-              {isSendingChat ? "..." : "->"}
-            </button>
+            {isSendingChat || loadingAction ? (
+              <button
+                type="button"
+                className="assistant-send-button bg-[var(--surface-ghost)] hover:bg-[var(--surface-hover)] text-[var(--text-strong)] border-[var(--divider)]"
+                onClick={stopRequest}
+                title="Stop AI Request"
+              >
+                <Square size={13} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="assistant-send-button"
+                onClick={() => void sendChatMessage()}
+                disabled={!chatInput.trim()}
+              >
+                -&gt;
+              </button>
+            )}
           </div>
         </div>
       </div>

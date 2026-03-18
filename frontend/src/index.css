@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -986,13 +987,15 @@
 }
 
 .assistant-message {
-  max-width: 92%;
+  max-width: 100%;
   border-radius: 1rem;
   padding: 0.8rem 0.9rem;
   margin-bottom: 0.8rem;
-  white-space: pre-wrap;
   line-height: 1.6;
   font-size: 0.92rem;
+  overflow-x: auto;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .assistant-message-actions {
@@ -1283,7 +1286,35 @@
 .ProseMirror ul,
 .ProseMirror ol {
   margin: 0.8rem 0;
-  padding-left: 1.35rem;
+  padding-left: 1.5rem;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror ul li,
+.ProseMirror ol li {
+  margin-bottom: 0.4rem;
+}
+
+.ProseMirror ul li p,
+.ProseMirror ol li p {
+  margin: 0;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  max-height: 480px;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+  display: block;
 }
 
 .ProseMirror table {

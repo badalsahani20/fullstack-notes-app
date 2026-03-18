@@ -7,6 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import EditorBubbleMenu from "./editorBubbleMenu";
 import EditorToolbar from "../tools/EditorToolbar";
+import { ImageUploadExtension } from "../extensions/imageUploadExtension";
 
 type TipTapProps = {
   content: string;
@@ -20,6 +21,10 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
       StarterKit,
       TextStyle,
       BubbleMenu,
+      ImageUploadExtension.configure({
+        inline: true,
+        allowBase64: true,
+      }),
       FontFamily.configure({
         types: ["textStyle"],
       }),

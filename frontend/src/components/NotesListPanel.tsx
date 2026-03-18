@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Plus, Search } from "lucide-react";
+import { ChevronRight, Plus, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -22,8 +22,17 @@ const NotesListPanel = () => {
   const { noteId, folderId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const isFocusMode = searchParams.get("focus") === "1";
+  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+
+  const closeNoteList = () => {
+    const next = new URLSearchParams(location.search);
+    next.set("focus", "2");
+    navigate(`${location.pathname}?${next.toString()}`, { replace: true });
+  };
   const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [query, setQuery] = useState("");
@@ -84,7 +93,8 @@ const NotesListPanel = () => {
   const handleCreateNote = async () => {
     const newNote = await createNote(folderId || null);
     if (newNote?._id) {
-      navigate(folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`);
+      const basePath = folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`;
+      navigate(`${basePath}${location.search}`);
     }
   };
 
@@ -121,7 +131,7 @@ const NotesListPanel = () => {
   return (
     <>
       <aside className="desktop-pane">
-        <div className="notes-panel-header">
+        <div className="notes-panel-header flex items-center justify-between pr-2">
           <div className="notes-panel-breadcrumb">
             <span>{breadcrumbRoot}</span>
             {currentFolderName ? (
@@ -131,6 +141,17 @@ const NotesListPanel = () => {
               </>
             ) : null}
           </div>
+          {isFocusMode && (
+            <button
+              type="button"
+              onClick={closeNoteList}
+              className="desktop-icon-button bg-transparent border-transparent hover:bg-[var(--surface-ghost)]"
+              style={{ width: "1.8rem", height: "1.8rem", color: "var(--muted-text)" }}
+              title="Close Note List"
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
 
         <div className="px-4 pb-3">
@@ -180,15 +201,14 @@ const NotesListPanel = () => {
                     key={note._id}
                     note={note}
                     isActive={noteId === note._id}
-                    onClick={() =>
-                      navigate(
-                        folderId
-                          ? `/folders/${folderId}/note/${note._id}`
-                          : isFavoritesRoute
-                            ? `/favorites/note/${note._id}`
-                            : `/note/${note._id}`
-                      )
-                    }
+                    onClick={() => {
+                      const basePath = folderId
+                        ? `/folders/${folderId}/note/${note._id}`
+                        : isFavoritesRoute
+                          ? `/favorites/note/${note._id}`
+                          : `/note/${note._id}`;
+                      navigate(`${basePath}${location.search}`);
+                    }}
                     onDelete={handleDeleteNote}
                     onTogglePin={togglePinning}
                   />
