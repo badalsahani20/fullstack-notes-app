@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./components/MainLayout";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import NoteEditor from "./pages/NoteEditor";
 import HomeEmptyState from "./components/HomeEmptySpace";
 import OAuthSuccess from "./pages/OAuthSuccess";
@@ -12,6 +13,7 @@ function App() {
       <Toaster position="bottom-right" />
       <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/oauth-success" element={<OAuthSuccess />} />
 
       <Route element={<MainLayout />}>
