@@ -51,17 +51,17 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
         <button type="button" onClick={onToggleTheme} className="desktop-icon-button" aria-label="Toggle theme">
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
-        <button type="button" className="desktop-icon-button relative" aria-label="Notifications">
+        <button type="button" className="desktop-icon-button relative hidden sm:inline-flex" aria-label="Notifications">
           <Bell size={16} />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[var(--panel-bg)]" />
         </button>
         <Button type="button" onClick={handleCreateNote} className="desktop-primary-button">
           <Plus size={15} />
-          New Note
+          <span className="hidden sm:inline">New Note</span>
         </Button>
         <Button type="button" variant="outline" onClick={handleCreateFolder} className="desktop-secondary-button">
           <Plus size={15} />
-          New Folder
+          <span className="hidden sm:inline">New Folder</span>
         </Button>
         <UserMenu />
       </div>
