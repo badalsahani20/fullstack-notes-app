@@ -16,7 +16,7 @@ const isRenderableNote = (value: unknown): value is Note => {
 };
 
 const NotesListPanel = () => {
-  const { notes, fetchNotes, createNote, softDeleteNote, togglePinning, restoreNote, permanentDeleteNote } = useNoteStore();
+  const { notes, fetchNotes, createNote, softDeleteNote, togglePinning, restoreNote, permanentDeleteNote, emptyTrash } = useNoteStore();
   const { trash, fetchTrash } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { noteId, folderId } = useParams();
@@ -92,6 +92,8 @@ const NotesListPanel = () => {
           panelTitle={panelTitle}
           currentFolderName={currentFolderName ?? null}
           isFocusMode={isFocusMode}
+          actionLabel={isTrashRoute && trash.length > 0 ? "Clear All" : undefined}
+          onAction={isTrashRoute && trash.length > 0 ? () => void emptyTrash() : undefined}
           onClose={closeNoteList}
         />
 

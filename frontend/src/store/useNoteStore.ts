@@ -50,6 +50,7 @@ interface NoteState {
   togglePinning: (noteId: string) => Promise<void>;
   restoreNote: (noteId: string) => Promise<void>;
   permanentDeleteNote: (noteId: string) => Promise<void>;
+  emptyTrash: () => Promise<void>;
 }
 
 type UnknownNote = Partial<Note> & { id?: string };
@@ -305,7 +306,6 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   restoreNote: async (noteId) => {
-    set({ loading: true });
     try {
       const res = await api.patch(`/trash/restore/note/${noteId}`);
       const restoredNote = normalizeNote(res.data.note || res.data);
@@ -326,11 +326,10 @@ export const useNoteStore = create<NoteState>((set, get) => ({
               ),
             }
           : state.notesCache,
-        loading: false,
       }));
     } catch (error) {
       console.error("Restore failed", error);
-      set({ loading: false, error: "Could not restore note" });
+      set({ error: "Could not restore note" });
     }
   },
   permanentDeleteNote: async (noteId) => {
@@ -341,6 +340,15 @@ export const useNoteStore = create<NoteState>((set, get) => ({
       }));
     } catch (error) {
       console.error("Permanent deletion failed", error);
+    }
+  },
+  emptyTrash: async () => {
+    try {
+      await api.delete("/trash/empty");
+      set({ trash: [] });
+    } catch (error) {
+      console.error("Failed to clear trash", error);
+      set({ error: "Could not clear trash" });
     }
   },
 }));

@@ -19,7 +19,10 @@ export const createFolder = catchAsync(async (req, res) => {
     });
 
     // Invalidate cache
-    await redis.del(`folders:${req.user._id}`);
+    await Promise.all([
+      redis.del(`folders:${req.user._id}`),
+      redis.del(`notes:${req.user._id}`),
+    ]);
 
     res.status(201).json({
       success: true,
@@ -89,7 +92,10 @@ export const updateFolder = catchAsync(async (req, res) => {
     }
 
     // Invalidate cache
-    await redis.del(`folders:${req.user._id}`);
+    await Promise.all([
+      redis.del(`folders:${req.user._id}`),
+      redis.del(`notes:${req.user._id}`),
+    ]);
 
     //Successful update
     res.status(200).json({
@@ -119,5 +125,3 @@ export const deleteFolder = catchAsync(async (req, res) => {
 
     res.status(200).json({ message: "Folder and all associated notes deleted" });
 });
-
-
