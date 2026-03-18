@@ -1,22 +1,24 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { Eye, EyeOff, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import Google from "../assets/google.svg";
+import { toast } from "sonner";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
   const nav = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const res = await api.post("/users/login", { email, password });
       if (res.data) {
@@ -30,69 +32,125 @@ const Login = () => {
         );
         nav("/");
       }
-    } catch (error) {
-      console.log("Login error", error);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err?.response?.data?.message || "Invalid email or password");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
     window.location.href = `${import.meta.env.VITE_API_URL}/users/google`;
-  }
+  };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-4">
-      <Card className="w-full max-w-md border-white/10 bg-[#121a2a]/85 text-zinc-100 shadow-[0_20px_48px_rgba(0,0,0,0.35)] backdrop-blur-md">
-        <CardHeader className="space-y-2">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-primary">
-            <FileText size={24} />
-          </div>
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <CardDescription className="text-zinc-400">Sign in to continue organizing your notes.</CardDescription>
-        </CardHeader>
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#080d18] p-4">
+      {/* Ambient glow blobs */}
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-[500px] w-[600px] -translate-x-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-violet-600/8 blur-[100px]" />
 
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Email</label>
+      <div className="relative w-full max-w-md">
+        {/* Logo mark */}
+        <div className="mb-8 flex flex-col items-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 shadow-lg shadow-indigo-500/10">
+            <Sparkles size={22} className="text-indigo-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back</h1>
+            <p className="mt-1 text-sm text-zinc-500">Sign in to continue organizing your notes.</p>
+          </div>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-2xl border border-white/8 bg-[#0f1625]/90 p-8 shadow-[0_24px_64px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+          <form onSubmit={handleLogin} className="space-y-5">
+            {/* Email */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Email</label>
               <Input
                 type="email"
                 placeholder="name@example.com"
-                className="border-white/12 bg-[#0f1625]"
+                className="h-11 border-white/10 bg-white/5 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500/50"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                autoFocus
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300">Password</label>
-              <Input
-                type="password"
-                className="border-white/12 bg-[#0f1625]"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+            {/* Password */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Password</label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Your password"
+                  className="h-11 border-white/10 bg-white/5 pr-10 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500/50"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-zinc-300"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-              Sign In
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={loading}
+              className="h-11 w-full bg-indigo-600 font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Signing in…
+                </span>
+              ) : (
+                "Sign in"
+              )}
             </Button>
 
-            <Button type="button" onClick={handleGoogleLogin} className="w-full mt-3 flex items-center justify-center gap-2 bg-white text-black hover:bg-gray-200">
-                <img title="google" src={Google} width={18} />
-                Continue with Google
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-white/8" />
+              <span className="text-xs text-zinc-600">or</span>
+              <div className="h-px flex-1 bg-white/8" />
+            </div>
+
+            {/* Google */}
+            <Button
+              type="button"
+              onClick={handleGoogleLogin}
+              variant="outline"
+              className="h-11 w-full border-white/10 bg-white/5 font-medium text-white hover:bg-white/10"
+            >
+              <img src={Google} alt="Google" width={18} className="mr-2" />
+              Continue with Google
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-zinc-500">
+          <p className="mt-6 text-center text-sm text-zinc-600">
             Need an account?{" "}
-            <Link to="/register" className="font-medium text-zinc-200 hover:text-primary">
-              Sign Up
+            <Link to="/register" className="font-medium text-indigo-400 transition hover:text-indigo-300">
+              Sign up for free
             </Link>
-          </div>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+
+        <p className="mt-6 text-center text-xs text-zinc-700">
+          By signing in you agree to our{" "}
+          <span className="text-zinc-500">Terms of Service</span> and{" "}
+          <span className="text-zinc-500">Privacy Policy</span>.
+        </p>
+      </div>
     </div>
   );
 };
