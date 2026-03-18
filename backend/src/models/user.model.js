@@ -16,13 +16,17 @@ const userSchema = new mongoose.Schema({
     },
     password:{
         type: String,
-        // required: [true, "Password is required"],
+        required: function () {
+            return this.provider === "local";
+        },
         minlength: [6, "Password must be at least 6 characters"],
         select: false,
+        default: undefined,
     },
     googleId: {
         type: String,
-        index: true
+        index: true,
+        default: undefined,
     },
     avatar: String,
     provider: {
@@ -44,6 +48,15 @@ const userSchema = new mongoose.Schema({
         },
     ],
 } , {timestamps: true});
+
+userSchema.index(
+    { googleId: 1 },
+    {
+        unique: true,
+        sparse: true,
+        partialFilterExpression: { googleId: { $type: "string" } },
+    }
+);
 
 userSchema.pre("save", async function(next) {
     if(!this.isModified("password") || !this.password) return next();
