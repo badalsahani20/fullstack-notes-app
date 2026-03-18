@@ -1,29 +1,29 @@
-# Full-Stack Notes Application
+# Notesify — Full-Stack Notes App
 
-A modern, high-performance, and feature-rich full-stack application for managing notes and folders. Built with the **MERN stack**, optimized with **Redis Caching**, and featuring a powerful rich-text editor using **TipTap** and **Cloudinary**.
+A modern, feature-rich full-stack notes application built with the **MERN stack**, featuring a powerful rich-text editor, folder organization, and a built-in AI assistant.
 
 ## 🚀 Features
 
-- **Rich Text Editing:** Powered by TipTap, allowing seamless formatting, bullet points, headers, tables, and full markdown-style editing.
-- **Drag & Drop Image Uploads:** Native support for dragging and dropping (or pasting) images directly into notes. Images are instantly uploaded and hosted via Cloudinary.
-- **Lightning Fast Caching:** Integrated Upstash Redis caching on the backend for incredibly fast `GET` requests on Notes and Folders.
-- **Folder Organization:** Group your notes logically into custom folders.
-- **Trash & Archive:** Safely soft-delete notes to a Trash bin, with the ability to restore them or permanently delete them.
-- **Authentication:** Secure user authentication managed via Passport.js & JWT.
-- **AI Assistant Integration:** Built-in AI controller to help summarize, brainstorm, or refine note content directly within the app.
-- **Beautiful UI:** Styled with TailwindCSS and `shadcn/ui`, featuring smooth animations (`framer-motion`), dark mode, and toast notifications (`sonner`).
+- **Rich Text Editing:** Powered by TipTap — supports formatting, bullet points, headers, tables, and markdown-style editing.
+- **Drag & Drop Image Uploads:** Drop or paste images directly into notes; uploaded and hosted via Cloudinary.
+- **Lightning Fast Caching:** Upstash Redis caching on the backend for fast `GET` requests on notes and folders.
+- **Folder Organization:** Group notes into custom folders with an expandable sidebar tree.
+- **Favorites & Trash:** Star notes to pin them, soft-delete to Trash, restore or permanently remove.
+- **Authentication:** Secure session management via Passport.js & JWT.
+- **AI Assistant:** Built-in chat panel powered by Groq (LLaMA) — streaming responses, quick actions (Summarize, Improve, Brainstorm, Rewrite), context-aware chat using note content or selected text, and persistent chat history per note.
+- **Beautiful UI:** shadcn/ui + TailwindCSS, dark mode, smooth animations via Framer Motion.
 
 ---
 
 ## 💻 Tech Stack
 
 ### Frontend
-- **Framework:** React (Vite) + TypeScript
-- **Styling:** TailwindCSS + `tw-animate-css` 
-- **Components:** `shadcn/ui`, Lucide Icons
+- **Framework:** React 18 (Vite) + TypeScript
+- **Styling:** TailwindCSS + shadcn/ui + Lucide Icons
 - **State Management:** Zustand
-- **Routing:** React Router DOM
-- **Editor:** TipTap (ProseMirror underlying) + Custom Extensions
+- **Routing:** React Router v6
+- **Editor:** TipTap (ProseMirror) + Custom Extensions
+- **Animations:** Framer Motion
 - **Image Hosting:** Cloudinary (Direct Unsigned Uploads)
 
 ### Backend
@@ -31,7 +31,7 @@ A modern, high-performance, and feature-rich full-stack application for managing
 - **Database:** MongoDB + Mongoose
 - **Caching:** Redis (Upstash)
 - **Authentication:** Passport.js + JWT
-- **AI Integration:** Groq / Google Generative AI SDKs
+- **AI Integration:** Groq API (LLaMA 3.1) + Google Generative AI
 
 ---
 
@@ -40,28 +40,57 @@ A modern, high-performance, and feature-rich full-stack application for managing
 ```text
 fullstack-notes/
 ├── backend/
-│   ├── config/          # Redis, Database, and Passport Configurations
+│   ├── config/          # Redis, Database, and Passport configurations
 │   ├── src/
 │   │   ├── controllers/ # Logic for Folders, Notes, Auth, Trash, and AI
 │   │   ├── middleware/  # Auth guards and request validation
-│   │   ├── models/      # Mongoose Schemas (User, Node, Folder, etc.)
-│   │   ├── routes/      # Express API routes definition
+│   │   ├── models/      # Mongoose schemas (User, Note, Folder)
+│   │   ├── routes/      # Express API route definitions
 │   │   ├── services/    # Reusable business logic & DB calls
 │   │   └── utils/       # catchAsync wrappers and helpers
-│   └── server.js        # Main Express application entry point
+│   └── server.js        # Express app entry point
 │
 └── frontend/
-    ├── src/
-    │   ├── components/  # Reusable UI widgets (TipTap, Layouts, Buttons)
-    │   ├── extensions/  # Custom TipTap plugins (e.g., ImageUploadExtension)
-    │   ├── pages/       # Route-level components (Login, NoteEditor)
-    │   ├── providers/   # React Context providers (SessionProvider)
-    │   ├── store/       # Zustand global state (useNoteStore)
-    │   ├── tools/       # Editor Toolbars and Bubble Menus
-    │   ├── utils/       # Helper functions (uploadImage to Cloudinary)
-    │   ├── App.tsx      # Main Router and Toaster setup
-    │   └── index.css    # Global Tailwind styles & ProseMirror resets
-    └── package.json
+    └── src/
+        ├── components/
+        │   ├── ai/
+        │   │   ├── AiAuditPanel.tsx      ← thin glue layer
+        │   │   ├── AiCompose.tsx         ← compose bar (textarea, actions, send/stop)
+        │   │   ├── AiGuideDialog.tsx     ← first-time welcome dialog
+        │   │   ├── AiMessage.tsx         ← single message bubble (streaming + markdown)
+        │   │   ├── AiMessageList.tsx     ← scrollable message list + auto-scroll
+        │   │   └── types.ts              ← shared AI types
+        │   ├── editor/
+        │   │   ├── EditorHeader.tsx      ← title, star, Ask AI button, meta row
+        │   │   └── RelativeTimeLabel.tsx ← isolated 1s ticker (prevents re-renders)
+        │   ├── header/
+        │   │   ├── HeaderSearch.tsx      ← global search bar
+        │   │   └── UserMenu.tsx          ← profile dropdown + logout
+        │   ├── notes/
+        │   │   ├── NoteDeleteDialog.tsx  ← delete confirmation + "don't ask again"
+        │   │   ├── NotesPanelHeader.tsx  ← breadcrumb + focus-mode close button
+        │   │   └── NotesPanelSearch.tsx  ← search input + create note button
+        │   ├── ui/                       ← shadcn/ui primitives (untouched)
+        │   ├── AppHeader.tsx             ← top header orchestrator
+        │   ├── MainLayout.tsx            ← root layout + theme state
+        │   ├── NotesListPanel.tsx        ← middle column note list
+        │   └── SideBar.tsx               ← left activity rail
+        ├── hooks/
+        │   ├── useAiChat.ts              ← AI API calls, streaming, history
+        │   ├── useFolderTree.ts          ← folder expand/collapse, counts, lazy fetch
+        │   └── useNotesFilter.ts         ← route-aware note filtering + search
+        ├── pages/
+        │   ├── NoteEditor.tsx            ← editor page with resizable AI panel
+        │   ├── Login.tsx
+        │   └── Register.tsx
+        ├── store/
+        │   ├── useNoteStore.ts           ← notes, CRUD, chat history, notes cache
+        │   ├── useFolderStore.ts         ← folders, CRUD
+        │   └── useAuthStore.ts           ← user session
+        ├── lib/
+        │   └── api.ts                    ← configured Axios instance
+        └── utils/
+            └── getRelativeUpdatedLabel.ts
 ```
 
 ---
@@ -73,6 +102,7 @@ fullstack-notes/
 - MongoDB connection string
 - Upstash Redis account
 - Cloudinary account
+- Groq API key
 
 ### 1. Clone the repository
 ```bash
@@ -81,59 +111,69 @@ cd fullstack-notes-app
 ```
 
 ### 2. Backend Setup
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Create a `.env` file in the `backend/` directory:
-   ```env
-   PORT=5000
-   MONGO_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   UPSTASH_REDIS_REST_URL=your_upstash_redis_url
-   UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
-   # AI Keys (Optional)
-   GROQ_API_KEY=your_groq_key
-   ```
-3. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in `backend/`:
+```env
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+GROQ_API_KEY=your_groq_key
+```
+
+```bash
+npm run dev
+```
 
 ### 3. Frontend Setup
-1. Navigate to the frontend directory:
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-2. Create a `.env` file in the `frontend/` directory:
-   ```env
-   VITE_API_URL=http://localhost:5000/api
-   VITE_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-   VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset_name
-   ```
-3. Start the frontend development server:
-   ```bash
-   npm run dev
-   ```
+```bash
+cd ../frontend
+npm install
+```
+
+Create a `.env` file in `frontend/`:
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset_name
+```
+
+```bash
+npm run dev
+```
 
 ---
 
-## 🎨 Implemented Caching Strategy (Redis)
-To ensure near-instantaneous load times, the backend implements caching wrapping the MongoDB queries:
-- `GET /api/notes` routes query Redis first using a `notes:<userId>` key.
-- A lock (`NX: true`) is utilized to prevent cache stampedes during simultaneous requests.
-- Mutating operations (`POST`, `PUT`, `DELETE` on notes or folders) instantly publish a `redis.del()` command to invalidate the stale cache, ensuring the frontend always receives perfectly synchronized data on the next load.
+## 🎨 Caching Strategy (Redis)
 
-## 🖼️ Cloudinary TipTap Integration
-Image hosting scales infinitely without burdening the backend server. 
-1. The user drops an image into the TipTap editor canvas.
-2. The custom `ImageUploadExtension` securely intercepts the native `Drop` or `Paste` browser event.
-3. The image is passed to `src/utils/uploadImage.ts` and POSTed straight to Cloudinary using an *unsigned upload preset*.
-4. Cloudinary returns a secure `https` URL, which TipTap natively converts into an HTML `<img src="..." />` element.
-5. Upon saving the note, the backend strictly stores the HTML string, completely unburdened from handling multipart form data or binary files.
+The backend wraps MongoDB queries with Redis for near-instant load times:
+- `GET /api/notes` queries Redis first using a `notes:<userId>` key.
+- A lock (`NX: true`) prevents cache stampedes under simultaneous requests.
+- Mutating operations (`POST`, `PUT`, `DELETE`) immediately invalidate stale cache via `redis.del()`.
+
+## 🤖 AI Chat Architecture
+
+The AI panel streams responses in real time:
+1. The user sends a message or triggers a quick action (Improve, Summarize, etc.).
+2. The frontend trims chat history to the last **6 messages** before sending, to stay within Groq token limits.
+3. The backend picks the appropriate Groq model and streams back a response.
+4. The frontend reads the `ReadableStream` chunk by chunk via `TextDecoder`, updating the message in real time.
+5. On completion, the full chat history is persisted to MongoDB.
+
+## 🖼️ Cloudinary Image Integration
+
+Images are hosted infinitely without burdening the backend:
+1. User drops/pastes an image into the TipTap editor.
+2. The custom `ImageUploadExtension` intercepts the `drop` or `paste` event.
+3. The image POSTs directly to Cloudinary using an unsigned upload preset.
+4. Cloudinary returns a secure `https` URL, inserted as an `<img>` element.
+5. The backend stores only the HTML string — no binary file handling needed.
 
 ---
 
-*Built with ❤️ focusing on speed, seamless UX, and a maintainable MERN architecture.*
+*Built with ❤️ focusing on speed, seamless UX, and a maintainable architecture.*

@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Plus, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import NoteCard from "./noteCard";
+import NoteDeleteDialog from "@/components/notes/NoteDeleteDialog";
+import NotesPanelHeader from "@/components/notes/NotesPanelHeader";
+import NotesPanelSearch from "@/components/notes/NotesPanelSearch";
+import { useNotesFilter } from "@/hooks/useNotesFilter";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteStore, type Note } from "@/store/useNoteStore";
 
-const SKIP_NOTE_DELETE_CONFIRM_KEY = "notesify.skipNoteDeleteConfirm";
 
 const isRenderableNote = (value: unknown): value is Note => {
   if (!value || typeof value !== "object") return false;
@@ -25,17 +24,14 @@ const NotesListPanel = () => {
   const searchParams = new URLSearchParams(location.search);
   const isFocusMode = searchParams.get("focus") === "1";
   
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const closeNoteList = () => {
     const next = new URLSearchParams(location.search);
     next.set("focus", "2");
     navigate(`${location.pathname}?${next.toString()}`, { replace: true });
   };
-  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [query, setQuery] = useState("");
 
   const safeNotes = notes.filter(isRenderableNote);
 
@@ -49,46 +45,13 @@ const NotesListPanel = () => {
     }
   }, [fetchFolders, folders.length]);
 
-  useEffect(() => {
-    const savedPreference = window.localStorage.getItem(SKIP_NOTE_DELETE_CONFIRM_KEY);
-    setSkipDeleteConfirm(savedPreference === "true");
-  }, []);
-
-  const isFavoritesRoute = location.pathname.startsWith("/favorites");
-  const isArchiveRoute = location.pathname.startsWith("/archive");
-  const isTrashRoute = location.pathname.startsWith("/trash");
-
-  const filteredNotes = useMemo(() => {
-    const base = isFavoritesRoute ? safeNotes.filter((note) => note.pinned) : safeNotes;
-
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return base;
-
-    return base.filter((note) => {
-      const haystack = `${note.title} ${note.content}`.replace(/<[^>]+>/g, " ").toLowerCase();
-      return haystack.includes(normalizedQuery);
-    });
-  }, [isFavoritesRoute, query, safeNotes]);
-
-  const pendingNote = safeNotes.find((note) => note._id === pendingDeleteNoteId);
-  const pendingNoteTitle = pendingNote?.title || "this note";
-
-  const currentFolderName = folderId ? folders.find((folder) => folder._id === folderId)?.name : null;
-
-  const panelTitle = useMemo(() => {
-    if (isFavoritesRoute) return "Favorites";
-    if (isArchiveRoute) return "Archive";
-    if (isTrashRoute) return "Trash";
-    if (currentFolderName) return currentFolderName;
-    return "All Notes";
-  }, [currentFolderName, isArchiveRoute, isFavoritesRoute, isTrashRoute]);
-
-  const breadcrumbRoot = useMemo(() => {
-    if (isFavoritesRoute) return "Favorites";
-    if (isArchiveRoute) return "Archive";
-    if (isTrashRoute) return "Trash";
-    return currentFolderName ? "AI Notes" : "All Notes";
-  }, [currentFolderName, isArchiveRoute, isFavoritesRoute, isTrashRoute]);
+  const {
+    filteredNotes,
+    panelTitle,
+    breadcrumbRoot,
+    currentFolderName,
+    isFavoritesRoute,
+  } = useNotesFilter(safeNotes, folders, query);
 
   const handleCreateNote = async () => {
     const newNote = await createNote(folderId || null);
@@ -99,75 +62,38 @@ const NotesListPanel = () => {
   };
 
   const performDeleteNote = async (id: string) => {
-    setIsDeleting(true);
     await softDeleteNote(id);
     if (noteId === id) {
       navigate(folderId ? `/folders/${folderId}` : isFavoritesRoute ? "/favorites" : "/");
     }
-    setIsDeleting(false);
   };
 
   const handleDeleteNote = async (id: string) => {
-    if (skipDeleteConfirm) {
-      await performDeleteNote(id);
-      return;
-    }
     setPendingDeleteNoteId(id);
-    setDeleteDialogOpen(true);
   };
 
-  const confirmDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!pendingDeleteNoteId) return;
-    if (skipDeleteConfirm) {
-      window.localStorage.setItem(SKIP_NOTE_DELETE_CONFIRM_KEY, "true");
-    } else {
-      window.localStorage.removeItem(SKIP_NOTE_DELETE_CONFIRM_KEY);
-    }
     await performDeleteNote(pendingDeleteNoteId);
-    setDeleteDialogOpen(false);
     setPendingDeleteNoteId(null);
   };
 
   return (
     <>
       <aside className="desktop-pane">
-        <div className="notes-panel-header flex items-center justify-between pr-2">
-          <div className="notes-panel-breadcrumb">
-            <span>{breadcrumbRoot}</span>
-            {currentFolderName ? (
-              <>
-                <ChevronRight size={14} />
-                <span className="notes-panel-breadcrumb-active">{panelTitle}</span>
-              </>
-            ) : null}
-          </div>
-          {isFocusMode && (
-            <button
-              type="button"
-              onClick={closeNoteList}
-              className="desktop-icon-button bg-transparent border-transparent hover:bg-[var(--surface-ghost)]"
-              style={{ width: "1.8rem", height: "1.8rem", color: "var(--muted-text)" }}
-              title="Close Note List"
-            >
-              <X size={15} />
-            </button>
-          )}
-        </div>
+        <NotesPanelHeader
+          breadcrumbRoot={breadcrumbRoot}
+          panelTitle={panelTitle}
+          currentFolderName={currentFolderName ?? null}
+          isFocusMode={isFocusMode}
+          onClose={closeNoteList}
+        />
 
-        <div className="px-4 pb-3">
-          <div className="notes-panel-search">
-            <Search size={16} className="text-[var(--muted-text)]" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search notes..."
-              className="notes-panel-search-input"
-            />
-            <button type="button" className="notes-panel-plus-button" aria-label="Create note" onClick={handleCreateNote}>
-              <Plus size={15} />
-            </button>
-          </div>
-        </div>
+        <NotesPanelSearch
+          query={query}
+          onQueryChange={setQuery}
+          onCreateNote={handleCreateNote}
+        />
 
         <div className="px-4 pb-2 text-sm text-[var(--muted-text)]">Notes ({filteredNotes.length})</div>
 
@@ -219,43 +145,12 @@ const NotesListPanel = () => {
         </div>
       </aside>
 
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteDialogOpen(open);
-          if (!open) {
-            setPendingDeleteNoteId(null);
-          }
-        }}
-      >
-        <DialogContent className="desktop-dialog">
-          <DialogHeader>
-            <DialogTitle>Delete note?</DialogTitle>
-            <DialogDescription className="text-[var(--muted-text)]">
-              This will move "{pendingNoteTitle}" to trash.
-            </DialogDescription>
-          </DialogHeader>
-
-          <label className="mt-2 flex items-center gap-2 text-sm text-[var(--text-strong)]">
-            <input
-              type="checkbox"
-              checked={skipDeleteConfirm}
-              onChange={(event) => setSkipDeleteConfirm(event.target.checked)}
-              className="h-4 w-4 rounded border border-[var(--divider)] bg-transparent accent-[var(--accent-strong)]"
-            />
-            Don't ask again
-          </label>
-
-          <DialogFooter className="mt-4 gap-2 sm:justify-end">
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>
-              Cancel
-            </Button>
-            <Button onClick={confirmDelete} disabled={isDeleting}>
-              {isDeleting ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <NoteDeleteDialog
+        noteId={pendingDeleteNoteId}
+        noteTitle={safeNotes.find((n) => n._id === pendingDeleteNoteId)?.title || "this note"}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteNoteId(null)}
+      />
     </>
   );
 };

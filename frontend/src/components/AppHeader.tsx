@@ -1,21 +1,10 @@
-import { useMemo, useState } from "react";
-import { Bell, ChevronDown, Moon, Plus, Search, Sun, LogOut, Settings, User } from "lucide-react";
+import { Bell, Moon, Plus, Sun } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuthStore } from "@/store/useAuthStore";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteStore } from "@/store/useNoteStore";
-import api from "@/lib/api";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import UserMenu from "@/components/header/UserMenu";
+import HeaderSearch from "@/components/header/HeaderSearch";
 
 type AppHeaderProps = {
   theme: "light" | "dark";
@@ -23,32 +12,10 @@ type AppHeaderProps = {
 };
 
 const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
-  const { user, clearAuth } = useAuthStore();
   const { addFolder } = useFolderStore();
   const { createNote } = useNoteStore();
   const { folderId } = useParams();
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = useState("");
-
-  const handleLogout = async () => {
-    try {
-      await api.post("/users/logout");
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-    clearAuth();
-    navigate("/login");
-  };
-
-  const initials = useMemo(() => {
-    if (!user?.name) return "IN";
-    return user.name
-      .split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-  }, [user?.name]);
 
   const handleCreateNote = async () => {
     const newNote = await createNote(folderId || null);
@@ -78,15 +45,7 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
         </div>
       </div>
 
-      <div className="desktop-search-wrap">
-        <Search size={16} className="desktop-search-icon" />
-        <Input
-          value={searchValue}
-          onChange={(event) => setSearchValue(event.target.value)}
-          placeholder="Search notes, folders, and ideas..."
-          className="desktop-search-input"
-        />
-      </div>
+      <HeaderSearch />
 
       <div className="desktop-header-actions">
         <button type="button" onClick={onToggleTheme} className="desktop-icon-button" aria-label="Toggle theme">
@@ -104,42 +63,7 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
           <Plus size={15} />
           New Folder
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button type="button" className="desktop-profile cursor-pointer hover:bg-white/5 transition-colors rounded-md p-1">
-              <Avatar className="h-8 w-8 border border-[var(--divider)]">
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-              <div className="hidden text-left md:block">
-                <p className="text-[13px] font-semibold leading-tight">{user?.name || "Guest"}</p>
-                <p className="text-xs text-[var(--muted-text)]">{user?.email || "Research workspace"}</p>
-              </div>
-              <ChevronDown size={14} className="text-[var(--muted-text)]" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name || "Guest"}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user?.email || "No email"}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-red-500 focus:text-red-500" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <UserMenu />
       </div>
     </header>
   );

@@ -12,7 +12,7 @@ export const getAllNotes = catchAsync(async (req, res) => {
     const cachedNotes = await redis.get(cacheKey);
 
     if (cachedNotes) {
-        // Upstash automatically parses objects, no need for JSON.parse
+        // Upstash automatically parses objects
         return res.status(200).json(cachedNotes);
     }
 
@@ -26,7 +26,6 @@ export const getAllNotes = catchAsync(async (req, res) => {
         return res.status(404).json({message: "No notes found."});
       }
       
-      // Upstash automatically stringifies objects, no need for JSON.stringify
       await redis.set(cacheKey, notes, { ex: 3600 });
       await redis.del(lockKey); 
       

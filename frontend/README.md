@@ -1,73 +1,78 @@
-# React + TypeScript + Vite
+# Notesify — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A note-taking app frontend built with **Vite + React + TypeScript**.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Build tool | Vite |
+| Routing | React Router v6 |
+| State | Zustand |
+| Editor | TipTap |
+| UI | shadcn/ui + Tailwind CSS |
+| Animations | Framer Motion |
+| HTTP | Axios (`@/lib/api`) |
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Project Structure
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── components/
+│   ├── ai/
+│   │   ├── AiAuditPanel.tsx      ← thin glue layer (~72 lines)
+│   │   ├── AiCompose.tsx         ← compose bar (textarea, quick actions, send/stop)
+│   │   ├── AiGuideDialog.tsx     ← first-time welcome dialog
+│   │   ├── AiMessage.tsx         ← single message bubble (streaming + markdown)
+│   │   ├── AiMessageList.tsx     ← scrollable message list + auto-scroll
+│   │   └── types.ts              ← shared AI types
+│   ├── editor/
+│   │   ├── EditorHeader.tsx      ← title input, star, Ask AI button, meta row
+│   │   └── RelativeTimeLabel.tsx ← isolated ticker (prevents editor re-renders)
+│   ├── header/
+│   │   ├── HeaderSearch.tsx      ← global search bar
+│   │   └── UserMenu.tsx          ← profile dropdown + logout
+│   ├── notes/
+│   │   ├── NoteDeleteDialog.tsx  ← delete confirmation + "don't ask again" pref
+│   │   ├── NotesPanelHeader.tsx  ← breadcrumb + focus-mode close button
+│   │   └── NotesPanelSearch.tsx  ← search input + create note button
+│   ├── ui/                       ← shadcn/ui primitives (no edits)
+│   ├── AppHeader.tsx             ← top header orchestrator
+│   ├── MainLayout.tsx            ← root layout (theme state)
+│   ├── NotesListPanel.tsx        ← note list column
+│   ├── SideBar.tsx               ← activity rail (nav icons)
+│   ├── SideBarHeader.tsx         ← sidebar header
+│   ├── TipTap.tsx                ← TipTap editor wrapper
+│   └── EmptyEditorState.tsx      ← empty state when no note is selected
+├── hooks/
+│   ├── useAiChat.ts              ← all AI API logic, streaming, history
+│   ├── useFolderTree.ts          ← folder expand/collapse, counts, lazy fetch
+│   └── useNotesFilter.ts         ← route-aware note filtering + search
+├── pages/
+│   ├── NoteEditor.tsx            ← editor page (resizable AI panel)
+│   ├── Login.tsx
+│   └── Register.tsx
+├── store/
+│   ├── useNoteStore.ts           ← notes, CRUD, chatHistory, notesCache
+│   ├── useFolderStore.ts         ← folders, CRUD
+│   └── useAuthStore.ts           ← user session, clearAuth
+├── lib/
+│   └── api.ts                    ← configured Axios instance
+└── utils/
+    └── getRelativeUpdatedLabel.ts
+```
+
+## Architecture Notes
+
+- **Thin components, fat hooks** — Components own layout and JSX only. All data fetching, state computation, and API calls live in custom hooks (`useAiChat`, `useNotesFilter`, `useFolderTree`).
+- **AI chat history** — Trimmed to the last 6 messages before sending to the backend to stay within Groq's token limits.
+- **RelativeTimeLabel** — Extracted to its own component specifically to isolate its 1-second `setInterval` so it doesn't cause the entire editor tree to re-render.
+- **Stores** — Zustand keeps global state flat and minimal. Components only subscribe to what they need.
