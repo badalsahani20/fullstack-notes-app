@@ -3,6 +3,19 @@ import * as AuthService from "../services/auth.service.js";
 import catchAsync from "../utils/catchAsync.js";
 import crypto from "crypto";
 
+const getRefreshCookieOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+});
+
+const getRefreshCookieClearOptions = () => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+});
+
 export const registerUser = catchAsync(async (req, res, next) => {
   const { name, email, password } = req.body;
   if (!email || !password) {
@@ -31,12 +44,7 @@ export const loginUser = catchAsync(async (req, res, next) => {
   //Call the service to handle login logic
   const { user, accessToken, refreshToken } = await AuthService.loginUser(email, password);
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  })
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
   res.status(200).json({
     success: true,
     accessToken,
@@ -69,12 +77,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
 
   const { accessToken, refreshToken, user } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
 
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
   res.status(200).json({
     success: true,
@@ -91,7 +94,7 @@ export const logoutUser = catchAsync(async (req, res, next) => {
   const refreshTokenFromCookie = req.cookies.refreshToken;
   
   await AuthService.logoutUser(refreshTokenFromCookie);
-  res.clearCookie("refreshToken");
+  res.clearCookie("refreshToken", getRefreshCookieClearOptions());
 
   res.json({ message: "Logged out successfully" });
 });
@@ -119,10 +122,7 @@ export const googleCallback = catchAsync(async (req, res) => {
   await user.save();
 
   res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000
+    ...getRefreshCookieOptions(),
   });
 
   res.redirect(

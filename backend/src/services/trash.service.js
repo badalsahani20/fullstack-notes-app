@@ -13,7 +13,7 @@ export const emptyTrash = async (userId) => {
 }
 
 export const permanentlyDeleteFolderAndNotes = async (folderId, userId) => {
-    const folderResult = await Folder.findOneAndDelete({ id: folderId, user: userId, isDeleted: true});
+    const folderResult = await Folder.findOneAndDelete({ _id: folderId, user: userId, isDeleted: true});
 
     if (folderResult) {
         await Notes.deleteMany({ folder: folderId, user: userId});
@@ -66,5 +66,4 @@ export const restoreFolderAndNotes = async (folderId, userId) => {
   );
   return folder;
 };
-
 

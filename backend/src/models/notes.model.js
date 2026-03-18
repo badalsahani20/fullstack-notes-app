@@ -73,7 +73,9 @@ notesSchema.pre("save", function (next) {
 });
 
 notesSchema.pre(/^find/, function(next) {
-    this.where({ isDeleted: {$ne: true} });
+    if (this.getQuery().isDeleted === undefined) {
+        this.where({ isDeleted: {$ne: true} });
+    }
     next();
 })
 

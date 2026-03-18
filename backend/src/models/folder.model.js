@@ -26,7 +26,9 @@
     }, {timestamps: true});
 
     folderSchema.pre(/^find/, function(next) {
-        this.find({ isDeleted: {$ne: true} });
+        if (this.getQuery().isDeleted === undefined) {
+            this.find({ isDeleted: {$ne: true} });
+        }
         next();
     });
     

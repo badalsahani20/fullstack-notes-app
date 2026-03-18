@@ -19,6 +19,17 @@ const NOTES_CACHE_TTL_MS = 60_000;
 
 const getNotesCacheKey = (folderId?: string | null) => folderId ?? ALL_NOTES_CACHE_KEY;
 
+const dedupeNotesById = (notes: Note[]) => {
+  const seen = new Set<string>();
+  return notes.filter((note) => {
+    if (seen.has(note._id)) return false;
+    seen.add(note._id);
+    return true;
+  });
+};
+
+const prependUniqueNote = (notes: Note[], note: Note) => dedupeNotesById([note, ...notes.filter((item) => item._id !== note._id)]);
+
 interface NoteState {
   notes: Note[];
   notesCache: Record<string, Note[]>;
@@ -66,7 +77,7 @@ const normalizeNote = (value: unknown): Note | null => {
 
 const normalizeNoteList = (value: unknown): Note[] => {
   if (!Array.isArray(value)) return [];
-  return value.map(normalizeNote).filter((note): note is Note => Boolean(note));
+  return dedupeNotesById(value.map(normalizeNote).filter((note): note is Note => Boolean(note)));
 };
 
 export const useNoteStore = create<NoteState>((set, get) => ({
@@ -185,16 +196,16 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         const nextNotesCache = { ...state.notesCache };
         const nextFetchedAt = { ...state.notesFetchedAt };
 
-        nextNotesCache[targetKey] = [newNote, ...(nextNotesCache[targetKey] ?? [])];
+        nextNotesCache[targetKey] = prependUniqueNote(nextNotesCache[targetKey] ?? [], newNote);
         nextFetchedAt[targetKey] = Date.now();
 
         if (targetKey !== ALL_NOTES_CACHE_KEY) {
-          nextNotesCache[ALL_NOTES_CACHE_KEY] = [newNote, ...(nextNotesCache[ALL_NOTES_CACHE_KEY] ?? [])];
+          nextNotesCache[ALL_NOTES_CACHE_KEY] = prependUniqueNote(nextNotesCache[ALL_NOTES_CACHE_KEY] ?? [], newNote);
           nextFetchedAt[ALL_NOTES_CACHE_KEY] = Date.now();
         }
 
         return {
-          notes: [newNote, ...state.notes],
+          notes: prependUniqueNote(state.notes, newNote),
           activeNote: newNote,
           notesCache: nextNotesCache,
           notesFetchedAt: nextFetchedAt,
@@ -269,7 +280,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
         return {
           notes: state.notes.filter((n) => n._id !== noteId),
           notesCache: nextNotesCache,
-          trash: [{ ...noteToDelete, isDeleted: true }, ...state.trash],
+          trash: prependUniqueNote(state.trash, { ...noteToDelete, isDeleted: true }),
           activeNote: state.activeNote?._id === noteId ? null : state.activeNote,
         };
       });
@@ -301,18 +312,18 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
       set((state) => ({
         trash: state.trash.filter((n) => n._id !== noteId),
-        notes: restoredNote ? [restoredNote, ...state.notes] : state.notes,
+        notes: restoredNote ? prependUniqueNote(state.notes, restoredNote) : state.notes,
         notesCache: restoredNote
           ? {
               ...state.notesCache,
-              [getNotesCacheKey(restoredNote.folder)]: [
+              [getNotesCacheKey(restoredNote.folder)]: prependUniqueNote(
+                state.notesCache[getNotesCacheKey(restoredNote.folder)] ?? [],
                 restoredNote,
-                ...(state.notesCache[getNotesCacheKey(restoredNote.folder)] ?? []),
-              ],
-              [ALL_NOTES_CACHE_KEY]:
-                restoredNote.folder === null
-                  ? [restoredNote, ...(state.notesCache[ALL_NOTES_CACHE_KEY] ?? [])]
-                  : [restoredNote, ...(state.notesCache[ALL_NOTES_CACHE_KEY] ?? [])],
+              ),
+              [ALL_NOTES_CACHE_KEY]: prependUniqueNote(
+                state.notesCache[ALL_NOTES_CACHE_KEY] ?? [],
+                restoredNote,
+              ),
             }
           : state.notesCache,
         loading: false,
