@@ -23,7 +23,7 @@ export const createFolder = async (userData) => {
 };
 
 export const getUserFolders = async (userId) => {
-  return await Folder.find({ user: userId, isDeleted: false }).sort({
+  return await Folder.find({ user: userId, isDeleted: { $ne: true } }).sort({
     updatedAt: -1,
   });
 };
@@ -32,7 +32,7 @@ export const getFolderById = async (folderId, userId) => {
   const folder = await Folder.findOne({
     _id: folderId,
     user: userId,
-    isDeleted: false,
+    isDeleted: { $ne: true },
   });
   if (!folder) {
     const error = new Error("Folder not found");
@@ -46,7 +46,7 @@ export const getNotesByFolder = async (folderId, userId) => {
   const folder = await Folder.findOne({
     _id: folderId,
     user: userId,
-    isDeleted: false,
+    isDeleted: { $ne: true },
   });
   if (!folder) {
     return [];
@@ -56,7 +56,8 @@ export const getNotesByFolder = async (folderId, userId) => {
   return await Notes.find({
     user: userId,
     folder: folderId,
-    isDeleted: false,
+    isDeleted: { $ne: true },
+    isArchived: { $ne: true },
   }).sort({ pinned: -1, updatedAt: -1 });
 };
 

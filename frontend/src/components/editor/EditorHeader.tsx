@@ -1,4 +1,4 @@
-import { Sparkles, Star } from "lucide-react";
+import { Archive, Star } from "lucide-react";
 import RelativeTimeLabel from "./RelativeTimeLabel";
 import type { Note } from "@/store/useNoteStore";
 import type { Folder } from "@/store/useFolderStore";
@@ -13,7 +13,7 @@ type EditorHeaderProps = {
   /** Called on blur to commit the title if changed */
   onCommitTitle: () => void;
   onTogglePin: (id: string) => void;
-  onAskAi: () => void;
+  onToggleArchive: (id: string) => void;
 };
 
 /**
@@ -27,7 +27,7 @@ const EditorHeader = ({
   onDraftTitleChange,
   onCommitTitle,
   onTogglePin,
-  onAskAi,
+  onToggleArchive,
 }: EditorHeaderProps) => {
   return (
     <div className="desktop-editor-header">
@@ -46,22 +46,33 @@ const EditorHeader = ({
           }}
         />
 
-        <button
-          type="button"
-          onClick={() => onTogglePin(note._id)}
-          className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
-        >
-          <Star size={15} fill={note.pinned ? "currentColor" : "none"} />
-          {note.pinned ? "Starred" : "Starred"}
-        </button>
-        <button type="button" onClick={onAskAi} className="editor-ask-ai-button">
-          <Sparkles size={15} />
-          Ask AI
-        </button>
+        <div className="editor-meta-stack">
+          <button
+            type="button"
+            onClick={() => onToggleArchive(note._id)}
+            className={`editor-star-toggle ${note.isArchived ? "editor-archive-toggle-active" : ""}`}
+            aria-label={note.isArchived ? "Unarchive note" : "Archive note"}
+          >
+            <Archive size={15} />
+            <span className="hidden md:inline">{note.isArchived ? "Archived" : "Archive"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onTogglePin(note._id)}
+            className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
+            aria-label={note.pinned ? "Unpin note" : "Pin note"}
+          >
+            <Star size={15} fill={note.pinned ? "currentColor" : "none"} />
+            <span className="hidden md:inline">{note.pinned ? "Starred" : "Starred"}</span>
+          </button>
+          <div className="editor-updated-mobile md:hidden">
+            <RelativeTimeLabel updatedAt={note.updatedAt} />
+          </div>
+        </div>
       </div>
 
       <div className="editor-title-meta">
-        <span>{folder?.name || "AI Notes"}</span>
+        <span className="editor-folder-label">{folder?.name || "AI Notes"}</span>
         <RelativeTimeLabel updatedAt={note.updatedAt} />
       </div>
     </div>

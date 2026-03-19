@@ -7,6 +7,28 @@ const api = axios.create({
 });
 
 let refreshPromise: Promise<string> | null = null;
+
+export const requestSessionRefresh = async () => {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(
+        `${import.meta.env.VITE_API_URL}/users/refresh`,
+        {},
+        { withCredentials: true }
+      )
+      .then((res) => {
+        const { user, accessToken } = res.data;
+        useAuthStore.getState().setAuth(user, accessToken);
+        return accessToken;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+};
+
 //Request interceptor
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
@@ -28,27 +50,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // const res = await axios.post(
-        //   `${import.meta.env.VITE_API_URL}users/refresh`,
-        //   {},
-        //   { withCredentials: true },
-        // );
-        // const { accessToken } = res.data;
-        // useAuthStore.getState().setAuth(res.data.user, accessToken);
-        if(!refreshPromise) {
-            refreshPromise = axios.post(
-                `${import.meta.env.VITE_API_URL}/users/refresh`,
-                {},
-                { withCredentials: true}
-            ).then((res) => {
-                const { user, accessToken } = res.data;
-                useAuthStore.getState().setAuth(user, accessToken);
-                return accessToken;
-            }).finally(() => {
-                refreshPromise = null;
-            });
-        }
-        const newToken = await refreshPromise;
+        const newToken = await requestSessionRefresh();
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshErr) {

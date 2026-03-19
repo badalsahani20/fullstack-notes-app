@@ -1,11 +1,12 @@
 import express from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
-import { createNote, deleteNote, getAllNotes, togglePin, updateNote, getNoteById, searchAllNotes } from "../controllers/notes.controller.js";
+import { createNote, deleteNote, getAllNotes, getArchivedNotes, toggleArchive, togglePin, updateNote, getNoteById, searchAllNotes } from "../controllers/notes.controller.js";
 
 const router = express.Router();
 router.use(authMiddleware);
 
 router.get("/search", searchAllNotes);
+router.get("/archive", getArchivedNotes);
 
 router.get("/", getAllNotes);
 
@@ -18,5 +19,6 @@ router.put("/:id", updateNote);
 router.delete("/:id", deleteNote);
 
 router.patch("/:id/pin", togglePin);
+router.patch("/:id/archive", toggleArchive);
 
 export default router;

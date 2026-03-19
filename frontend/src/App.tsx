@@ -7,6 +7,8 @@ import HomeEmptyState from "./components/HomeEmptySpace";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import PrivateRoute from "./components/PrivateRoute";
 import { Toaster } from "sonner";
+import SearchPage from "./pages/SearchPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -22,6 +24,8 @@ function App() {
       <Route element={<PrivateRoute />}>
         <Route element={<MainLayout />}>
           <Route index element={<HomeEmptyState />} />
+          <Route path="/search" element={<SearchPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/folders" element={<HomeEmptyState />} />
           <Route path="/favorites" element={<HomeEmptyState />} />
           <Route path="/favorites/note/:noteId" element={<NoteEditor />} />

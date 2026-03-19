@@ -37,6 +37,10 @@ const notesSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isArchived: {
+        type: Boolean,
+        default: false
+    },
     grammarErrors: [{
         start: Number,
         end: Number,
@@ -75,6 +79,9 @@ notesSchema.pre("save", function (next) {
 notesSchema.pre(/^find/, function(next) {
     if (this.getQuery().isDeleted === undefined) {
         this.where({ isDeleted: {$ne: true} });
+    }
+    if (this.getQuery().isArchived === undefined) {
+        this.where({ isArchived: {$ne: true} });
     }
     next();
 })

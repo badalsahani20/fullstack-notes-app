@@ -16,7 +16,7 @@ const ALL_NOTES_CACHE_KEY = "__all__";
  */
 export const useFolderTree = () => {
   const { folders, fetchFolders } = useFolderStore();
-  const { fetchNotes, fetchNotesForCache, fetchTrash, notesCache, trash } = useNoteStore();
+  const { fetchArchived, fetchNotes, fetchNotesForCache, fetchTrash, notesCache, trash, archivedNotes } = useNoteStore();
   const { folderId } = useParams();
 
   const [foldersOpen, setFoldersOpen] = useState(true);
@@ -26,8 +26,9 @@ export const useFolderTree = () => {
   useEffect(() => {
     fetchFolders();
     fetchNotes(null);
+    fetchArchived();
     fetchTrash();
-  }, [fetchFolders, fetchNotes, fetchTrash]);
+  }, [fetchArchived, fetchFolders, fetchNotes, fetchTrash]);
 
   // Expand the active folder automatically if we navigate directly to it
   useEffect(() => {
@@ -52,6 +53,8 @@ export const useFolderTree = () => {
     () => allNotes.filter((note) => note.pinned).length,
     [allNotes]
   );
+
+  const archiveCount = useMemo(() => archivedNotes.length, [archivedNotes]);
 
   const sortedFolders = useMemo(
     () => [...folders].sort((a, b) => a.name.localeCompare(b.name)),
@@ -84,6 +87,7 @@ export const useFolderTree = () => {
     
     countsByFolder,
     favoritesCount,
+    archiveCount,
     
     toggleFoldersGroup,
     toggleFolder,

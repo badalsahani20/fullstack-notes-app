@@ -62,6 +62,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isSendingChat, setIsSendingChat] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
 
   const { notes, updateNote } = useNoteStore();
   const activeNote = useMemo(() => notes.find((n: any) => n._id === noteId), [notes, noteId]);
@@ -77,25 +79,44 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
-  // Load chat history from the database when this note is first opened
-  useEffect(() => {
+  // Load chat history from the database when the user explicitly requests it
+  const loadHistory = () => {
     if (activeNote?.chatHistory && activeNote.chatHistory.length > 0) {
-      setMessages([
-        { id: "welcome", role: "assistant", text: "Ask about the current note or use the quick actions below to refine it." },
-        ...activeNote.chatHistory.map((m: any) => ({
-          id: m.id || `${Date.now()}-${Math.random()}`,
-          role: m.role,
-          text: m.content as string,
-        })),
-      ]);
+      const historicMessages = activeNote.chatHistory.map((m: any) => ({
+        id: m.id || `${Date.now()}-${Math.random()}`,
+        role: m.role,
+        text: m.content as string,
+        skipAnimation: true, // New flag
+      }));
+
+      setMessages((prev) => {
+        // Keep the welcome message at the top, then historic messages, then current messages
+        const welcomeMessage = prev.find((m) => m.id === "welcome");
+        const otherMessages = prev.filter((m) => m.id !== "welcome");
+        return [
+          ...(welcomeMessage ? [welcomeMessage] : []),
+          ...historicMessages,
+          ...otherMessages,
+        ];
+      });
+
       setChatHistory(
         activeNote.chatHistory.map((m: any) => ({
           role: m.role as "system" | "user" | "assistant",
           content: m.content,
         }))
       );
+      setHistoryLoaded(true);
     }
-  }, [noteId]); // intentionally only runs when the noteId changes, not on every activeNote update
+  };
+
+  useEffect(() => {
+    setHistoryLoaded(false);
+    setMessages([
+      { id: "welcome", role: "assistant", text: "Hi! How can i help you today?" },
+    ]);
+    setChatHistory([]);
+  }, [noteId]);
 
   // Track editor selection so the context indicator updates in real time
   useEffect(() => {
@@ -118,7 +139,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   useEffect(() => {
     const latestMessage = messages[messages.length - 1];
 
-    if (!latestMessage || latestMessage.role !== "assistant" || latestMessage.id === "welcome") {
+    if (!latestMessage || latestMessage.role !== "assistant" || latestMessage.id === "welcome" || latestMessage.skipAnimation) {
       setStreamingMessageId(null);
       setStreamedMessageText("");
       setIsStreaming(false);
@@ -297,6 +318,17 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     }
   };
 
+  /** Clears the current session and DB history for this note */
+  const startNewChat = async () => {
+    setMessages([
+      { id: "welcome", role: "assistant", text: "Hi! How can i help you today?" },
+    ]);
+    setChatHistory([]);
+    setHistoryLoaded(false);
+    void updateNote(noteId, { chatHistory: [] });
+    toast.success("Chat history cleared");
+  };
+
   /** Replaces the selected text in the editor with the AI suggestion */
   const applySuggestionToSelection = () => {
     if (!editor || !result?.suggestion || !selectionRange) return;
@@ -315,6 +347,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     }
   };
 
+  const hasHistory = (activeNote?.chatHistory?.length ?? 0) > 0 && !historyLoaded;
+  const historyCount = activeNote?.chatHistory?.length ?? 0;
+
   // ── Return everything the panel and its children need ──────────────────────
   return {
     // Message list state
@@ -325,6 +360,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     result,
     selectionRange,
     copied,
+    hasHistory,
+    historyCount,
     // Compose bar state
     chatInput,
     setChatInput,
@@ -336,5 +373,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     runAction,
     copySuggestion,
     applySuggestionToSelection,
+    loadHistory,
+    startNewChat,
   };
 };

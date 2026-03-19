@@ -10,6 +10,7 @@ export interface Note {
   pinned: boolean;
   version: number;
   isDeleted: boolean;
+  isArchived: boolean;
   updatedAt: string;
   chatHistory?: { id: string; role: 'user' | 'assistant'; content: string }[];
 }
@@ -36,13 +37,17 @@ interface NoteState {
   notesFetchedAt: Record<string, number>;
   currentNotesViewKey: string;
   trash: Note[];
+  archivedNotes: Note[];
   activeNote: Note | null;
   loading: boolean;
   isSaving: boolean;
   error: string | null;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
   fetchNotes: (folderId?: string | null) => Promise<void>;
   fetchNotesForCache: (folderId: string) => Promise<void>;
   fetchTrash: () => Promise<void>;
+  fetchArchived: () => Promise<void>;
   setActiveNote: (note: Note | null) => void;
   createNote: (folderId?: string | null) => Promise<Note | null>;
   updateNote: (noteId: string, updates: Partial<Note>) => Promise<void>;
@@ -51,6 +56,7 @@ interface NoteState {
   restoreNote: (noteId: string) => Promise<void>;
   permanentDeleteNote: (noteId: string) => Promise<void>;
   emptyTrash: () => Promise<void>;
+  toggleArchive: (noteId: string) => Promise<Note | null>;
 }
 
 type UnknownNote = Partial<Note> & { id?: string };
@@ -71,6 +77,7 @@ const normalizeNote = (value: unknown): Note | null => {
     pinned: typeof maybe.pinned === "boolean" ? maybe.pinned : false,
     version: typeof maybe.version === "number" ? maybe.version : 0,
     isDeleted: typeof maybe.isDeleted === "boolean" ? maybe.isDeleted : false,
+    isArchived: typeof maybe.isArchived === "boolean" ? maybe.isArchived : false,
     updatedAt: typeof maybe.updatedAt === "string" ? maybe.updatedAt : new Date().toISOString(),
     chatHistory: Array.isArray(maybe.chatHistory) ? maybe.chatHistory : [],
   };
@@ -87,10 +94,13 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   notesFetchedAt: {},
   currentNotesViewKey: ALL_NOTES_CACHE_KEY,
   trash: [],
+  archivedNotes: [],
   activeNote: null,
   loading: false,
   isSaving: false,
   error: null,
+  searchQuery: "",
+  setSearchQuery: (query: string) => set({ searchQuery: query }),
 
   fetchNotes: async (folderId = null) => {
     const cacheKey = getNotesCacheKey(folderId);
@@ -175,6 +185,20 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     }
   },
 
+  fetchArchived: async () => {
+    set({ loading: true });
+    try {
+      const res = await api.get("/notes/archive");
+      const data = res.data.notes || res.data;
+      set({ archivedNotes: normalizeNoteList(data) });
+    } catch (error) {
+      set({ error: "Failed to load archived notes" });
+      console.error(error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   setActiveNote: (note) => set({ activeNote: note }),
 
   createNote: async (folderId = null) => {
@@ -207,6 +231,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
         return {
           notes: prependUniqueNote(state.notes, newNote),
+          archivedNotes: state.archivedNotes.filter((item) => item._id !== newNote._id),
           activeNote: newNote,
           notesCache: nextNotesCache,
           notesFetchedAt: nextFetchedAt,
@@ -221,7 +246,9 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   updateNote: async (noteId, updates) => {
-    const currentNote = get().notes.find((n) => n._id === noteId) || get().activeNote;
+    const currentNote = get().notes.find((n) => n._id === noteId)
+      || get().archivedNotes.find((n) => n._id === noteId)
+      || get().activeNote;
     if (!currentNote) return;
 
     set({ isSaving: true });
@@ -254,6 +281,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
         return {
           notes: state.notes.map((n) => (n._id === noteId ? updatedNote : n)),
+          archivedNotes: state.archivedNotes.map((n) => (n._id === noteId ? updatedNote : n)),
           activeNote: state.activeNote?._id === noteId ? updatedNote : state.activeNote,
           notesCache: nextNotesCache,
         };
@@ -265,7 +293,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
   },
 
   softDeleteNote: async (noteId) => {
-    const noteToDelete = get().notes.find((n) => n._id === noteId);
+    const noteToDelete = get().notes.find((n) => n._id === noteId) || get().archivedNotes.find((n) => n._id === noteId);
     if (!noteToDelete) return;
 
     try {
@@ -280,6 +308,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
         return {
           notes: state.notes.filter((n) => n._id !== noteId),
+          archivedNotes: state.archivedNotes.filter((n) => n._id !== noteId),
           notesCache: nextNotesCache,
           trash: prependUniqueNote(state.trash, { ...noteToDelete, isDeleted: true }),
           activeNote: state.activeNote?._id === noteId ? null : state.activeNote,
@@ -298,6 +327,7 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
       set({
         notes: get().notes.map((n) => (n._id === noteId ? updatedNote : n)),
+        archivedNotes: get().archivedNotes.map((n) => (n._id === noteId ? updatedNote : n)),
         activeNote: get().activeNote?._id === noteId ? updatedNote : get().activeNote,
       });
     } catch (error) {
@@ -312,18 +342,25 @@ export const useNoteStore = create<NoteState>((set, get) => ({
 
       set((state) => ({
         trash: state.trash.filter((n) => n._id !== noteId),
-        notes: restoredNote ? prependUniqueNote(state.notes, restoredNote) : state.notes,
+        notes: restoredNote && !restoredNote.isArchived ? prependUniqueNote(state.notes, restoredNote) : state.notes,
+        archivedNotes: restoredNote?.isArchived
+          ? prependUniqueNote(state.archivedNotes, restoredNote)
+          : state.archivedNotes,
         notesCache: restoredNote
           ? {
               ...state.notesCache,
-              [getNotesCacheKey(restoredNote.folder)]: prependUniqueNote(
-                state.notesCache[getNotesCacheKey(restoredNote.folder)] ?? [],
-                restoredNote,
-              ),
-              [ALL_NOTES_CACHE_KEY]: prependUniqueNote(
-                state.notesCache[ALL_NOTES_CACHE_KEY] ?? [],
-                restoredNote,
-              ),
+              ...(restoredNote.isArchived
+                ? {}
+                : {
+                    [getNotesCacheKey(restoredNote.folder)]: prependUniqueNote(
+                      state.notesCache[getNotesCacheKey(restoredNote.folder)] ?? [],
+                      restoredNote,
+                    ),
+                    [ALL_NOTES_CACHE_KEY]: prependUniqueNote(
+                      state.notesCache[ALL_NOTES_CACHE_KEY] ?? [],
+                      restoredNote,
+                    ),
+                  }),
             }
           : state.notesCache,
       }));
@@ -349,6 +386,40 @@ export const useNoteStore = create<NoteState>((set, get) => ({
     } catch (error) {
       console.error("Failed to clear trash", error);
       set({ error: "Could not clear trash" });
+    }
+  },
+  toggleArchive: async (noteId) => {
+    try {
+      const res = await api.patch(`/notes/${noteId}/archive`);
+      const updatedNote = normalizeNote(res.data.note || res.data);
+      if (!updatedNote) return null;
+
+      set((state) => {
+        const nextNotesCache = Object.fromEntries(
+          Object.entries(state.notesCache).map(([key, list]) => [key, list.filter((n) => n._id !== noteId)])
+        );
+        const nextNotes = state.notes.filter((n) => n._id !== noteId);
+        const nextArchived = state.archivedNotes.filter((n) => n._id !== noteId);
+
+        if (!updatedNote.isArchived) {
+          const folderKey = getNotesCacheKey(updatedNote.folder);
+          nextNotesCache[folderKey] = prependUniqueNote(nextNotesCache[folderKey] ?? [], updatedNote);
+          nextNotesCache[ALL_NOTES_CACHE_KEY] = prependUniqueNote(nextNotesCache[ALL_NOTES_CACHE_KEY] ?? [], updatedNote);
+        }
+
+        return {
+          notes: updatedNote.isArchived ? nextNotes : prependUniqueNote(nextNotes, updatedNote),
+          archivedNotes: updatedNote.isArchived ? prependUniqueNote(nextArchived, updatedNote) : nextArchived,
+          activeNote: state.activeNote?._id === noteId ? updatedNote : state.activeNote,
+          notesCache: nextNotesCache,
+        };
+      });
+
+      return updatedNote;
+    } catch (error) {
+      console.error("Archiving failed", error);
+      set({ error: "Could not update archive state" });
+      return null;
     }
   },
 }));

@@ -36,6 +36,11 @@ const errorMiddleware = (err, req, res, next) => {
     statusCode = 400;
   }
 
+  if (err.name === "VersionError") {
+    message = "Conflict detected: Data has been modified by another request.";
+    statusCode = 409;
+  }
+
   if (err.statusCode === 403) {
     res.clearCookie("refreshToken");
   }

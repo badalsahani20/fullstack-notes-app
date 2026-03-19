@@ -2,7 +2,7 @@ import { FilePenLine, Search, Sparkles, SquarePen } from "lucide-react";
 
 const EmptyEditorState = () => {
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
       <div className="desktop-editor-header border-b border-[var(--divider)]">
         <div>
           <p className="text-sm text-[var(--muted-text)]">AI Notes</p>
@@ -10,7 +10,7 @@ const EmptyEditorState = () => {
         </div>
       </div>
 
-      <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex flex-1 items-start justify-center p-5 md:items-center md:p-8">
         <div className="empty-state-card">
           <div className="empty-state-badge">
             <Sparkles size={14} />

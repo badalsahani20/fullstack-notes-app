@@ -1,4 +1,4 @@
-import { RotateCcw, Star, Trash2, X } from "lucide-react";
+import { Archive, RotateCcw, Star, Trash2, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/store/useNoteStore";
@@ -9,11 +9,13 @@ type NoteCardProps = {
   isActive: boolean;
   /** When true, shows Restore + Delete Permanently buttons instead of the normal trash icon */
   isTrashView?: boolean;
+  isArchiveView?: boolean;
   onClick: () => void;
   onDelete?: (noteId: string) => void;
   onRestore?: (noteId: string) => void;
   onPermanentDelete?: (noteId: string) => void;
   onTogglePin?: (noteId: string) => void;
+  onToggleArchive?: (noteId: string) => void;
 };
 
 const toPreviewText = (html: string) =>
@@ -27,11 +29,13 @@ const NoteCard = ({
   note,
   isActive,
   isTrashView = false,
+  isArchiveView = false,
   onClick,
   onDelete,
   onRestore,
   onPermanentDelete,
   onTogglePin,
+  onToggleArchive,
 }: NoteCardProps) => {
   const preview = toPreviewText(note.content || "");
 
@@ -111,18 +115,31 @@ const NoteCard = ({
           </button>
         </div>
       ) : (
-        /* Normal view: soft delete button */
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete?.(note._id);
-          }}
-          className="note-row-delete"
-          aria-label="Delete note"
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleArchive?.(note._id);
+            }}
+            className={cn("note-row-delete", isArchiveView && "text-blue-400")}
+            aria-label={isArchiveView ? "Unarchive note" : "Archive note"}
+            title={isArchiveView ? "Unarchive" : "Archive"}
+          >
+            <Archive size={14} />
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete?.(note._id);
+            }}
+            className="note-row-delete"
+            aria-label="Delete note"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       )}
     </motion.article>
   );

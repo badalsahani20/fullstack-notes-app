@@ -6,6 +6,7 @@ import {
   FileText,
   Notebook,
   Plane,
+  Plus,
   Star,
   Trash2,
   UtensilsCrossed,
@@ -13,6 +14,7 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Folder as FolderType } from "@/store/useFolderStore";
 import { useFolderTree } from "@/hooks/useFolderTree";
+import { useFolderStore } from "@/store/useFolderStore";
 
 type IconComponent = ComponentType<{ size?: number; className?: string }>;
 
@@ -108,6 +110,7 @@ const FoldersPanel = () => {
   const { folderId, noteId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addFolder } = useFolderStore();
 
   const {
     allNotes,
@@ -118,6 +121,7 @@ const FoldersPanel = () => {
     expandedFolders,
     countsByFolder,
     favoritesCount,
+    archiveCount,
     toggleFoldersGroup,
     toggleFolder,
   } = useFolderTree();
@@ -127,23 +131,47 @@ const FoldersPanel = () => {
   const isTrashRoute = location.pathname.startsWith("/trash");
   const isAllNotesRoute = !folderId && !isFavoritesRoute && !isArchiveRoute && !isTrashRoute;
 
+  const handleCreateFolder = async () => {
+    const name = window.prompt("Folder name");
+    const normalized = name?.trim();
+    if (!normalized) return;
+
+    const folder = await addFolder(normalized);
+    if (folder?._id) {
+      navigate(`/folders/${folder._id}`);
+    }
+  };
+
 
 
   return (
     <aside className="desktop-pane sidebar-panel">
       <div className="sidebar-content custom-scrollbar mt-1">
-        <div className="sidebar-static-links">
-          <TopLink label="All Notes" count={allNotes.length} active={isAllNotesRoute} icon={FileText} onClick={() => navigate(noteId ? `/note/${noteId}` : "/")} />
-          <TopLink label="Favorites" count={favoritesCount} active={isFavoritesRoute} icon={Star} onClick={() => navigate(noteId ? `/favorites/note/${noteId}` : "/favorites")} />
+        <div className="hidden-on-mobile">
+          <div className="sidebar-static-links">
+            <TopLink label="All Notes" count={allNotes.length} active={isAllNotesRoute} icon={FileText} onClick={() => navigate(noteId ? `/note/${noteId}` : "/")} />
+            <TopLink label="Favorites" count={favoritesCount} active={isFavoritesRoute} icon={Star} onClick={() => navigate(noteId ? `/favorites/note/${noteId}` : "/favorites")} />
+          </div>
+
+          <div className="sidebar-divider" />
         </div>
 
-        <div className="sidebar-divider" />
-
         <div className="sidebar-folders">
-          <button type="button" className="sidebar-folders-header" onClick={toggleFoldersGroup}>
-            <span className="sidebar-section-title">Notebooks</span>
-            <ChevronDown size={15} className={`transition-transform ${foldersOpen ? "rotate-0" : "-rotate-90"}`} />
-          </button>
+          <div className="sidebar-folders-header-row">
+            <button type="button" className="sidebar-folders-header" onClick={toggleFoldersGroup}>
+              <span className="sidebar-section-title">Notebooks</span>
+              <ChevronDown size={15} className={`transition-transform ${foldersOpen ? "rotate-0" : "-rotate-90"}`} />
+            </button>
+            <button
+              type="button"
+              className="sidebar-create-folder-button"
+              onClick={() => void handleCreateFolder()}
+              aria-label="Create folder"
+              title="Create folder"
+            >
+              <Plus size={15} />
+            </button>
+          </div>
 
           {foldersOpen ? (
             <div className="mt-3 space-y-1">
@@ -188,7 +216,7 @@ const FoldersPanel = () => {
         <div className="sidebar-divider" />
 
         <div className="sidebar-bottom-links">
-          <TopLink label="Archive" count={0} active={isArchiveRoute} icon={Archive} onClick={() => navigate(noteId ? `/archive/note/${noteId}` : "/archive")} />
+          <TopLink label="Archive" count={archiveCount} active={isArchiveRoute} icon={Archive} onClick={() => navigate(noteId ? `/archive/note/${noteId}` : "/archive")} />
           <TopLink label="Trash" count={trash.length} active={isTrashRoute} icon={Trash2} onClick={() => navigate(noteId ? `/trash/note/${noteId}` : "/trash")} />
         </div>
       </div>

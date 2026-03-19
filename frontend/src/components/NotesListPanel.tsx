@@ -16,7 +16,10 @@ const isRenderableNote = (value: unknown): value is Note => {
 };
 
 const NotesListPanel = () => {
-  const { notes, fetchNotes, createNote, softDeleteNote, togglePinning, restoreNote, permanentDeleteNote, emptyTrash } = useNoteStore();
+  const { 
+    notes, fetchNotes, createNote, softDeleteNote, togglePinning, restoreNote, 
+    permanentDeleteNote, emptyTrash, searchQuery, setSearchQuery, archivedNotes, fetchArchived, toggleArchive
+  } = useNoteStore();
   const { trash, fetchTrash } = useNoteStore();
   const { folders, fetchFolders } = useFolderStore();
   const { noteId, folderId } = useParams();
@@ -26,7 +29,6 @@ const NotesListPanel = () => {
   const isFocusMode = searchParams.get("focus") === "1";
   
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
 
   const closeNoteList = () => {
     const next = new URLSearchParams(location.search);
@@ -50,14 +52,19 @@ const NotesListPanel = () => {
     fetchTrash();
   }, [fetchTrash]);
 
+  useEffect(() => {
+    fetchArchived();
+  }, [fetchArchived]);
+
   const {
     filteredNotes,
     panelTitle,
     breadcrumbRoot,
     currentFolderName,
     isFavoritesRoute,
+    isArchiveRoute,
     isTrashRoute,
-  } = useNotesFilter(safeNotes, folders, query, trash);
+  } = useNotesFilter(safeNotes, folders, searchQuery, trash, archivedNotes);
 
   const handleCreateNote = async () => {
     const newNote = await createNote(folderId || null);
@@ -70,7 +77,7 @@ const NotesListPanel = () => {
   const performDeleteNote = async (id: string) => {
     await softDeleteNote(id);
     if (noteId === id) {
-      navigate(folderId ? `/folders/${folderId}` : isFavoritesRoute ? "/favorites" : "/");
+      navigate(folderId ? `/folders/${folderId}` : isArchiveRoute ? "/archive" : isFavoritesRoute ? "/favorites" : "/");
     }
   };
 
@@ -86,7 +93,7 @@ const NotesListPanel = () => {
 
   return (
     <>
-      <aside className="desktop-pane">
+      <aside className="desktop-pane mobile-notes-pane">
         <NotesPanelHeader
           breadcrumbRoot={breadcrumbRoot}
           panelTitle={panelTitle}
@@ -98,14 +105,16 @@ const NotesListPanel = () => {
         />
 
         <NotesPanelSearch
-          query={query}
-          onQueryChange={setQuery}
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
           onCreateNote={handleCreateNote}
+          onOpenFavorites={() => navigate(isFavoritesRoute ? "/" : "/favorites")}
+          isFavoritesView={isFavoritesRoute}
         />
 
         <div className="px-4 pb-2 text-sm text-[var(--muted-text)]">Notes ({filteredNotes.length})</div>
 
-        <div className="custom-scrollbar flex-1 space-y-1.5 overflow-y-auto px-3 pb-4">
+        <div className="custom-scrollbar mobile-notes-scroll flex-1 space-y-1.5 overflow-y-auto px-3 pb-4">
           {filteredNotes.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
@@ -114,6 +123,8 @@ const NotesListPanel = () => {
             >
               {location.pathname === "/favorites"
                 ? "Star a note to keep it here."
+                : location.pathname === "/archive"
+                  ? "Archive a note to keep it out of your main workspace."
                 : "No notes match this view yet. Create one to start filling the workspace."}
             </motion.div>
           ) : (
@@ -136,10 +147,13 @@ const NotesListPanel = () => {
                     note={note}
                     isActive={noteId === note._id}
                     isTrashView={isTrashRoute}
+                    isArchiveView={isArchiveRoute}
                     onClick={() => {
                       if (isTrashRoute) return; // no editor for trashed notes
                       const basePath = folderId
                         ? `/folders/${folderId}/note/${note._id}`
+                        : isArchiveRoute
+                          ? `/archive/note/${note._id}`
                         : isFavoritesRoute
                           ? `/favorites/note/${note._id}`
                           : `/note/${note._id}`;
@@ -149,6 +163,7 @@ const NotesListPanel = () => {
                     onRestore={(id: string) => restoreNote(id)}
                     onPermanentDelete={(id: string) => permanentDeleteNote(id)}
                     onTogglePin={togglePinning}
+                    onToggleArchive={(id: string) => void toggleArchive(id)}
                   />
                 ))}
               </AnimatePresence>
@@ -159,7 +174,7 @@ const NotesListPanel = () => {
 
       <NoteDeleteDialog
         noteId={pendingDeleteNoteId}
-        noteTitle={safeNotes.find((n) => n._id === pendingDeleteNoteId)?.title || "this note"}
+        noteTitle={filteredNotes.find((n) => n._id === pendingDeleteNoteId)?.title || "this note"}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDeleteNoteId(null)}
       />

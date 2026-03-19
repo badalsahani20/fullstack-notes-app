@@ -118,8 +118,17 @@ export const googleCallback = catchAsync(async (req, res) => {
   const refreshToken = user.generateRefreshToken();
 
   const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
-  user.refreshToken.push({ token: hashedRefreshToken });
-  await user.save();
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $push: {
+        refreshToken: {
+          $each: [{ token: hashedRefreshToken }],
+          $slice: -5,
+        },
+      },
+    }
+  );
 
   res.cookie("refreshToken", refreshToken, {
     ...getRefreshCookieOptions(),

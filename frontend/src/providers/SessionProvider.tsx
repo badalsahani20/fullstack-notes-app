@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Loader } from "lucide-react";
-import api from "@/lib/api";
+import { requestSessionRefresh } from "@/lib/api";
 
 export const SessionProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
@@ -15,10 +15,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
       }
 
       try {
-        const res = await api.post("/users/refresh");
-
-        const { user, accessToken } = res.data;
-        setAuth(user, accessToken);
+        await requestSessionRefresh();
       } catch (error: unknown) {
         const status = typeof error === "object" && error && "response" in error
           ? (error as { response?: { status?: number } }).response?.status

@@ -13,9 +13,10 @@ type TipTapProps = {
   content: string;
   onChange: (html: string) => void;
   onEditorReady?: (editor: Editor | null) => void;
+  onAskAi?: () => void;
 };
 
-const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
+const TipTap = ({ content, onChange, onEditorReady, onAskAi }: TipTapProps) => {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -72,7 +73,7 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
 
   return (
     <div className="editor-shell relative mx-auto w-full max-w-4xl" style={{ ["--editor-font-size" as string]: `18px` }}>
-      <EditorToolbar editor={editor} />
+      <EditorToolbar editor={editor} onAskAi={onAskAi} />
       <EditorBubbleMenu editor={editor} />
       <EditorContent className="editor-content-shell" editor={editor} spellCheck={true} onKeyDown={handleEditorKeyDown} />
     </div>

@@ -2,6 +2,12 @@ import * as TrashService from "../services/trash.service.js";
 import * as NoteService from "../services/notes.service.js";
 import catchAsync from "../utils/catchAsync.js";
 import { redis } from "../../config/redis.js";
+
+const clearNoteCaches = async (userId) =>
+  Promise.all([
+    redis.del(`notes:${userId}`),
+    redis.del(`notes:archive:${userId}`),
+  ]);
 export const getTrash = catchAsync(async (req, res, next) => {
     const trash = await TrashService.getTrashItems(req.user._id);
 
@@ -10,13 +16,14 @@ export const getTrash = catchAsync(async (req, res, next) => {
 
 export const hardDeleteNote = catchAsync(async (req, res, next) => {
     await NoteService.permanentlyRemoveNote(req.params.id, req.user._id);
+    await clearNoteCaches(req.user._id);
     res.status(200).json({ message: "Note permanently deleted "});
 });
 
 export const hardDeleteFolder = catchAsync(async (req, res, next) => {
     await TrashService.permanentlyDeleteFolderAndNotes(req.params.id, req.user._id);
     await Promise.all([
-        redis.del(`notes:${req.user._id}`),
+        clearNoteCaches(req.user._id),
         redis.del(`folders:${req.user._id}`),
     ]);
     res.status(200).json({ message: "Folder and its notes permanently deleted "});
@@ -48,7 +55,7 @@ export const restoreNote = catchAsync(async (req, res, next) => {
     });
   }
 
-  await redis.del(`notes:${userId}`);
+  await clearNoteCaches(userId);
 
   res.status(200).json({
     success: true,

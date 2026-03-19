@@ -1,4 +1,4 @@
-import { Square, Type, FileText, Wand2 } from "lucide-react";
+import { ArrowUp, Square, Type, FileText, Wand2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,7 @@ const actionMeta: Record<AiAction, { label: string; prompt: string }> = {
     prompt: "Summarize the key ideas from this note into a concise explanation.",
   },
   explain: {
-    label: "Brainstorm",
+    label: "Explain",
     prompt: "Explain this note in simpler language with clear takeaways.",
   },
   rewrite: {
@@ -35,6 +35,7 @@ type AiComposeProps = {
   loadingAction: AiAction | null;
   /** True while a chat send is in progress */
   isSending: boolean;
+  mobileMode?: boolean;
   onInputChange: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
@@ -58,6 +59,7 @@ const AiCompose = ({
   selectionRange,
   loadingAction,
   isSending,
+  mobileMode = false,
   onInputChange,
   onSend,
   onStop,
@@ -67,9 +69,9 @@ const AiCompose = ({
 
   return (
     <div className="assistant-compose">
-      <div className="assistant-compose-shell">
+      <div className="assistant-compose-shell bg-[#1c1b1b]">
         {/* Context indicator + Quick actions row */}
-        <div className="px-3 py-1.5 border-b border-[var(--divider)] flex items-center justify-between gap-2 text-xs font-medium text-[var(--muted-text)] bg-[var(--surface-muted)]">
+        <div className="px-2 py-1 mb-2 border-b border-[var(--divider)] rounded-md flex items-center justify-between gap-2 text-xs font-medium text-[var(--muted-text)] bg-[var(--surface-muted)]">
           {/* Left side: which context the AI will use */}
           <div className="flex items-center gap-2">
             {selectionRange ? (
@@ -86,41 +88,58 @@ const AiCompose = ({
           </div>
 
           {/* Right side: quick actions dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                disabled={isBusy}
-                className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-[var(--surface-ghost)] text-[var(--text-strong)] transition-colors disabled:opacity-50"
-                title="Quick Actions"
-              >
-                <Wand2
-                  size={12}
-                  className={
-                    loadingAction
-                      ? "animate-pulse text-[var(--accent-strong)]"
-                      : "text-[var(--accent-strong)]"
-                  }
-                />
-                {loadingAction ? actionMeta[loadingAction].label : "Actions"}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-48 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-md"
-            >
+          {mobileMode ? (
+            <div className="assistant-mobile-actions">
               {(Object.keys(actionMeta) as AiAction[]).map((action) => (
-                <DropdownMenuItem
+                <button
                   key={action}
+                  type="button"
+                  disabled={isBusy}
                   onClick={() => onAction(action)}
-                  className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-100 text-sm py-1.5 transition-colors"
+                  className={`assistant-mobile-action ${loadingAction === action ? "assistant-mobile-action-active" : ""}`}
                   title={actionMeta[action].prompt}
                 >
                   {actionMeta[action].label}
-                </DropdownMenuItem>
+                </button>
               ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isBusy}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-[var(--surface-ghost)] text-[var(--text-strong)] transition-colors disabled:opacity-50"
+                  title="Quick Actions"
+                >
+                  <Wand2
+                    size={12}
+                    className={
+                      loadingAction
+                        ? "animate-pulse text-[var(--accent-strong)]"
+                        : "text-[var(--accent-strong)]"
+                    }
+                  />
+                  {loadingAction ? actionMeta[loadingAction].label : "Actions"}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-md"
+              >
+                {(Object.keys(actionMeta) as AiAction[]).map((action) => (
+                  <DropdownMenuItem
+                    key={action}
+                    onClick={() => onAction(action)}
+                    className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-100 text-sm py-1.5 transition-colors"
+                    title={actionMeta[action].prompt}
+                  >
+                    {actionMeta[action].label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Chat textarea */}
@@ -129,7 +148,7 @@ const AiCompose = ({
           value={chatInput}
           onChange={(e) => onInputChange(e.target.value)}
           placeholder="Ask about this note, get ideas, or request edits..."
-          rows={4}
+          rows={2}
           disabled={isSending}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -157,7 +176,7 @@ const AiCompose = ({
               onClick={onSend}
               disabled={!chatInput.trim()}
             >
-              -&gt;
+              <ArrowUp size={14} />
             </button>
           )}
         </div>

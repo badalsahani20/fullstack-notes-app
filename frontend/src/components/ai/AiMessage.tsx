@@ -36,8 +36,11 @@ const AiMessage = ({
   onApply,
 }: AiMessageProps) => {
   return (
-    <div className={`assistant-message assistant-message-${message.role}`}>
-      <div className="max-w-full overflow-hidden">
+    <div className={`assistant-message assistant-message-${message.role} w-full`}>
+      <div className="assistant-message-meta">
+        <span className="assistant-message-role">{message.role === "assistant" ? "AI" : "You"}</span>
+      </div>
+      <div className="max-w-full overflow-hidden ">
         {message.role === "assistant" ? (
           <div className="prose prose-sm dark:prose-invert max-w-full overflow-hidden prose-p:leading-relaxed prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-800 prose-pre:max-w-full prose-pre:overflow-x-auto break-words">
             <ReactMarkdown>{String(displayText || "")}</ReactMarkdown>

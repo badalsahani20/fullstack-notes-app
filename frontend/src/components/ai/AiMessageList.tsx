@@ -3,6 +3,9 @@ import AiMessage from "@/components/ai/AiMessage";
 import type { Message, AssistResult, SelectionRange } from "@/components/ai/types";
 
 type AiMessageListProps = {
+  hasHistory: boolean;
+  historyCount: number;
+  onLoadHistory: () => void;
   messages: Message[];
   streamingMessageId: string | null;
   streamedMessageText: string;
@@ -23,6 +26,9 @@ type AiMessageListProps = {
  *    the streamed text grows — so the user always sees the latest content
  */
 const AiMessageList = ({
+  hasHistory,
+  historyCount,
+  onLoadHistory,
   messages,
   streamingMessageId,
   streamedMessageText,
@@ -45,6 +51,17 @@ const AiMessageList = ({
 
   return (
     <div ref={listRef} className="custom-scrollbar assistant-message-list">
+      {hasHistory && (
+        <button
+          type="button"
+          className="ai-history-toggle"
+          onClick={onLoadHistory}
+          aria-label={`Load ${historyCount} previous messages`}
+        >
+          Older chat ({historyCount} messages)
+        </button>
+      )}
+
       {messages.map((message, index) => {
         // Is this the message currently being animated? 
         const isStreamed =

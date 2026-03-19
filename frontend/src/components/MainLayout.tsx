@@ -5,6 +5,8 @@ import ActivityBar from "./SideBar";
 import NotesListPanel from "./NotesListPanel";
 import FoldersPanel from "./folderPanel";
 import AppHeader from "./AppHeader";
+import MobileBottomNav from "./MobileBottomNav";
+import MobileCreateButton from "./MobileCreateButton";
 
 const MainLayout = () => {
   const location = useLocation();
@@ -14,6 +16,9 @@ const MainLayout = () => {
   const isNotesHidden = focusParam === "2";
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 960);
+  const isSearchRoute = location.pathname.startsWith("/search");
+  const isProfileRoute = location.pathname.startsWith("/profile");
+  const showGlobalHeader = !(isMobile && Boolean(noteId));
   
   const animationKey = noteId ? `note-${noteId}` : "empty-state";
 
@@ -34,14 +39,16 @@ const MainLayout = () => {
     ? location.pathname === "/folders" && !folderId && !noteId
     : !isFoldersHidden;
   const showNotesPanel = isMobile
-    ? !noteId && !showFoldersPanel
+    ? !noteId && !showFoldersPanel && !isSearchRoute && !isProfileRoute
     : !isNotesHidden;
-  const showMainPanel = isMobile ? Boolean(noteId) : true;
+  const showMainPanel = isMobile ? Boolean(noteId) || isSearchRoute || isProfileRoute : true;
 
   return (
     <div className="app-shell">
-      <div className="app-window">
-        <AppHeader theme={theme} onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))} />
+      <div className={`app-window ${isMobile ? "mobile-app-window" : ""}`}>
+        {showGlobalHeader ? (
+          <AppHeader theme={theme} onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))} />
+        ) : null}
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {!isMobile ? <ActivityBar /> : null}
@@ -94,6 +101,9 @@ const MainLayout = () => {
             </main>
           ) : null}
         </div>
+
+        {isMobile ? <MobileBottomNav /> : null}
+        {isMobile ? <MobileCreateButton /> : null}
       </div>
     </div>
   );

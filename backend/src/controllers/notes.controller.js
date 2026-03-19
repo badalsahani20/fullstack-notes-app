@@ -3,6 +3,12 @@ import catchAsync from "../utils/catchAsync.js";
 import mongoose from "mongoose";
 import { redis } from "../../config/redis.js";
 
+const clearNoteCaches = async (userId) =>
+  Promise.all([
+    redis.del(`notes:${userId}`),
+    redis.del(`notes:archive:${userId}`),
+  ]);
+
 export const getAllNotes = catchAsync(async (req, res) => {
     const userId = req.user._id;
     const cacheKey = `notes:${userId}`;
@@ -45,12 +51,42 @@ export const getAllNotes = catchAsync(async (req, res) => {
     }
 });
 
+export const getArchivedNotes = catchAsync(async (req, res) => {
+    const userId = req.user._id;
+    const cacheKey = `notes:archive:${userId}`;
+    const lockKey = `lock:notes:archive:${userId}`;
+
+    const cachedNotes = await redis.get(cacheKey);
+    if (cachedNotes) {
+      return res.status(200).json(cachedNotes);
+    }
+
+    const lock = await redis.set(lockKey, "1", { nx: true, ex: 5 });
+
+    if (lock) {
+      const notes = await NoteService.findArchivedNotes(userId);
+      await redis.set(cacheKey, notes, { ex: 3600 });
+      await redis.del(lockKey);
+      return res.status(200).json(notes);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const retryCache = await redis.get(cacheKey);
+
+    if (retryCache) {
+      return res.status(200).json(retryCache);
+    }
+
+    const notes = await NoteService.findArchivedNotes(userId);
+    return res.status(200).json(notes);
+});
+
 export const createNote = catchAsync(async (req, res) => {
     const { content, title, color, folder, createdAt} = req.body;
     const note = await NoteService.createNewNote(req.user._id, {content, title, color, folder, createdAt});
 
     // Invalidate cache
-    await redis.del(`notes:${req.user._id}`);
+    await clearNoteCaches(req.user._id);
 
     res.status(201).json(note);
 });
@@ -93,7 +129,7 @@ export const updateNote = catchAsync(async (req, res) => {
   }
 
     // Invalidate cache
-    await redis.del(`notes:${req.user._id}`);
+    await clearNoteCaches(req.user._id);
 
     res.status(200).json(result.updatedNote);
 });
@@ -111,7 +147,7 @@ export const deleteNote = catchAsync(async (req, res) => {
     }
 
     // Invalidate cache
-    await redis.del(`notes:${req.user._id}`);
+    await clearNoteCaches(req.user._id);
 
     res.status(200).json({message: "Note Moved to Trash" });
 })
@@ -123,9 +159,21 @@ export const togglePin = catchAsync(async (req, res) => {
     }
 
     // Invalidate cache
-    await redis.del(`notes:${req.user._id}`);
+    await clearNoteCaches(req.user._id);
 
     res.status(200).json({message: "Pin status toggled" , note});
+})
+
+export const toggleArchive = catchAsync(async (req, res) => {
+    const note = await NoteService.flipArchiveStatus(req.params.id,req.user._id);
+    if(!note) {
+        return res.status(404).json({message: "Note not found"});
+    }
+
+    // Invalidate cache
+    await clearNoteCaches(req.user._id);
+
+    res.status(200).json({message: note.isArchived ? "Note archived" : "Note unarchived" , note});
 })
 
 export const searchAllNotes = catchAsync(async (req, res) => {
@@ -156,7 +204,7 @@ export const restoreNote = catchAsync(async (req, res) => {
   }
 
   // Invalidate cache
-  await redis.del(`notes:${userId}`);
+  await clearNoteCaches(userId);
 
   res.status(200).json({
     success: true,

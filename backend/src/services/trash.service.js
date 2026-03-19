@@ -23,7 +23,7 @@ export const permanentlyDeleteFolderAndNotes = async (folderId, userId) => {
 }
 export const getTrashItems = async (userId) => {
     const[notes, folders] = await Promise.all([
-        Notes.find({ user: userId, isDeleted: true}).sort({ updatedAt: -1 }),
+        Notes.find({ user: userId, isDeleted: true, isArchived: { $in: [true, false] }}).sort({ updatedAt: -1 }),
         Folder.find({user: userId, isDeleted: true}).sort({ updatedAt: -1 })
     ])
 
@@ -32,7 +32,7 @@ export const getTrashItems = async (userId) => {
 
 export const restoreNote = async (noteId, userId) => {
     return await Notes.findOneAndUpdate(
-        { _id: noteId, user: userId, isDeleted: true},
+        { _id: noteId, user: userId, isDeleted: true, isArchived: { $in: [true, false] }},
         {isDeleted: false, $inc: { version: 1 }},
         { new: true }
     );
@@ -58,7 +58,7 @@ export const restoreFolderAndNotes = async (folderId, userId) => {
 
   //Restore the notes in the folder
   await Notes.updateMany(
-    { folder: folderId, user: userId, isDeleted: true },
+    { folder: folderId, user: userId, isDeleted: true, isArchived: { $in: [true, false] } },
     {
         $set: { isDeleted: false },
         $inc: { version: 1 }
@@ -66,4 +66,3 @@ export const restoreFolderAndNotes = async (folderId, userId) => {
   );
   return folder;
 };
-

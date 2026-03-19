@@ -7,6 +7,7 @@ import {
   List,
   Maximize2,
   Minimize2,
+  Sparkles,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Editor } from "@tiptap/react";
@@ -17,9 +18,10 @@ import { toast } from "sonner";
 
 type Props = {
   editor: Editor;
+  onAskAi?: () => void;
 };
 
-const EditorToolbar = ({ editor }: Props) => {
+const EditorToolbar = ({ editor, onAskAi }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -88,6 +90,16 @@ const EditorToolbar = ({ editor }: Props) => {
           <Image size={14} />
           <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
         </button>
+        {onAskAi ? (
+          <button
+            type="button"
+            title="Ask AI"
+            onClick={onAskAi}
+            className={cn(toolbarButtonClass(false), "editor-toolbar-ai-button md:hidden")}
+          >
+            <Sparkles size={14} />
+          </button>
+        ) : null}
       </div>
     </div>
   );

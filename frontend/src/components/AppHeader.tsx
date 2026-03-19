@@ -45,7 +45,9 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
         </div>
       </div>
 
-      <HeaderSearch />
+      <div className="desktop-header-search-slot">
+        <HeaderSearch />
+      </div>
 
       <div className="desktop-header-actions">
         <button type="button" onClick={onToggleTheme} className="desktop-icon-button" aria-label="Toggle theme">
@@ -55,11 +57,11 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
           <Bell size={16} />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[var(--panel-bg)]" />
         </button>
-        <Button type="button" onClick={handleCreateNote} className="desktop-primary-button">
+        <Button type="button" onClick={handleCreateNote} className="desktop-primary-button hidden md:inline-flex">
           <Plus size={15} />
           <span className="hidden sm:inline">New Note</span>
         </Button>
-        <Button type="button" variant="outline" onClick={handleCreateFolder} className="desktop-secondary-button">
+        <Button type="button" variant="outline" onClick={handleCreateFolder} className="desktop-secondary-button hidden sm:inline-flex">
           <Plus size={15} />
           <span className="hidden sm:inline">New Folder</span>
         </Button>

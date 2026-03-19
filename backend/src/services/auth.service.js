@@ -1,6 +1,9 @@
 import User from "../models/user.model.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+
+const hashRefreshToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+
 export const registerUser = async (userData) => {
     //Check for duplicates
     const existingUser = await User.findOne({ email: userData.email});
@@ -42,11 +45,20 @@ export const loginUser = async (email, password) => {
     const refreshToken = user.generateRefreshToken();
     
     //Hash the refresh token before storing
-    const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
+    const hashedRefreshToken = hashRefreshToken(refreshToken);
 
-    //Store the hashed refresh token in the database
-    user.refreshToken.push({ token: hashedRefreshToken });
-    await user.save();
+    //Store the hashed refresh token in the database without saving the whole document
+    await User.updateOne(
+        { _id: user._id },
+        {
+            $push: {
+                refreshToken: {
+                    $each: [{ token: hashedRefreshToken }],
+                    $slice: -5,
+                },
+            },
+        }
+    );
     
     return { user, accessToken, refreshToken };
 }
@@ -77,34 +89,35 @@ export const refreshAccessToken = async (refreshTokenFromCookie) => {
         throw error;
     }
 
-    const hashedToken = crypto.createHash("sha256").update(refreshTokenFromCookie).digest("hex");
+    const hashedToken = hashRefreshToken(refreshTokenFromCookie);
 
     const tokenExists = user.refreshToken.some(
         (t) => t.token === hashedToken
     );
 
     if(!tokenExists) {
-        //Token reuse detected
-        user.refreshToken = [];
-        await user.save();
+        //Likely a stale/replayed token. Clear server-side sessions defensively.
+        await User.updateOne({ _id: user._id }, { $set: { refreshToken: [] } });
 
         const error = new Error("Refresh token reuse detected");
         error.statusCode = 403;
         throw error;
     }
-    //Rotation
-    user.refreshToken = user.refreshToken.filter(t => t.token !== hashedToken);
-
     const newAccessToken = user.generateAccessToken();
     const newRefreshToken = user.generateRefreshToken();
+    const newHashedToken = hashRefreshToken(newRefreshToken);
+    const rotatedTokens = [...user.refreshToken.filter((t) => t.token !== hashedToken), { token: newHashedToken }].slice(-5);
 
-    const newHashedToken = crypto.createHash("sha256").update(newRefreshToken).digest("hex");
+    const rotationResult = await User.updateOne(
+        { _id: user._id, "refreshToken.token": hashedToken },
+        { $set: { refreshToken: rotatedTokens } }
+    );
 
-    user.refreshToken.push({ token: newHashedToken });
-    if(user.refreshToken.length > 5) {
-        user.refreshToken.shift();
+    if (rotationResult.modifiedCount === 0) {
+        const error = new Error("Refresh token already rotated");
+        error.statusCode = 401;
+        throw error;
     }
-    await user.save();
 
     // return {user: user accessToken: newAccessToken, refreshToken: newRefreshToken };
     return { user, accessToken:newAccessToken, refreshToken:newRefreshToken };
@@ -117,7 +130,7 @@ export const logoutUser = async (refreshTokenFromCookie) => {
         throw error;
     }
 
-    const hashedToken = crypto.createHash("sha256").update(refreshTokenFromCookie).digest("hex");
+    const hashedToken = hashRefreshToken(refreshTokenFromCookie);
 
     await User.updateOne(
         { "refreshToken.token": hashedToken },
