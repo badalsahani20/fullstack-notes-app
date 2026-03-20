@@ -5,15 +5,10 @@ import { requestSessionRefresh } from "@/lib/api";
 
 export const SessionProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
-  const { user, accessToken, setAuth, clearAuth } = useAuthStore();
+  const { clearAuth } = useAuthStore();
 
   useEffect(() => {
     const initAuth = async () => {
-      if (user && accessToken) {
-        setLoading(false);
-        return;
-      }
-
       try {
         await requestSessionRefresh();
       } catch (error: unknown) {
@@ -30,7 +25,7 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
     };
 
     initAuth();
-  }, [accessToken, clearAuth, setAuth, user]);
+  }, [clearAuth]);
 
   if (loading)
     return (

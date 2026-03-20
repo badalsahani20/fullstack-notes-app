@@ -1,30 +1,22 @@
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useNavigate } from "react-router-dom";
+import { requestSessionRefresh } from "@/lib/api";
 
 const OAuthSuccess = () => {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
-
-  const token = params.get("token");
-  const id = params.get("id");
-  const name = params.get("name");
-  const email = params.get("email");
 
   useEffect(() => {
-    if (token && id && email) {
-      setAuth(
-        {
-          id,
-          name: (name && name !== "undefined") ? name : "",
-          email,
-        },
-        token,
-      );
-      navigate("/");
-    }
-  }, []);
+    const finishOAuthLogin = async () => {
+      try {
+        await requestSessionRefresh();
+        navigate("/", { replace: true });
+      } catch {
+        navigate("/login", { replace: true });
+      }
+    };
+
+    finishOAuthLogin();
+  }, [navigate]);
 
   return <p className="text-center mt-10">Logging you in...</p>;
 };

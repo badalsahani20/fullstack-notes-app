@@ -888,7 +888,7 @@
 
 .desktop-editor-header {
   border-bottom: 1px solid var(--divider);
-  padding: 1.35rem 2rem 1rem;
+  padding: 0.95rem 2rem 0;
   background: var(--panel-bg-strong);
 }
 
@@ -921,9 +921,10 @@
 .editor-title-meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 0.65rem;
+  width: 100%;
+  margin-top: 0.45rem;
   font-size: 0.82rem;
   color: var(--muted-text);
 }
@@ -988,18 +989,15 @@
 }
 
 .editor-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  position: relative;
+  top: auto;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   gap: 0.5rem;
-  border: 1px solid var(--divider);
-  border-radius: 0.95rem;
-  background: #303336;
-  padding: 0.4rem 0.5rem;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0 0.55rem;
+  margin-top: 0.5rem;
 }
 
 .editor-shell {
@@ -1011,29 +1009,44 @@
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .editor-toolbar-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
-  border-radius: 0.7rem;
-  width: 1.85rem;
-  height: 1.85rem;
-  color: white;
+  border: 1px solid var(--divider);
+  border-radius: 0.78rem;
+  min-width: 2.05rem;
+  height: 2.05rem;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--surface-muted) 84%, transparent);
   transition: all 0.18s ease;
 }
 
 .editor-toolbar-button:hover {
-  background: var(--surface-ghost);
+  background: color-mix(in srgb, var(--surface-ghost) 92%, var(--active-surface));
   color: var(--text-strong);
+  border-color: color-mix(in srgb, var(--divider) 78%, var(--accent-strong));
 }
 
 .editor-toolbar-button-active {
-  border-color: color-mix(in srgb, var(--accent-strong) 18%, transparent);
-  background: var(--active-surface);
+  border-color: color-mix(in srgb, var(--accent-strong) 28%, transparent);
+  background: color-mix(in srgb, var(--active-surface) 88%, white 6%);
   color: var(--accent-strong);
+}
+
+.editor-toolbar-menu {
+  border: 1px solid var(--divider);
+  background: var(--panel-bg-strong);
+  color: var(--text-strong);
+}
+
+.editor-toolbar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
 }
 
 .assistant-rail {
@@ -1088,7 +1101,7 @@
 .assistant-rail-header {
   border-bottom: 1px solid var(--divider);
   padding: 0.95rem 1rem;
-  background: #171717;
+  background: color-mix(in srgb, var(--panel-bg-strong) 95%, transparent);
 }
 
 .assistant-rail-header-row {
@@ -1124,9 +1137,9 @@
 .assistant-close-button,
 .assistant-header-action {
   height: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--divider);
   border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--surface-ghost) 88%, transparent);
   padding-inline: 0.72rem;
   transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
@@ -1138,9 +1151,9 @@
 
 .assistant-header-action:hover,
 .assistant-close-button:hover {
-  background: rgba(255, 255, 255, 0.065);
+  background: color-mix(in srgb, var(--surface-ghost) 96%, var(--active-surface));
   color: var(--text-strong);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: color-mix(in srgb, var(--divider) 76%, var(--accent-strong));
   transform: translateY(-1px);
 }
 
@@ -1153,7 +1166,7 @@
 
 .assistant-message {
   max-width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--divider);
   border-radius: 1.15rem;
   padding: 0.85rem 0.95rem;
   margin-bottom: 0.8rem;
@@ -1193,9 +1206,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid var(--divider);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.045);
+  background: color-mix(in srgb, var(--surface-ghost) 88%, transparent);
   padding: 0.34rem 0.62rem;
   font-size: 0.72rem;
   color: var(--muted-text);
@@ -1203,7 +1216,7 @@
 }
 
 .assistant-inline-action:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.085);
+  background: color-mix(in srgb, var(--surface-ghost) 96%, var(--active-surface));
   color: var(--text-strong);
   transform: translateY(-1px);
 }
@@ -1214,23 +1227,23 @@
 
 .assistant-message-user {
   margin-left: auto;
-  border-color: rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.04);
-  color: white;
+  border-color: color-mix(in srgb, var(--accent-strong) 18%, var(--divider));
+  background: color-mix(in srgb, var(--accent-soft) 72%, var(--panel-bg));
+  color: var(--text-strong);
 }
 
 .assistant-message-assistant {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--assistant-assistant);
   color: var(--text-strong);
 }
 
 .assistant-message-user .assistant-message-role {
-  background: rgba(96, 165, 250, 0.12);
-  color: #8fc1ff;
+  background: color-mix(in srgb, var(--accent-strong) 14%, transparent);
+  color: var(--accent-strong);
 }
 
 .assistant-message-assistant .assistant-message-role {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--surface-ghost) 92%, transparent);
   color: var(--muted-text);
 }
 
@@ -1250,7 +1263,12 @@
   bottom: 0;
   border-top: 1px solid var(--divider);
   padding: 0.65rem 0.85rem 0.8rem;
-  background: linear-gradient(180deg, rgba(23, 23, 23, 0), rgba(23, 23, 23, 0.96) 20%, #171717 100%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--panel-bg-strong) 0%, transparent),
+    color-mix(in srgb, var(--panel-bg-strong) 88%, transparent) 20%,
+    var(--panel-bg-strong) 100%
+  );
 }
 
 .assistant-quick-actions {
@@ -1289,18 +1307,34 @@
 
 .assistant-quick-pill:hover,
 .assistant-quick-pill-active {
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--surface-ghost) 96%, var(--active-surface));
   color: var(--text-strong);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: color-mix(in srgb, var(--divider) 78%, var(--accent-strong));
 }
 
 .assistant-compose-shell {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--divider);
   border-radius: 1.25rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--panel-bg) 94%, white 6%),
+    color-mix(in srgb, var(--surface-muted) 92%, transparent)
+  );
   padding: 0.82rem 0.76rem 0.64rem;
   box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.assistant-actions-menu {
+  border: 1px solid var(--divider);
+  background: var(--panel-bg-strong);
+  color: var(--text-strong);
+}
+
+.assistant-actions-menu-item:hover,
+.assistant-actions-menu-item:focus {
+  background: var(--surface-muted);
+  color: var(--text-strong);
 }
 
 .assistant-compose-input {
@@ -1358,7 +1392,13 @@
   gap: 0.8rem;
   font-size: 0.92rem;
   line-height: 1.55;
-  color: rgba(244, 244, 245, 0.9);
+  color: var(--text-strong);
+}
+
+.assistant-guide-dialog {
+  border: 1px solid var(--divider);
+  background: var(--panel-bg-strong);
+  color: var(--text-strong);
 }
 
 .assistant-resize-handle {
@@ -1490,9 +1530,9 @@
   display: inline-flex;
   align-items: center;
   margin-bottom: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--divider);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.035);
+  background: color-mix(in srgb, var(--surface-ghost) 90%, transparent);
   padding: 0.34rem 0.7rem;
   font-size: 0.72rem;
   color: var(--muted-text);
@@ -1500,8 +1540,30 @@
 }
 
 .ai-history-toggle:hover {
-  background: rgba(255, 255, 255, 0.055);
+  background: color-mix(in srgb, var(--surface-ghost) 96%, var(--active-surface));
   color: var(--text-strong);
+}
+
+.assistant-markdown {
+  color: var(--text-strong);
+}
+
+.assistant-markdown p {
+  line-height: 1.7;
+}
+
+.assistant-markdown :where(code):not(:where(pre code)) {
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--surface-muted) 82%, #10223d);
+  color: color-mix(in srgb, var(--accent-strong) 76%, #dc2626);
+  padding: 0.14rem 0.36rem;
+}
+
+.assistant-markdown pre {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--divider);
+  background: color-mix(in srgb, var(--panel-bg) 90%, #0f172a);
 }
 
 .mobile-profile-card {
@@ -1661,6 +1723,96 @@
 .ProseMirror p,
 .ProseMirror li {
   color: color-mix(in srgb, var(--text-strong) 92%, transparent);
+}
+
+.ProseMirror code {
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--surface-muted) 82%, #10223d);
+  color: #fda4af;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 0.9em;
+  padding: 0.18rem 0.42rem;
+}
+
+.ProseMirror pre {
+  position: relative;
+  margin: 1.15rem 0;
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 22%, var(--divider));
+  border-radius: 1rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-elevated) 92%, #0f172a),
+      color-mix(in srgb, var(--surface-muted) 88%, #08111f)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 28px rgba(2, 6, 23, 0.14);
+}
+
+.ProseMirror pre::before {
+  content: "Code";
+  display: block;
+  padding: 0.7rem 1rem 0;
+  color: color-mix(in srgb, var(--accent-strong) 72%, white);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ProseMirror pre code {
+  display: block;
+  min-width: max-content;
+  background: transparent;
+  color: color-mix(in srgb, var(--text-strong) 92%, #dbeafe);
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  padding: 0.85rem 1rem 1rem;
+  text-shadow: 0 0 0.01px currentColor;
+}
+
+.ProseMirror mark[data-color] {
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--marker-color, #ffffbb) 82%, white);
+  color: #3f3200;
+  padding: 0.04em 0.18em;
+  box-shadow:
+    inset 0 -0.45em 0 color-mix(in srgb, var(--marker-color, #ffffbb) 96%, #eab308),
+    0 1px 0 rgba(255, 255, 255, 0.22);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.ProseMirror mark[data-color="#ffffbb"] {
+  --marker-color: #ffffbb;
+}
+
+.ProseMirror pre code .hljs-keyword,
+.ProseMirror pre code .hljs-selector-tag,
+.ProseMirror pre code .hljs-title,
+.ProseMirror pre code .hljs-section {
+  color: #93c5fd;
+}
+
+.ProseMirror pre code .hljs-string,
+.ProseMirror pre code .hljs-attribute,
+.ProseMirror pre code .hljs-template-tag,
+.ProseMirror pre code .hljs-literal {
+  color: #86efac;
+}
+
+.ProseMirror pre code .hljs-number,
+.ProseMirror pre code .hljs-symbol,
+.ProseMirror pre code .hljs-bullet {
+  color: #fca5a5;
+}
+
+.ProseMirror pre code .hljs-comment,
+.ProseMirror pre code .hljs-quote {
+  color: #94a3b8;
 }
 
 .ProseMirror ul,
@@ -1926,7 +2078,7 @@
   }
 
   .desktop-editor-header {
-    padding: 0.8rem 1rem 0.24rem;
+    padding: 0.76rem 1rem 0;
   }
 
   .editor-title-row {
@@ -1974,7 +2126,7 @@
   }
 
   .editor-workspace {
-    padding: 0.9rem 1rem 5rem;
+    padding: 0 1rem 5rem;
   }
 
   .editor-toolbar {
@@ -1989,16 +2141,19 @@
     flex-wrap: nowrap;
     margin-bottom: 0;
     padding: 0.38rem 0.42rem;
+    border: 1px solid var(--divider);
     border-radius: 1rem;
+    background: color-mix(in srgb, var(--panel-bg-strong) 96%, transparent);
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
   }
 
   .editor-toolbar-group {
     flex-wrap: nowrap;
+    width: auto;
   }
 
   .editor-toolbar-button {
-    width: 1.72rem;
+    min-width: 1.72rem;
     height: 1.72rem;
   }
 

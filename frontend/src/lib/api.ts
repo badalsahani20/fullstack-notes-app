@@ -1,5 +1,10 @@
-import axios from "axios";
+import axios, { type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../store/useAuthStore";
+
+//_retry doesn't exist in InternalAxiosRequestConfig, so we need to extend it
+interface CustomAxiosRequest extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -44,13 +49,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as CustomAxiosRequest;
     //If we get a 401 and haven't tried to refresh yet
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes("/users/refresh")) {
       originalRequest._retry = true;
 
       try {
         const newToken = await requestSessionRefresh();
+        originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshErr) {

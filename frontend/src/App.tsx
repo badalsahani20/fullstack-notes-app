@@ -9,6 +9,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import { Toaster } from "sonner";
 import SearchPage from "./pages/SearchPage";
 import ProfilePage from "./pages/ProfilePage";
+import NotesListPanel from "./components/NotesListPanel";
 
 function App() {
   return (
@@ -22,7 +23,7 @@ function App() {
 
       {/* Protected routes — redirect to /login if not authenticated */}
       <Route element={<PrivateRoute />}>
-        <Route element={<MainLayout />}>
+        <Route element={<MainLayout middlePanel={<NotesListPanel />} />}>
           <Route index element={<HomeEmptyState />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/profile" element={<ProfilePage />} />

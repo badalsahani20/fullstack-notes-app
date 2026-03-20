@@ -16,19 +16,26 @@ const getRefreshCookieClearOptions = () => ({
   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
 });
 
-export const registerUser = catchAsync(async (req, res, next) => {
+export const registerUser = catchAsync(async (req, res) => {
   const { name, email, password } = req.body;
-  if (!email || !password) {
+  if (!name || !email || !password) {
     return res
       .status(400)
-      .json({ message: "Please provide email and password" });
+      .json({ message: "Please provide name, email and password" });
   }
 
-  //Call the service to handle registration logic
-  const user = await AuthService.registerUser({ name, email, password });
+  const { user, accessToken, refreshToken } = await AuthService.registerUser({
+    name,
+    email,
+    password,
+  });
+
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+
   res.status(201).json({
     success: true,
     message: "User registered successfully",
+    accessToken,
     user: { id: user._id, name: user?.name, email: user.email },
   });
 });
@@ -114,7 +121,6 @@ export const getMe = catchAsync(async (req, res, next) => {
 
 export const googleCallback = catchAsync(async (req, res) => {
   const user = req.user;
-  const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
 
   const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
@@ -135,6 +141,6 @@ export const googleCallback = catchAsync(async (req, res) => {
   });
 
   res.redirect(
-    `${process.env.FRONTEND_URL}/oauth-success?token=${accessToken}&id=${user._id}&name=${user.name || ""}&email=${user.email}`
+    `${process.env.FRONTEND_URL}/oauth-success`
   );
 })

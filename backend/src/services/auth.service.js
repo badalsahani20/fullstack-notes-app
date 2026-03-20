@@ -16,7 +16,23 @@ export const registerUser = async (userData) => {
     //Data logic
     //he Model's .pre('save') hook handles the hashing automatically
     const user = await User.create(userData);
-    return user;
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    const hashedRefreshToken = hashRefreshToken(refreshToken);
+
+    await User.updateOne(
+        { _id: user._id },
+        {
+            $push: {
+                refreshToken: {
+                    $each: [{ token: hashedRefreshToken }],
+                    $slice: -5,
+                },
+            },
+        }
+    );
+
+    return { user, accessToken, refreshToken };
 }
 
 export const loginUser = async (email, password) => {

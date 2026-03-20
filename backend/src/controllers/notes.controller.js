@@ -2,6 +2,7 @@ import * as NoteService from "../services/notes.service.js";
 import catchAsync from "../utils/catchAsync.js";
 import mongoose from "mongoose";
 import { redis } from "../../config/redis.js";
+import { sanitizeNoteHtml } from "../utils/sanitizeNoteHtml.js";
 
 const clearNoteCaches = async (userId) =>
   Promise.all([
@@ -37,7 +38,7 @@ export const getAllNotes = catchAsync(async (req, res) => {
       
       res.status(200).json(notes);
     }else{
-       // 3️⃣ Another request is fetching DB
+       // Another request is fetching DB
        await new Promise((resolve) => setTimeout(resolve, 100));
        const retryCache = await redis.get(cacheKey);
 
@@ -83,7 +84,13 @@ export const getArchivedNotes = catchAsync(async (req, res) => {
 
 export const createNote = catchAsync(async (req, res) => {
     const { content, title, color, folder, createdAt} = req.body;
-    const note = await NoteService.createNewNote(req.user._id, {content, title, color, folder, createdAt});
+    const note = await NoteService.createNewNote(req.user._id, {
+      content: sanitizeNoteHtml(content),
+      title,
+      color,
+      folder,
+      createdAt,
+    });
 
     // Invalidate cache
     await clearNoteCaches(req.user._id);
@@ -109,7 +116,11 @@ export const updateNote = catchAsync(async (req, res) => {
       message: "Version is required for update"
    });
 } 
-  const finalUpdateData = {...updateData, grammarErrors: [] };
+  const finalUpdateData = {
+    ...updateData,
+    ...(typeof updateData.content === "string" ? { content: sanitizeNoteHtml(updateData.content) } : {}),
+    grammarErrors: [],
+  };
   const result = await NoteService.updateNoteWithVersionCheck(
     req.params.id,
     req.user.id,

@@ -1,12 +1,15 @@
+import type { Editor } from "@tiptap/react";
 import { Archive, Star } from "lucide-react";
 import RelativeTimeLabel from "./RelativeTimeLabel";
 import type { Note } from "@/store/useNoteStore";
 import type { Folder } from "@/store/useFolderStore";
+import EditorToolbar from "@/tools/EditorToolbar";
 
 type EditorHeaderProps = {
   note: Note;
   /** Found folder for the note (if any), strictly for displaying its name */
   folder?: Folder;
+  editor: Editor | null;
   /** The controlled text input value for the title */
   draftTitle: string;
   onDraftTitleChange: (title: string) => void;
@@ -14,6 +17,7 @@ type EditorHeaderProps = {
   onCommitTitle: () => void;
   onTogglePin: (id: string) => void;
   onToggleArchive: (id: string) => void;
+  onAskAi?: () => void;
 };
 
 /**
@@ -23,11 +27,13 @@ type EditorHeaderProps = {
 const EditorHeader = ({
   note,
   folder,
+  editor,
   draftTitle,
   onDraftTitleChange,
   onCommitTitle,
   onTogglePin,
   onToggleArchive,
+  onAskAi,
 }: EditorHeaderProps) => {
   return (
     <div className="desktop-editor-header">
@@ -75,6 +81,8 @@ const EditorHeader = ({
         <span className="editor-folder-label">{folder?.name || "AI Notes"}</span>
         <RelativeTimeLabel updatedAt={note.updatedAt} />
       </div>
+
+      {editor ? <EditorToolbar editor={editor} onAskAi={onAskAi} /> : null}
     </div>
   );
 };

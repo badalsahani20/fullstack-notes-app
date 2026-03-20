@@ -1,12 +1,16 @@
 import {
   Bold,
-  CheckSquare,
+  Code2,
+  Heading1,
+  Heading2,
+  Highlighter,
   Image,
   Italic,
-  Link2,
   List,
   Maximize2,
   Minimize2,
+  MoreHorizontal,
+  Pilcrow,
   Sparkles,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -15,6 +19,12 @@ import { cn } from "@/lib/utils";
 import { uploadImage } from "@/utils/uploadImage";
 import { useRef } from "react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Props = {
   editor: Editor;
@@ -72,6 +82,52 @@ const EditorToolbar = ({ editor, onAskAi }: Props) => {
         <button type="button" title="Italic" onClick={() => editor.chain().focus().toggleItalic().run()} className={toolbarButtonClass(editor.isActive("italic"))}>
           <Italic size={14} />
         </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              title="Text styles"
+              className={toolbarButtonClass(
+                editor.isActive("heading", { level: 1 }) ||
+                editor.isActive("heading", { level: 2 }) ||
+                editor.isActive("paragraph"),
+              )}
+            >
+              <Pilcrow size={14} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="editor-toolbar-menu w-44">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().setParagraph().run()}
+              className="editor-toolbar-menu-item"
+            >
+              <Pilcrow size={14} />
+              <span>Paragraph</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+              className="editor-toolbar-menu-item"
+            >
+              <Heading1 size={14} />
+              <span>Heading 1</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              className="editor-toolbar-menu-item"
+            >
+              <Heading2 size={14} />
+              <span>Heading 2</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <button
+          type="button"
+          title="Marker"
+          onClick={() => editor.chain().focus().toggleMarkerHighlight("#fef08a").run()}
+          className={toolbarButtonClass(editor.isActive("markerHighlight"))}
+        >
+          <Highlighter size={14} />
+        </button>
         <button
           type="button"
           title="bullet-points"
@@ -80,16 +136,30 @@ const EditorToolbar = ({ editor, onAskAi }: Props) => {
         >
           <List size={14} />
         </button>
-        <button title="check square" type="button" aria-label="CheckSquare" className={toolbarButtonClass(false)}>
-          <CheckSquare size={14} />
-        </button>
-        <button title="add link" type="button" className={toolbarButtonClass(false)}>
-          <Link2 size={14} />
-        </button>
-        <button type="button" title="add image" className={toolbarButtonClass(false)} onClick={() => fileInputRef.current?.click()}>
-          <Image size={14} />
-          <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button type="button" title="More tools" className={toolbarButtonClass(editor.isActive("codeBlock"))}>
+              <MoreHorizontal size={14} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="editor-toolbar-menu w-44">
+            <DropdownMenuItem
+              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+              className="editor-toolbar-menu-item"
+            >
+              <Code2 size={14} />
+              <span>Code block</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => fileInputRef.current?.click()}
+              className="editor-toolbar-menu-item"
+            >
+              <Image size={14} />
+              <span>Upload image</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
         {onAskAi ? (
           <button
             type="button"

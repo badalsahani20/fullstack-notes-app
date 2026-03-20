@@ -69,7 +69,7 @@ const AiCompose = ({
 
   return (
     <div className="assistant-compose">
-      <div className="assistant-compose-shell bg-[#1c1b1b]">
+      <div className="assistant-compose-shell">
         {/* Context indicator + Quick actions row */}
         <div className="px-2 py-1 mb-2 border-b border-[var(--divider)] rounded-md flex items-center justify-between gap-2 text-xs font-medium text-[var(--muted-text)] bg-[var(--surface-muted)]">
           {/* Left side: which context the AI will use */}
@@ -125,13 +125,13 @@ const AiCompose = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="w-48 bg-zinc-950 border-zinc-800 text-zinc-100 shadow-md"
+                className="assistant-actions-menu w-48 shadow-md"
               >
                 {(Object.keys(actionMeta) as AiAction[]).map((action) => (
                   <DropdownMenuItem
                     key={action}
                     onClick={() => onAction(action)}
-                    className="cursor-pointer hover:bg-zinc-800 focus:bg-zinc-800 focus:text-zinc-100 text-sm py-1.5 transition-colors"
+                    className="assistant-actions-menu-item cursor-pointer text-sm py-1.5 transition-colors"
                     title={actionMeta[action].prompt}
                   >
                     {actionMeta[action].label}

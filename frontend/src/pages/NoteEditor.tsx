@@ -9,6 +9,7 @@ import AiAuditPanel from "@/components/AiAuditPanel";
 import EmptyEditorState from "@/components/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
@@ -22,7 +23,7 @@ const NoteEditor = () => {
   const [draftTitle, setDraftTitle] = useState("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 960);
+  const isMobile = useMediaQuery("(max-width: 960px)");
 
   const debouncedUpdate = useMemo(
     () =>
@@ -41,15 +42,6 @@ const NoteEditor = () => {
   useEffect(() => {
     setDraftTitle(note?.title ?? "");
   }, [note?._id, note?.title]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 960);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   useEffect(() => {
     if (note) return;
@@ -96,15 +88,17 @@ const NoteEditor = () => {
       <EditorHeader
         note={note}
         folder={folder}
+        editor={editorInstance}
         draftTitle={draftTitle}
         onDraftTitleChange={setDraftTitle}
         onCommitTitle={commitTitle}
         onTogglePin={togglePinning}
         onToggleArchive={handleToggleArchive}
+        onAskAi={() => setAiOpen(true)}
       />
 
       <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4 custom-scrollbar">
-        <TipTap key={note._id} content={note.content} onChange={handleContentChange} onEditorReady={setEditorInstance} onAskAi={() => setAiOpen(true)} />
+        <TipTap key={note._id} content={note.content} onChange={handleContentChange} onEditorReady={setEditorInstance} />
       </div>
     </section>
   );

@@ -15,6 +15,26 @@ const isRenderableNote = (value: unknown): value is Note => {
   return typeof (value as Note)._id === "string";
 };
 
+const NotesListSkeleton = () => (
+  <div className="flex flex-col gap-2 animate-pulse">
+    {[1, 2, 3, 4, 5].map((item) => (
+      <div
+        key={item}
+        className="rounded-[1.35rem] border border-[var(--divider)] bg-[var(--surface-muted)] px-4 py-3"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="h-4 w-32 rounded-full bg-[var(--surface-ghost)]" />
+          <div className="h-3 w-12 rounded-full bg-[var(--surface-ghost)]" />
+        </div>
+        <div className="mt-3 space-y-2">
+          <div className="h-3 w-full rounded-full bg-[var(--surface-ghost)]" />
+          <div className="h-3 w-4/5 rounded-full bg-[var(--surface-ghost)]" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const NotesListPanel = () => {
   const { 
     notes, fetchNotes, createNote, softDeleteNote, togglePinning, restoreNote, 
@@ -29,6 +49,7 @@ const NotesListPanel = () => {
   const isFocusMode = searchParams.get("focus") === "1";
   
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+  const [isBootstrappingNotes, setIsBootstrappingNotes] = useState(true);
 
   const closeNoteList = () => {
     const next = new URLSearchParams(location.search);
@@ -39,7 +60,24 @@ const NotesListPanel = () => {
   const safeNotes = notes.filter(isRenderableNote);
 
   useEffect(() => {
-    fetchNotes(folderId || null);
+    let cancelled = false;
+
+    const loadNotes = async () => {
+      setIsBootstrappingNotes(true);
+      try {
+        await fetchNotes(folderId || null);
+      } finally {
+        if (!cancelled) {
+          setIsBootstrappingNotes(false);
+        }
+      }
+    };
+
+    void loadNotes();
+
+    return () => {
+      cancelled = true;
+    };
   }, [folderId, fetchNotes]);
 
   useEffect(() => {
@@ -65,6 +103,7 @@ const NotesListPanel = () => {
     isArchiveRoute,
     isTrashRoute,
   } = useNotesFilter(safeNotes, folders, searchQuery, trash, archivedNotes);
+  const isInitialNotesLoad = isBootstrappingNotes && filteredNotes.length === 0;
 
   const handleCreateNote = async () => {
     const newNote = await createNote(folderId || null);
@@ -115,7 +154,9 @@ const NotesListPanel = () => {
         <div className="px-4 pb-2 text-sm text-[var(--muted-text)]">Notes ({filteredNotes.length})</div>
 
         <div className="custom-scrollbar mobile-notes-scroll flex-1 space-y-1.5 overflow-y-auto px-3 pb-4">
-          {filteredNotes.length === 0 ? (
+          {isInitialNotesLoad ? (
+            <NotesListSkeleton />
+          ) : filteredNotes.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}

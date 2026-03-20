@@ -30,7 +30,7 @@ const AiGuideDialog = () => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="desktop-dialog max-w-sm border-zinc-800 bg-zinc-950 text-zinc-100">
+      <DialogContent className="desktop-dialog assistant-guide-dialog max-w-sm">
         <DialogHeader>
           <DialogTitle>How to use AI Assistant</DialogTitle>
         </DialogHeader>

@@ -1,6 +1,6 @@
 import { Editor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
-import { Bold, Italic, Strikethrough, Code } from "lucide-react";
+import { Bold, Italic, Strikethrough, Code, Highlighter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const EditorBubbleMenu = ({ editor }: { editor: Editor }) => {
@@ -63,6 +63,18 @@ const EditorBubbleMenu = ({ editor }: { editor: Editor }) => {
         )}
       >
         <Code size={16} />
+      </button>
+
+      <button
+        onClick={() => editor.chain().focus().toggleMarkerHighlight("#fef08a").run()}
+        className={cn(
+          "rounded-md p-2 transition-colors",
+          editor.isActive("markerHighlight")
+            ? "bg-white/10 text-primary"
+            : "text-zinc-300 hover:bg-white/10 hover:text-zinc-100"
+        )}
+      >
+        <Highlighter size={16} />
       </button>
     </BubbleMenu>
   );

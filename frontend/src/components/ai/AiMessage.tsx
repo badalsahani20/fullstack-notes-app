@@ -42,7 +42,7 @@ const AiMessage = ({
       </div>
       <div className="max-w-full overflow-hidden ">
         {message.role === "assistant" ? (
-          <div className="prose prose-sm dark:prose-invert max-w-full overflow-hidden prose-p:leading-relaxed prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-800 prose-pre:max-w-full prose-pre:overflow-x-auto break-words">
+          <div className="assistant-markdown prose prose-sm max-w-full overflow-hidden break-words">
             <ReactMarkdown>{String(displayText || "")}</ReactMarkdown>
           </div>
         ) : (
