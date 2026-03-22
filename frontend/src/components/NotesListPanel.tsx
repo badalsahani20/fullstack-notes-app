@@ -38,8 +38,8 @@ const NotesListPanel = () => {
   const { mutateAsync : toggleArchive } = useToggleArchiveMutation();
 
   const trashFolders: TrashFolder[] = [];
-  const restoreFolder = async (id: string) => {};
-  const permanentDeleteFolder = async (id: string) => {};
+  const restoreFolder = async (_id: string) => {};
+  const permanentDeleteFolder = async (_id: string) => {};
 
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
   const { noteId, folderId } = useParams();

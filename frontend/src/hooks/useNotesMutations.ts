@@ -263,7 +263,7 @@ export const useRestoreNoteMutation = () => {
             queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, restoredNote));
             queryClient.setQueryData(["notes", "trash"], (old: Note[] = []) => updateNoteInList(old, restoredNote));
         },
-        onError: (error: any, noteId, context) => {
+        onError: (error: any, _noteId, context) => {
             if (error?.response?.status === 404) {
                queryClient.invalidateQueries({ queryKey: ["notes"] });
                queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
