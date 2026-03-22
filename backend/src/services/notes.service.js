@@ -1,6 +1,7 @@
 import Notes from "../models/notes.model.js";
 // import { $regex } from "sift";
-const ANY_ARCHIVE_STATE = { $in: [true, false] };
+// Bypasses the Mongoose pre('find') hook while matching missing fields on old docs
+const ANY_ARCHIVE_STATE = { $in: [true, false, null] };
 
 export const findUserNotes = async (userId) => {
     return await Notes.find({ user: userId, isDeleted: { $ne: true }, isArchived: { $ne: true }}).sort({
@@ -78,24 +79,64 @@ export const removeNote = async (noteId, userId, clientVersion) => {
     return await existingNote.save();
 }
 
-export const flipPinStatus = async (noteId, userId) => {
-    return await Notes.findOneAndUpdate(
-        { _id: noteId, user: userId, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE },
+export const flipPinStatus = async (noteId, userId, clientVersion) => {
+    const existingNote = await Notes.findOne({
+        _id: noteId,
+        user: userId,
+        isDeleted: { $ne: true },
+        isArchived: ANY_ARCHIVE_STATE,
+    });
+
+    if (!existingNote) {
+        return null;
+    }
+
+    if (clientVersion !== existingNote.version) {
+        return { conflict: true, serverNote: existingNote };
+    }
+
+    const updatedNote = await Notes.findOneAndUpdate(
+        { _id: noteId, user: userId, version: clientVersion, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE },
         [
-            { 
-                $set: { 
+            {
+                $set: {
                     pinned: { $not: "$pinned" },
                     version: { $add: ["$version", 1] }
-                } 
+                }
             }
         ],
         { new: true }
     );
+
+    if (!updatedNote) {
+        const serverNote = await Notes.findOne({ _id: noteId, user: userId, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE });
+        if (!serverNote) {
+            return null;
+        }
+        return { conflict: true, serverNote };
+    }
+
+    return { updatedNote };
 }
 
-export const flipArchiveStatus = async (noteId, userId) => {
-    return await Notes.findOneAndUpdate(
-        { _id: noteId, user: userId, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE },
+export const flipArchiveStatus = async (noteId, userId, clientVersion) => {
+    const existingNote = await Notes.findOne({
+        _id: noteId,
+        user: userId,
+        isDeleted: { $ne: true },
+        isArchived: ANY_ARCHIVE_STATE,
+    });
+
+    if (!existingNote) {
+        return null;
+    }
+
+    if (clientVersion !== existingNote.version) {
+        return { conflict: true, serverNote: existingNote };
+    }
+
+    const updatedNote = await Notes.findOneAndUpdate(
+        { _id: noteId, user: userId, version: clientVersion, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE },
         [
             {
                 $set: {
@@ -106,6 +147,16 @@ export const flipArchiveStatus = async (noteId, userId) => {
         ],
         { new: true }
     );
+
+    if (!updatedNote) {
+        const serverNote = await Notes.findOne({ _id: noteId, user: userId, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE });
+        if (!serverNote) {
+            return null;
+        }
+        return { conflict: true, serverNote };
+    }
+
+    return { updatedNote };
 }
 
 export const searchNote = async(userId, query, folderId = null) => {

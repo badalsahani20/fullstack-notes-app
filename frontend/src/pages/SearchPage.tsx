@@ -1,18 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import NoteCard from "@/components/noteCard";
-import { useNoteStore } from "@/store/useNoteStore";
+import NoteDeleteDialog from "@/components/notes/NoteDeleteDialog";
+import { useNotesQuery } from "@/hooks/useNotesQuery";
+import { useDeleteNoteMutation, useTogglePinMutation } from "@/hooks/useNotesMutations";
 
 const SearchPage = () => {
   const navigate = useNavigate();
-  const { notes, fetchNotes, softDeleteNote, togglePinning } = useNoteStore();
+  const { data: notes = [] } = useNotesQuery();
+  const { mutateAsync: togglePinning } = useTogglePinMutation();
   const [query, setQuery] = useState("");
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+  const { mutateAsync: deleteNoteAsync, isPending: isDeleteNotePending } = useDeleteNoteMutation();
 
-  useEffect(() => {
-    void fetchNotes(null);
-  }, [fetchNotes]);
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteNoteId) return;
+    const noteToDelete = notes.find((n) => n._id === pendingDeleteNoteId);
+    if (noteToDelete) {
+      await deleteNoteAsync({ noteId: pendingDeleteNoteId, version: noteToDelete.version });
+    }
+    setPendingDeleteNoteId(null);
+  };
 
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -57,11 +67,19 @@ const SearchPage = () => {
             note={note}
             isActive={false}
             onClick={() => navigate(`/note/${note._id}`)}
-            onDelete={(id) => void softDeleteNote(id)}
-            onTogglePin={(id) => void togglePinning(id)}
+            onDelete={() => setPendingDeleteNoteId(note._id)}
+            onTogglePin={(id) => void togglePinning({ noteId: id, version: note.version })}
           />
         ))}
       </div>
+
+      <NoteDeleteDialog
+        noteId={pendingDeleteNoteId}
+        noteTitle={notes.find((n) => n._id === pendingDeleteNoteId)?.title || "this note"}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDeleteNoteId(null)}
+        isPending={isDeleteNotePending}
+      />
     </div>
   );
 };

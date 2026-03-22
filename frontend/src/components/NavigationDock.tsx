@@ -1,17 +1,17 @@
 import { Folder, Home, PlusCircle, Search, Trash2 } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import Dock from './Dock';
-import { useNoteStore } from '@/store/useNoteStore';
+import { useCreateNoteMutation } from '@/hooks/useNotesMutations';
 
 const NavigationDock = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { folderId } = useParams();
-    const { createNote } = useNoteStore();
+    const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
 
     const handleCreateNote = async () => {
       const targetFolderId = folderId || null;
-      const newNote = await createNote(targetFolderId);
+      const newNote = await createNoteAsync(targetFolderId);
       if(newNote) {
         navigate(targetFolderId ? `/folders/${targetFolderId}/note/${newNote._id}` : `/note/${newNote._id}`)
       }

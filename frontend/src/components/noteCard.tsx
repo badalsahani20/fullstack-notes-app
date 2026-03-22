@@ -1,8 +1,10 @@
 import { Archive, RotateCcw, Star, Trash2, X } from "lucide-react";
 import { motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/store/useNoteStore";
 import { getRelativeUpdatedLabel } from "@/utils/getRelativeUpdatedLabel";
+import { useNoteQuery } from "@/hooks/useNotesQuery";
 
 type NoteCardProps = {
   note: Note;
@@ -38,18 +40,40 @@ const NoteCard = ({
   onToggleArchive,
 }: NoteCardProps) => {
   const preview = toPreviewText(note.content || "");
+  const queryClient = useQueryClient();
+
+  let hoverTimeout: NodeJS.Timeout;
+
+  const handleHoverStart = (noteId: string) => {
+    clearTimeout(hoverTimeout);
+    hoverTimeout = setTimeout(() => {
+      queryClient.prefetchQuery({
+        queryKey: ["note", noteId],
+        queryFn: () => useNoteQuery(noteId),
+      });
+    }, 150);
+};
 
   return (
     <motion.article
       layout
+      layoutId={note._id}
       variants={{
-        hidden: { opacity: 0, y: 15, scale: 0.98 },
-        show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 350, damping: 25 } },
+        hidden: { opacity: 0, y: 12, scale: 0.97 },
+        show: {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          transition: { type: "spring", stiffness: 500, damping: 35 },
+        },
       }}
       initial="hidden"
       animate="show"
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.15 } }}
+      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.12, ease: "easeOut" } }}
+      whileHover={{ scale: isTrashView ? 1 : 1.015, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+      whileTap={{ scale: 0.985 }}
       onClick={onClick}
+      onHoverStart={() => handleHoverStart(note._id)}
       className={cn(
         "note-list-row",
         isActive && "note-list-row-active",
@@ -66,10 +90,20 @@ const NoteCard = ({
               event.stopPropagation();
               onTogglePin?.(note._id);
             }}
-            className={cn("mt-0.5 text-[var(--muted-text)] transition", note.pinned && "text-amber-500")}
+            className="transition focus:outline-none"
             aria-label={note.pinned ? "Unfavorite note" : "Favorite note"}
           >
-            <Star size={14} fill={note.pinned ? "currentColor" : "none"} />
+            <motion.div
+              key={note.pinned ? "pinned" : "unpinned"}
+              initial={{ scale: 0.5, rotate: -30 }}
+              animate={{ scale: 1, rotate: 0 }}
+              whileHover={{ scale: 1.2, rotate: 15 }}
+              whileTap={{ scale: 0.8, rotate: -15 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className={cn("flex items-center justify-center rounded-full p-1 transition-colors", note.pinned ? "hover:bg-amber-500/20 text-amber-500" : "hover:bg-gray-500/20 text-[var(--muted-text)] hover:text-[var(--text-strong)]")}
+            >
+              <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
+            </motion.div>
           </button>
         )}
 

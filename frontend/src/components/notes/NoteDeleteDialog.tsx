@@ -20,6 +20,8 @@ type NoteDeleteDialogProps = {
   onConfirm: () => Promise<void>;
   /** Called when the user cancels or closes the dialog */
   onCancel: () => void;
+  /** Whether the deletion is currently in progress */
+  isPending?: boolean;
 };
 
 /**
@@ -32,9 +34,8 @@ type NoteDeleteDialogProps = {
  *
  * The parent only needs to pass `noteId` (null = closed) and `onConfirm`.
  */
-const NoteDeleteDialog = ({ noteId, noteTitle, onConfirm, onCancel }: NoteDeleteDialogProps) => {
+const NoteDeleteDialog = ({ noteId, noteTitle, onConfirm, onCancel, isPending }: NoteDeleteDialogProps) => {
   const [skipConfirm, setSkipConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Read the saved "don't ask again" preference from localStorage on mount
   useEffect(() => {
@@ -50,9 +51,7 @@ const NoteDeleteDialog = ({ noteId, noteTitle, onConfirm, onCancel }: NoteDelete
       window.localStorage.removeItem(SKIP_NOTE_DELETE_CONFIRM_KEY);
     }
 
-    setIsDeleting(true);
     await onConfirm();
-    setIsDeleting(false);
   };
 
   return (
@@ -81,11 +80,11 @@ const NoteDeleteDialog = ({ noteId, noteTitle, onConfirm, onCancel }: NoteDelete
         </label>
 
         <DialogFooter className="mt-4 gap-2 sm:justify-end">
-          <Button variant="outline" onClick={onCancel} disabled={isDeleting}>
+          <Button variant="outline" onClick={onCancel} disabled={isPending}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={isDeleting}>
-            {isDeleting ? "Deleting..." : "Delete"}
+          <Button onClick={handleConfirm} disabled={isPending}>
+            {isPending ? "Deleting..." : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

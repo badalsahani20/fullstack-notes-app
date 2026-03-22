@@ -131,7 +131,7 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
   }
 
   return (
-    <div className="editor-shell relative mx-auto w-full max-w-4xl" style={{ ["--editor-font-size" as string]: `18px` }}>
+    <div className="editor-shell relative mx-auto w-full max-w-[46rem]" style={{ ["--editor-font-size" as string]: `18px` }}>
       <EditorBubbleMenu editor={editor} />
       <EditorContent className="editor-content-shell" editor={editor} spellCheck={true} onKeyDown={handleEditorKeyDown} />
     </div>

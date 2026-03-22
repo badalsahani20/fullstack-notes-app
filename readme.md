@@ -1,17 +1,18 @@
 # Notesify — Full-Stack Notes App
 
-A modern, feature-rich full-stack notes application built with the **MERN stack**, featuring a powerful rich-text editor, folder organization, and a built-in AI assistant.
+A modern, feature-rich full-stack notes application built with the **MERN stack**, featuring a powerful rich-text editor, folder organization, instantaneous optimistic UI updates, and a built-in AI assistant.
 
 ## 🚀 Features
 
-- **Rich Text Editing:** Powered by TipTap — supports formatting, bullet points, headers, tables, and markdown-style editing.
-- **Drag & Drop Image Uploads:** Drop or paste images directly into notes; uploaded and hosted via Cloudinary.
-- **Lightning Fast Caching:** Upstash Redis caching on the backend for fast `GET` requests on notes and folders.
-- **Folder Organization:** Group notes into custom folders with an expandable sidebar tree.
-- **Favorites & Trash:** Star notes to pin them, soft-delete to Trash, restore or permanently remove.
+- **Rich Text Editing:** Powered by TipTap — supports formatting, bullet points, headers, tables, and fluid markdown-style editing.
+- **Lightning Fast Caching:** Upstash Redis caching on the backend with smart self-healing cache-busting for lightning fast `GET` requests on notes and folders.
+- **Optimistic UI & Premium Sync:** Powered by TanStack React Query. UI mutations (pinning, deleting, editing) happen instantly in the local cache with gorgeous layout animations, invisibly syncing with the server in the background.
+- **Folder Organization:** Group notes into custom folders with an expandable, lazy-loaded sidebar tree.
+- **Favorites & Trash:** Star notes to pin them to the top, soft-delete them to the Trash, restore them, or permanently wipe them.
 - **Authentication:** Secure session management via Passport.js & JWT.
 - **AI Assistant:** Built-in chat panel powered by Groq (LLaMA) — streaming responses, quick actions (Summarize, Improve, Brainstorm, Rewrite), context-aware chat using note content or selected text, and persistent chat history per note.
-- **Beautiful UI:** shadcn/ui + TailwindCSS, dark mode, smooth animations via Framer Motion.
+- **Drag & Drop Image Uploads:** Drop or paste images directly into notes; uploaded and hosted via Cloudinary.
+- **Beautiful UI:** shadcn/ui + TailwindCSS, responsive dark mode, and highly refined physics-based micro-animations via Framer Motion.
 
 ---
 
@@ -19,17 +20,18 @@ A modern, feature-rich full-stack notes application built with the **MERN stack*
 
 ### Frontend
 - **Framework:** React 18 (Vite) + TypeScript
+- **Server State Sync:** TanStack React Query (`useQuery` & `useMutation`)
+- **UI State Management:** Zustand (Slimmed down for transient UI state only)
 - **Styling:** TailwindCSS + shadcn/ui + Lucide Icons
-- **State Management:** Zustand
 - **Routing:** React Router v6
 - **Editor:** TipTap (ProseMirror) + Custom Extensions
-- **Animations:** Framer Motion
+- **Animations:** Framer Motion (Spring layout animations and `AnimatePresence`)
 - **Image Hosting:** Cloudinary (Direct Unsigned Uploads)
 
 ### Backend
 - **Framework:** Node.js + Express
 - **Database:** MongoDB + Mongoose
-- **Caching:** Redis (Upstash)
+- **Caching:** Redis (Upstash Rest API)
 - **Authentication:** Passport.js + JWT
 - **AI Integration:** Groq API (LLaMA 3.1) + Google Generative AI
 
@@ -53,44 +55,34 @@ fullstack-notes/
 └── frontend/
     └── src/
         ├── components/
-        │   ├── ai/
-        │   │   ├── AiAuditPanel.tsx      ← thin glue layer
-        │   │   ├── AiCompose.tsx         ← compose bar (textarea, actions, send/stop)
-        │   │   ├── AiGuideDialog.tsx     ← first-time welcome dialog
-        │   │   ├── AiMessage.tsx         ← single message bubble (streaming + markdown)
-        │   │   ├── AiMessageList.tsx     ← scrollable message list + auto-scroll
-        │   │   └── types.ts              ← shared AI types
-        │   ├── editor/
-        │   │   ├── EditorHeader.tsx      ← title, star, Ask AI button, meta row
-        │   │   └── RelativeTimeLabel.tsx ← isolated 1s ticker (prevents re-renders)
-        │   ├── header/
-        │   │   ├── HeaderSearch.tsx      ← global search bar
-        │   │   └── UserMenu.tsx          ← profile dropdown + logout
-        │   ├── notes/
-        │   │   ├── NoteDeleteDialog.tsx  ← delete confirmation + "don't ask again"
-        │   │   ├── NotesPanelHeader.tsx  ← breadcrumb + focus-mode close button
-        │   │   └── NotesPanelSearch.tsx  ← search input + create note button
-        │   ├── ui/                       ← shadcn/ui primitives (untouched)
-        │   ├── AppHeader.tsx             ← top header orchestrator
-        │   ├── MainLayout.tsx            ← root layout + theme state
-        │   ├── NotesListPanel.tsx        ← middle column note list
-        │   └── SideBar.tsx               ← left activity rail
+        │   ├── ai/               ← AI chat, streaming bubbles, compose actions
+        │   ├── editor/           ← Tiptap editor blocks and header controls
+        │   ├── header/           ← Global search bar, profile dropdown
+        │   ├── notes/            ← Note tools, delete confirmation dialogs
+        │   ├── ui/               ← shadcn/ui primitives
+        │   ├── AppHeader.tsx     ← Top header orchestrator
+        │   ├── MainLayout.tsx    ← Root layout wrapper
+        │   ├── NotesListPanel.tsx← List column heavily leveraging Framer layouts
+        │   ├── SideBar.tsx       ← Left activity & folder rail
+        │   └── noteCard.tsx      ← Individual note card with physics-based hover
         ├── hooks/
-        │   ├── useAiChat.ts              ← AI API calls, streaming, history
-        │   ├── useFolderTree.ts          ← folder expand/collapse, counts, lazy fetch
-        │   └── useNotesFilter.ts         ← route-aware note filtering + search
+        │   ├── useAiChat.ts         ← AI API streaming & history
+        │   ├── useFolderTree.ts     ← folder expand/collapse & counts
+        │   ├── useNotesQuery.ts     ← React Query data fetchers
+        │   ├── useNotesMutations.ts ← Instant Optimistic UI mutations
+        │   └── useNotesFilter.ts    ← Route-aware note filtering + search
         ├── pages/
-        │   ├── NoteEditor.tsx            ← editor page with resizable AI panel
+        │   ├── NoteEditor.tsx    ← Editor page with resizable AI panel
         │   ├── Login.tsx
         │   └── Register.tsx
         ├── store/
-        │   ├── useNoteStore.ts           ← notes, CRUD, chat history, notes cache
-        │   ├── useFolderStore.ts         ← folders, CRUD
-        │   └── useAuthStore.ts           ← user session
+        │   ├── useNoteStore.ts   ← Minimal UI state (searchQuery, activeNoteId)
+        │   ├── useFolderStore.ts ← Local UI folder state
+        │   └── useAuthStore.ts   ← User session manager
         ├── lib/
-        │   └── api.ts                    ← configured Axios instance
+        │   └── api.ts            ← Configured Axios instance
         └── utils/
-            └── getRelativeUpdatedLabel.ts
+            └── ...
 ```
 
 ---
@@ -149,12 +141,18 @@ npm run dev
 
 ---
 
-## 🎨 Caching Strategy (Redis)
+## 🎨 Fast & Reliable Caching
 
+### Redis (Backend)
 The backend wraps MongoDB queries with Redis for near-instant load times:
 - `GET /api/notes` queries Redis first using a `notes:<userId>` key.
 - A lock (`NX: true`) prevents cache stampedes under simultaneous requests.
-- Mutating operations (`POST`, `PUT`, `DELETE`) immediately invalidate stale cache via `redis.del()`.
+- Mutating operations (`POST`, `PUT`, `DELETE`) aggressively invalidate stale cache via `redis.del()`, featuring self-healing fallbacks on 404 sync drifts.
+
+### React Query (Frontend)
+- The UI maintains a deeply synchronized client cache. 
+- All data mutations (pinning, editing, moving) trigger **Optimistic Updates**, which instantly edits and dynamically re-sorts the React Query arrays locally without waiting for the server.
+- The UI gracefully skips rollbacks if the server confirms ghost data is already deleted, keeping the user experience completely fluid.
 
 ## 🤖 AI Chat Architecture
 
@@ -163,16 +161,7 @@ The AI panel streams responses in real time:
 2. The frontend trims chat history to the last **6 messages** before sending, to stay within Groq token limits.
 3. The backend picks the appropriate Groq model and streams back a response.
 4. The frontend reads the `ReadableStream` chunk by chunk via `TextDecoder`, updating the message in real time.
-5. On completion, the full chat history is persisted to MongoDB.
-
-## 🖼️ Cloudinary Image Integration
-
-Images are hosted infinitely without burdening the backend:
-1. User drops/pastes an image into the TipTap editor.
-2. The custom `ImageUploadExtension` intercepts the `drop` or `paste` event.
-3. The image POSTs directly to Cloudinary using an unsigned upload preset.
-4. Cloudinary returns a secure `https` URL, inserted as an `<img>` element.
-5. The backend stores only the HTML string — no binary file handling needed.
+5. On completion, the full chat history is natively synced across the query cache and persisted to MongoDB.
 
 ---
 

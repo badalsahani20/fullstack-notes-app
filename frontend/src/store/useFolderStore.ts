@@ -7,13 +7,15 @@ export interface Folder {
     name: string;
     color?: string;
     version: number;
-    pinned: boolean;
-    isDeleted: false;
+    pinned?: boolean;
+    isDeleted: boolean;
     updatedAt: string;
 }
 
 interface FolderState {
     folders: Folder[];
+    fetchedAt: number;
+    hasFetched: boolean;
     loading: boolean;
     error: string | null;
     activeFolderId: string | null;
@@ -26,17 +28,22 @@ interface FolderState {
 
 export const useFolderStore = create<FolderState>((set, get) => ({
     folders: [],
+    fetchedAt: 0,
+    hasFetched: false,
     loading: false,
     error: null,
     activeFolderId: null,
 
     fetchFolders: async () => {
+        if (get().fetchedAt > 0) {
+            return;
+        }
         set({ loading: true, error: null });
         try {
             const res = await api.get('/folders');
-            set({ folders: res.data });
+            set({ folders: res.data, fetchedAt: Date.now(), hasFetched: true });
         } catch (err) {
-            set({ error: "Failed to fetch folders" });
+            set({ error: "Failed to fetch folders", hasFetched: true });
             console.error("Failed to fetch folders", err);
         }finally{
             set({ loading: false });

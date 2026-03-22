@@ -3,7 +3,7 @@ import { ChevronRight, X } from "lucide-react";
 type NotesPanelHeaderProps = {
   breadcrumbRoot: string;
   panelTitle: string;
-  currentFolderName: string | null;
+  showChevron: boolean;
   isFocusMode: boolean;
   actionLabel?: string;
   onAction?: () => void;
@@ -13,7 +13,7 @@ type NotesPanelHeaderProps = {
 const NotesPanelHeader = ({
   breadcrumbRoot,
   panelTitle,
-  currentFolderName,
+  showChevron,
   isFocusMode,
   actionLabel,
   onAction,
@@ -23,7 +23,7 @@ const NotesPanelHeader = ({
     <div className="notes-panel-header flex items-center justify-between pr-2">
       <div className="notes-panel-breadcrumb">
         <span>{breadcrumbRoot}</span>
-        {currentFolderName ? (
+        {showChevron ? (
           <>
             <ChevronRight size={14} />
             <span className="notes-panel-breadcrumb-active">{panelTitle}</span>

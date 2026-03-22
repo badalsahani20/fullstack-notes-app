@@ -45,7 +45,7 @@ export const emptyTrash = catchAsync(async (req, res, next) => {
 
 export const restoreNote = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const userId = req.user.id;
+  const userId = req.user._id;
 
   const restoredNote = await TrashService.restoreNote(id, userId);
   if (!restoredNote) {

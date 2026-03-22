@@ -1,5 +1,6 @@
 import type { Editor } from "@tiptap/react";
 import { Archive, Star } from "lucide-react";
+import { motion } from "framer-motion";
 import RelativeTimeLabel from "./RelativeTimeLabel";
 import type { Note } from "@/store/useNoteStore";
 import type { Folder } from "@/store/useFolderStore";
@@ -9,6 +10,7 @@ type EditorHeaderProps = {
   note: Note;
   /** Found folder for the note (if any), strictly for displaying its name */
   folder?: Folder;
+  folderLabel?: string;
   editor: Editor | null;
   /** The controlled text input value for the title */
   draftTitle: string;
@@ -27,6 +29,7 @@ type EditorHeaderProps = {
 const EditorHeader = ({
   note,
   folder,
+  folderLabel,
   editor,
   draftTitle,
   onDraftTitleChange,
@@ -68,8 +71,18 @@ const EditorHeader = ({
             className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
             aria-label={note.pinned ? "Unpin note" : "Pin note"}
           >
-            <Star size={15} fill={note.pinned ? "currentColor" : "none"} />
-            <span className="hidden md:inline">{note.pinned ? "Starred" : "Starred"}</span>
+            <motion.div
+              key={note.pinned ? "pinned" : "unpinned"}
+              initial={{ scale: 0.5, rotate: -30 }}
+              animate={{ scale: 1, rotate: 0 }}
+              whileHover={{ scale: 1.2, rotate: 15 }}
+              whileTap={{ scale: 0.8, rotate: -15 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+              className="flex items-center justify-center"
+            >
+              <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
+            </motion.div>
+            <span className="hidden md:inline">{note.pinned ? "Starred" : "Star"}</span>
           </button>
           <div className="editor-updated-mobile md:hidden">
             <RelativeTimeLabel updatedAt={note.updatedAt} />
@@ -78,7 +91,7 @@ const EditorHeader = ({
       </div>
 
       <div className="editor-title-meta">
-        <span className="editor-folder-label">{folder?.name || "AI Notes"}</span>
+        <span className="editor-folder-label">{folderLabel ?? folder?.name ?? "All Notes"}</span>
         <RelativeTimeLabel updatedAt={note.updatedAt} />
       </div>
 

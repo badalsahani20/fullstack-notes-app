@@ -2,7 +2,7 @@ import { Bell, Moon, Plus, Sun } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useFolderStore } from "@/store/useFolderStore";
-import { useNoteStore } from "@/store/useNoteStore";
+import { useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
 
@@ -13,12 +13,12 @@ type AppHeaderProps = {
 
 const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
   const { addFolder } = useFolderStore();
-  const { createNote } = useNoteStore();
+  const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
   const { folderId } = useParams();
   const navigate = useNavigate();
 
   const handleCreateNote = async () => {
-    const newNote = await createNote(folderId || null);
+    const newNote = await createNoteAsync(folderId || null);
     if (newNote?._id) {
       navigate(folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`);
     }

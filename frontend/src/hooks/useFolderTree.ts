@@ -1,44 +1,43 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useFolderStore } from "@/store/useFolderStore";
-import { useNoteStore } from "@/store/useNoteStore";
-
-const ALL_NOTES_CACHE_KEY = "__all__";
+import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
 
 /**
  * useFolderTree controls the logic for the sidebar folder navigation.
- * 
- * Owns:
- * - Data fetching triggers (folders, notes, trash)
+ *
+ * Owned here:
  * - Computing counts (favorites, total trash, and notes-per-folder)
  * - Folder expand/collapse state
- * - Lazy loading of folder contents on expansion
  */
 export const useFolderTree = () => {
-  const { folders, fetchFolders } = useFolderStore();
-  const { fetchArchived, fetchNotes, fetchNotesForCache, fetchTrash, notesCache, trash, archivedNotes } = useNoteStore();
+  const { folders } = useFolderStore();
+  const { data: notes = [], isLoading: isNotesLoading } = useNotesQuery();
+  const { data: trash = [] } = useTrashQuery();
+  const { data: archivedNotes = [] } = useArchivedQuery();
+  const trashFolders: any[] = [];
   const { folderId } = useParams();
 
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
 
-  // ── Initial Data Fetches ──────────────────────────────────────────────────
-  useEffect(() => {
-    fetchFolders();
-    fetchNotes(null);
-    fetchArchived();
-    fetchTrash();
-  }, [fetchArchived, fetchFolders, fetchNotes, fetchTrash]);
-
-  // Expand the active folder automatically if we navigate directly to it
   useEffect(() => {
     if (!folderId) return;
     setExpandedFolders((current) => ({ ...current, [folderId]: true }));
   }, [folderId]);
 
+  const allNotes = useMemo(
+    () => notes.filter((note) => !note.isDeleted && !note.isArchived),
+    [notes]
+  );
 
-  // ── Derived State & Counts ────────────────────────────────────────────────
-  const allNotes = useMemo(() => notesCache[ALL_NOTES_CACHE_KEY] ?? [], [notesCache]);
+  const notesByFolder = useMemo(() => {
+    return allNotes.reduce<Record<string, typeof allNotes>>((acc, note) => {
+      if (!note.folder) return acc;
+      acc[note.folder] = [...(acc[note.folder] ?? []), note];
+      return acc;
+    }, {});
+  }, [allNotes]);
 
   const countsByFolder = useMemo(() => {
     const counts = new Map<string, number>();
@@ -55,41 +54,38 @@ export const useFolderTree = () => {
   );
 
   const archiveCount = useMemo(() => archivedNotes.length, [archivedNotes]);
+  const trashCount = useMemo(
+    () => trash.length + trashFolders.length,
+    [trash.length, trashFolders.length]
+  );
 
   const sortedFolders = useMemo(
     () => [...folders].sort((a, b) => a.name.localeCompare(b.name)),
     [folders]
   );
 
-  // ── Actions ───────────────────────────────────────────────────────────────
   const toggleFoldersGroup = () => {
     setFoldersOpen((current) => !current);
   };
 
-  const toggleFolder = async (id: string) => {
+  const toggleFolder = (id: string) => {
     const nextExpanded = !expandedFolders[id];
     setExpandedFolders((current) => ({ ...current, [id]: nextExpanded }));
-    
-    // Lazy fetch notes for this folder if opening for the first time
-    if (nextExpanded && !notesCache[id]) {
-      await fetchNotesForCache(id);
-    }
   };
 
   return {
     allNotes,
     trash,
-    notesCache,
-    
+    notesByFolder,
     sortedFolders,
     foldersOpen,
     expandedFolders,
-    
     countsByFolder,
     favoritesCount,
     archiveCount,
-    
+    trashCount,
     toggleFoldersGroup,
     toggleFolder,
+    isNotesLoading,
   };
 };

@@ -3,7 +3,8 @@ import type { Editor } from "@tiptap/react";
 import type { AxiosError } from "axios";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { useNoteStore } from "@/store/useNoteStore";
+import { useNoteQuery } from "@/hooks/useNotesQuery";
+import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import { actionMeta } from "@/components/ai/AiCompose";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
 
@@ -64,9 +65,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
-
-  const { notes, updateNote } = useNoteStore();
-  const activeNote = useMemo(() => notes.find((n: any) => n._id === noteId), [notes, noteId]);
+  const { data: activeNote } = useNoteQuery(noteId);
+  const { mutateAsync: updateNoteAsync } = useUpdateNoteMutation();
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   // Tracks the last note context we sent to the AI so we know when it changed
@@ -292,7 +292,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         { id: userMessage.id, role: "user", content: userMessage.text },
         { id: assistantMessage.id, role: "assistant", content: assistantMessage.text },
       ].slice(-50);
-      void updateNote(noteId, { chatHistory: dbHistory as any });
+      if (activeNote) {
+        void updateNoteAsync({ noteId, updates: { chatHistory: dbHistory as any }, version: activeNote.version });
+      }
 
     } catch (error) {
       if (error && typeof error === "object" && "name" in error && error.name === "CanceledError") {
@@ -325,7 +327,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     ]);
     setChatHistory([]);
     setHistoryLoaded(false);
-    void updateNote(noteId, { chatHistory: [] });
+    if (activeNote) {
+      void updateNoteAsync({ noteId, updates: { chatHistory: [] }, version: activeNote.version });
+    }
     toast.success("Chat history cleared");
   };
 

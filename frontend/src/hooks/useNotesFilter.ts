@@ -41,7 +41,11 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, 
         ? archivedNotes.filter((note) => !note.isDeleted)
       : isFavoritesRoute
         ? notes.filter((note) => note.pinned && !note.isDeleted)
-        : notes.filter((note) => !note.isDeleted);
+        : notes.filter((note) =>
+            !note.isDeleted &&
+            !note.isArchived &&
+            (!folderId || note.folder === folderId)
+          );
 
     // Apply text search
     const normalizedQuery = query.trim().toLowerCase();
@@ -53,7 +57,7 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, 
         .toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [archivedNotes, isArchiveRoute, isFavoritesRoute, isTrashRoute, notes, query, trash]);
+  }, [archivedNotes, folderId, isArchiveRoute, isFavoritesRoute, isTrashRoute, notes, query, trash]);
 
   // ── Display strings ──────────────────────────────────────────────────────────
 

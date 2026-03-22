@@ -1,5 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 
+const panelEase = [0.22, 1, 0.36, 1] as const;
+
 type Props = {
     showGlobalHeader: boolean;
     showFoldersPanel: boolean;
@@ -30,7 +32,7 @@ const AppLayout = ({showGlobalHeader, activityBar, showFoldersPanel, showNotesPa
               initial={{ opacity: 0, y: -14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
+              transition={{ duration: 0.24, ease: panelEase }}
             >
               {header}
             </motion.div>
@@ -47,7 +49,7 @@ const AppLayout = ({showGlobalHeader, activityBar, showFoldersPanel, showNotesPa
                 initial={{ width: 0, opacity: 0, x: isMobile ? -24 : 0 }}
                 animate={{ width: isMobile ? "100%" : "15.625rem", opacity: 1, x: 0 }}
                 exit={{ width: 0, opacity: 0, x: isMobile ? -24 : 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+                transition={{ duration: 0.34, ease: panelEase }}
                 className="h-full shrink-0 overflow-hidden"
               >
                 <div className="desktop-folder-column w-full h-full">
@@ -64,7 +66,7 @@ const AppLayout = ({showGlobalHeader, activityBar, showFoldersPanel, showNotesPa
                 initial={{ width: 0, opacity: 0, x: isMobile ? 24 : 0 }}
                 animate={{ width: isMobile ? "100%" : "24rem", opacity: 1, x: 0 }}
                 exit={{ width: 0, opacity: 0, x: isMobile ? 24 : 0 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
+                transition={{ duration: 0.36, ease: panelEase }}
                 className="h-full shrink-0 overflow-hidden"
               >
                 <div className="desktop-notes-column w-full h-full">
@@ -80,7 +82,7 @@ const AppLayout = ({showGlobalHeader, activityBar, showFoldersPanel, showNotesPa
                 key={animationKey}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15, ease: "easeOut" }}
+                transition={{ duration: 0.22, ease: panelEase }}
                 className="flex-1 h-full min-h-0 flex flex-col"
               >
                 {main}

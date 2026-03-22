@@ -123,12 +123,13 @@ export const updateNote = catchAsync(async (req, res) => {
   };
   const result = await NoteService.updateNoteWithVersionCheck(
     req.params.id,
-    req.user.id,
+    req.user._id,
     version,
     finalUpdateData
   );
 
   if(!result) {
+    await clearNoteCaches(req.user._id);
     return res.status(404).json({ message: "Note not found" });
   }
   
@@ -149,7 +150,10 @@ export const deleteNote = catchAsync(async (req, res) => {
     const { version } = req.body;
 
     const result = await NoteService.removeNote(req.params.id, req.user._id, version);
-    if(!result) return res.status(404).json({message: "Note not found"});
+    if(!result) {
+        await clearNoteCaches(req.user._id);
+        return res.status(404).json({message: "Note not found"});
+    }
     if(result.conflict) {
       return res.status(409).json({
         message: "Conflict detected: Note was updated on another device",
@@ -164,27 +168,51 @@ export const deleteNote = catchAsync(async (req, res) => {
 })
 
 export const togglePin = catchAsync(async (req, res) => {
-    const note = await NoteService.flipPinStatus(req.params.id,req.user._id);
-    if(!note) {
+    const { version } = req.body;
+    if (version === undefined) {
+      return res.status(400).json({ message: "Version is required for pin toggle" });
+    }
+
+    const result = await NoteService.flipPinStatus(req.params.id, req.user._id, version);
+    if(!result) {
+        await clearNoteCaches(req.user._id);
         return res.status(404).json({message: "Note not found"});
+    }
+    if (result.conflict) {
+      return res.status(409).json({
+        message: "Conflict detected: Note was updated on another device",
+        serverNote: result.serverNote,
+      });
     }
 
     // Invalidate cache
     await clearNoteCaches(req.user._id);
 
-    res.status(200).json({message: "Pin status toggled" , note});
+    res.status(200).json({message: "Pin status toggled" , note: result.updatedNote});
 })
 
 export const toggleArchive = catchAsync(async (req, res) => {
-    const note = await NoteService.flipArchiveStatus(req.params.id,req.user._id);
-    if(!note) {
+    const { version } = req.body;
+    if (version === undefined) {
+      return res.status(400).json({ message: "Version is required for archive toggle" });
+    }
+
+    const result = await NoteService.flipArchiveStatus(req.params.id,req.user._id, version);
+    if(!result) {
+        await clearNoteCaches(req.user._id);
         return res.status(404).json({message: "Note not found"});
+    }
+    if (result.conflict) {
+      return res.status(409).json({
+        message: "Conflict detected: Note was updated on another device",
+        serverNote: result.serverNote,
+      });
     }
 
     // Invalidate cache
     await clearNoteCaches(req.user._id);
 
-    res.status(200).json({message: note.isArchived ? "Note archived" : "Note unarchived" , note});
+    res.status(200).json({message: result.updatedNote.isArchived ? "Note archived" : "Note unarchived" , note: result.updatedNote});
 })
 
 export const searchAllNotes = catchAsync(async (req, res) => {
@@ -204,7 +232,7 @@ export const searchAllNotes = catchAsync(async (req, res) => {
 
 export const restoreNote = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const userId = req.user.id;
+  const userId = req.user._id;
 
   const restoredNote = await NoteService.restoreNote(id, userId);
   if(!restoredNote) {
