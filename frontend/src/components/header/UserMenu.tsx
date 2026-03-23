@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ChevronDown, LogOut, Settings, User as UserIcon } from "lucide-react";
+import { ChevronDown, LogOut, Settings, User as UserIcon, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/useAuthStore";
 import api from "@/lib/api";
+import { toast } from "sonner";
 
 /**
  * The user profile dropdown in the top header.
@@ -68,13 +69,17 @@ const UserMenu = () => {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        <DropdownMenuItem className="cursor-pointer">
+        <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/profile")}>
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
+        <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info("Settings are coming soon!")}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info("Subscriptions are coming soon!")}>
+          <CreditCard className="mr-2 h-4 w-4" />
+          <span>Subscriptions</span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

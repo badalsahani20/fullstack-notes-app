@@ -5,7 +5,7 @@ import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
-import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation } from "@/hooks/useNotesMutations";
+import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/TipTap";
 import AiAuditPanel from "@/components/AiAuditPanel";
 import EmptyEditorState from "@/components/EmptyEditorState";
@@ -13,24 +13,53 @@ import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useAiChat } from "@/hooks/useAiChat";
+import EditorToolbar from "@/tools/EditorToolbar";
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
+  const isNew = noteId === "new";
   const location = useLocation();
   const navigate = useNavigate();
   const { mutateAsync: togglePinning } = useTogglePinMutation();
   const { mutateAsync: toggleArchiveMut } = useToggleArchiveMutation();
+  const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
 
-  const { data: note, isLoading: isNoteLoading } = useNoteQuery(noteId || "");
+  const { data: fetchedNote, isLoading: isNoteLoading } = useNoteQuery(isNew ? "" : (noteId || ""));
   const { mutateAsync: updateNoteAsync } = useUpdateNoteMutation();
 
-  const folder = folders.find((item) => item._id === (note?.folder || folderId));
-  const folderLabel = folder?.name ?? (note?.folder ? "Loading folder..." : "All Notes");
+  const [isCreating, setIsCreating] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+
+  const note = isNew 
+    ? { _id: "new", title: draftTitle, content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
+    : fetchedNote;
+
+  const folder = folders.find((item) => item._id === (note?.folder || folderId));
+  const folderLabel = folder?.name ?? (note?.folder && note?._id !== "new" ? "Loading folder..." : "All Notes");
   const [aiOpen, setAiOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 960px)");
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    if (!isMobile || !window.visualViewport) return;
+    
+    const handler = () => {
+      if (!window.visualViewport) return;
+      const viewport = window.visualViewport;
+      // Calculate how much the bottom is obscured by the keyboard
+      const offset = window.innerHeight - viewport.height - viewport.offsetTop;
+      setKeyboardOffset(Math.max(0, offset));
+    };
+
+    window.visualViewport.addEventListener("resize", handler);
+    window.visualViewport.addEventListener("scroll", handler);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handler);
+      window.visualViewport?.removeEventListener("scroll", handler);
+    };
+  }, [isMobile]);
 
   const aiChat = useAiChat(noteId || "", note?.content || "", editorInstance);
 
@@ -43,7 +72,7 @@ const NoteEditor = () => {
     () =>
       debounce((id: string, content: string) => {
         const latestNote = noteRef.current;
-        if (latestNote && latestNote._id === id) {
+        if (latestNote && latestNote._id === id && id !== "new") {
           updateNoteAsync({ 
             noteId: id, 
             updates: { content }, 
@@ -61,17 +90,50 @@ const NoteEditor = () => {
   }, [debouncedUpdate]);
 
   useEffect(() => {
-    setDraftTitle(note?.title ?? "");
-  }, [note?._id, note?.title]);
+    if (!isNew) {
+      setDraftTitle(note?.title ?? "");
+    }
+  }, [isNew, note?._id, note?.title]);
+
+  const handleCreateOnEdit = async (initialTitle: string, initialContent: string) => {
+    if (isCreating) return null;
+    setIsCreating(true);
+    try {
+      const newNote = await createNoteAsync({
+        title: initialTitle || "Untitled Note",
+        content: initialContent,
+        folderId: folderId
+      });
+      if (newNote?._id) {
+        const path = folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`;
+        navigate(`${path}${location.search}`, { replace: true });
+        return newNote;
+      }
+    } catch (err) {
+      console.error("Lazy creation failed:", err);
+    } finally {
+      setIsCreating(false);
+    }
+    return null;
+  };
 
   const handleContentChange = (html: string) => {
-    if (note) {
+    if (isNew) {
+      handleCreateOnEdit(draftTitle, html);
+    } else if (note) {
       debouncedUpdate(note._id, html);
     }
   };
 
   const commitTitle = () => {
     if (!note) return;
+    if (isNew) {
+      if (draftTitle.trim()) {
+        const content = editorInstance?.getHTML() || "";
+        handleCreateOnEdit(draftTitle, content);
+      }
+      return;
+    }
     const currentNote = noteRef.current || note;
     if (draftTitle !== currentNote.title) {
       updateNoteAsync({ 
@@ -83,7 +145,7 @@ const NoteEditor = () => {
   };
 
   const handleToggleArchive = async (id: string) => {
-    if (!note) return;
+    if (!note || isNew) return;
     const updatedNote = await toggleArchiveMut({ noteId: id, version: note.version });
     if (!updatedNote) return;
 
@@ -100,11 +162,11 @@ const NoteEditor = () => {
     navigate(`/note/${id}${location.search}`, { replace: true });
   };
 
-  if (isNoteLoading || (!note && !hasFetchedFolders)) {
+  if (isNoteLoading || (!note && !hasFetchedFolders && !isNew)) {
     return <div className="flex h-full items-center justify-center text-sm text-[var(--muted-text)]">Loading note...</div>;
   }
 
-  if (!note) {
+  if (!note && !isNew) {
     return <EmptyEditorState />;
   }
 
@@ -112,7 +174,7 @@ const NoteEditor = () => {
     <AnimatePresence mode="wait" initial={false}>
       <motion.section
         key={note._id}
-        initial={{ opacity: 0, x: 16 }}
+        initial={isNew ? {} : { opacity: 0, x: 16 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -12 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
@@ -126,14 +188,34 @@ const NoteEditor = () => {
           draftTitle={draftTitle}
           onDraftTitleChange={setDraftTitle}
           onCommitTitle={commitTitle}
-          onTogglePin={(id) => void togglePinning({ noteId: id, version: note.version })}
+          onTogglePin={(id) => {
+            if (isNew) return;
+            void togglePinning({ noteId: id, version: note.version })
+          }}
           onToggleArchive={handleToggleArchive}
           onAskAi={() => setAiOpen(true)}
+          isAiOpen={aiOpen}
+          isMobile={isMobile}
         />
 
         <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
-          <TipTap key={note._id} content={note.content} onChange={handleContentChange} onEditorReady={setEditorInstance} aiChat={aiChat} />
+          <TipTap 
+            key={note._id} 
+            content={isNew ? "" : note.content} 
+            onChange={handleContentChange} 
+            onEditorReady={setEditorInstance} 
+            aiChat={aiChat} 
+          />
         </div>
+
+        {isMobile && editorInstance && !aiOpen && (
+          <EditorToolbar 
+            editor={editorInstance} 
+            onAskAi={() => setAiOpen(true)} 
+            isMobile={true} 
+            yOffset={keyboardOffset}
+          />
+        )}
       </motion.section>
     </AnimatePresence>
   );
@@ -172,6 +254,7 @@ const NoteEditor = () => {
     </div>
   );
 };
+
 
 
 export default NoteEditor;

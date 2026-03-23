@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Sparkles } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import Google from "../assets/google.svg";
 import { toast } from "sonner";
+import Logo from "@/components/ui/Logo";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -53,9 +54,7 @@ const Login = () => {
       <div className="relative w-full max-w-md">
         {/* Logo mark */}
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/20 to-violet-500/20 shadow-lg shadow-indigo-500/10">
-            <Sparkles size={22} className="text-indigo-400" />
-          </div>
+          <Logo size={56} className="shadow-2xl" />
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back</h1>
             <p className="mt-1 text-sm text-zinc-500">Sign in to continue organizing your notes.</p>

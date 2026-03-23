@@ -12,7 +12,6 @@ import { useNoteStore, type Note, type TrashFolder } from "@/store/useNoteStore"
 import { NotesListSkeleton } from "@/components/ui/notesListSkeleton";
 import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
 import { 
-  useCreateNoteMutation, 
   useDeleteNoteMutation,
   usePermanentDeleteNoteMutation,
   useEmptyTrashMutation,
@@ -29,7 +28,6 @@ const isRenderableNote = (value: unknown): value is Note => {
 const NotesListPanel = () => {
   const { searchQuery, setSearchQuery } = useNoteStore();
 
-  const { mutateAsync : createNoteAsync, isPending : isCreateNotePending } = useCreateNoteMutation();
   const { mutateAsync : deleteNoteAsync, isPending : isDeleteNotePending } = useDeleteNoteMutation();
   const { mutateAsync : togglePinning } = useTogglePinMutation();
   const { mutateAsync : restoreNote } = useRestoreNoteMutation();
@@ -111,12 +109,9 @@ const NotesListPanel = () => {
     [filteredNotes, noteId]
   );
 
-  const handleCreateNote = async () => {
-    const newNote = await createNoteAsync(folderId || null);
-    if (newNote?._id) {
-      const basePath = folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`;
-      navigate(`${basePath}${location.search}`);
-    }
+  const handleCreateNote = () => {
+    const basePath = folderId ? `/folders/${folderId}/note/new` : `/note/new`;
+    navigate(`${basePath}${location.search}`);
   };
 
   const performDeleteNote = async (id: string) => {
@@ -227,7 +222,7 @@ const NotesListPanel = () => {
           query={searchQuery}
           onQueryChange={setSearchQuery}
           onCreateNote={handleCreateNote}
-          isPending={isCreateNotePending}
+          isPending={false}
           onOpenFavorites={() => navigate(isFavoritesRoute ? "/" : "/favorites")}
           isFavoritesView={isFavoritesRoute}
         />
@@ -236,7 +231,7 @@ const NotesListPanel = () => {
           {isTrashRoute ? `Trash (${combinedTrashItems.length})` : `Notes (${filteredNotes.length})`}
         </div>
 
-        <div className="custom-scrollbar mobile-notes-scroll flex-1 space-y-1.5 overflow-y-auto px-3 pb-4">
+        <div className="custom-scrollbar mobile-notes-scroll flex-1 space-y-3 overflow-y-auto px-3 pb-4">
           {isInitialNotesLoad ? (
             <NotesListSkeleton />
           ) : shouldShowNotesError ? (
@@ -270,7 +265,7 @@ const NotesListPanel = () => {
               }}
               initial="hidden"
               animate="show"
-              className="flex flex-col gap-1.5"
+              className="flex flex-col gap-3"
             >
               <AnimatePresence mode="popLayout">
                 {isTrashRoute

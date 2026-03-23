@@ -24,12 +24,14 @@ export const useNotesLayout = () => {
   ? !noteId && !showFoldersPanel && !isSearchRoute && !isProfileRoute
   : !isNotesHidden;
   const showMainPanel = isMobile ? Boolean(noteId) || isSearchRoute || isProfileRoute : true;
+  const showMobileBottomNav = isMobile && !noteId;
 
   return {
     showGlobalHeader,
     showFoldersPanel,
     showNotesPanel,
     showMainPanel,
+    showMobileBottomNav,
     isMobile,
     animationKey
   }

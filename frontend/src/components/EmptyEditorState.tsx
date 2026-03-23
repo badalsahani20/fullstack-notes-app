@@ -3,10 +3,16 @@ import { FilePenLine, Search, Sparkles, SquarePen } from "lucide-react";
 const EmptyEditorState = () => {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      <div className="desktop-editor-header border-b border-[var(--divider)]">
-        <div>
-          <p className="text-sm text-[var(--muted-text)]">AI Notes</p>
-          <h2 className="text-3xl font-semibold tracking-[-0.04em]">Select a note to begin</h2>
+      <div className="desktop-editor-header">
+        <div className="editor-title-row">
+          <h2 className="editor-title-input !text-3xl pointer-events-none">Select a note to begin</h2>
+        </div>
+
+        <div className="editor-title-meta pb-4">
+          <span className="editor-folder-label flex items-center gap-1.5 leading-none">
+            <Sparkles size={12} className="text-[var(--accent-strong)]" />
+            AI Notes
+          </span>
         </div>
       </div>
 

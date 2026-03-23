@@ -10,6 +10,7 @@ import { useParams } from "react-router-dom";
 
 import { useState } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
+import { toast } from "sonner";
 
 const ActivityBar = () => {
   const { noteId } = useParams();
@@ -54,7 +55,12 @@ const ActivityBar = () => {
       </div>
 
       <div className="flex flex-row sm:flex-col items-center gap-2 px-2 sm:px-0 pb-2 sm:pb-4 dark:bg-zinc-900">
-        <button className="desktop-icon-button desktop-rail-utility" type="button" aria-label="Settings">
+        <button 
+          className="desktop-icon-button desktop-rail-utility" 
+          type="button" 
+          aria-label="Settings"
+          onClick={() => toast.info("Settings are coming soon!")}
+        >
           <Settings size={15} />
         </button>
       </div>

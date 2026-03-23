@@ -1,12 +1,10 @@
 import { Plus } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useCreateNoteMutation } from "@/hooks/useNotesMutations";
 
 const MobileCreateButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { folderId } = useParams();
-  const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
 
   const hideOnRoute =
     location.pathname.startsWith("/profile") ||
@@ -15,12 +13,9 @@ const MobileCreateButton = () => {
 
   if (hideOnRoute) return null;
 
-  const handleCreateNote = async () => {
+  const handleCreateNote = () => {
     const targetFolderId = folderId || null;
-    const newNote = await createNoteAsync(targetFolderId);
-    if (newNote?._id) {
-      navigate(targetFolderId ? `/folders/${targetFolderId}/note/${newNote._id}` : `/note/${newNote._id}`);
-    }
+    navigate(targetFolderId ? `/folders/${targetFolderId}/note/new` : `/note/new`);
   };
 
   return (

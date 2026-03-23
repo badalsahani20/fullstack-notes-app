@@ -1,20 +1,14 @@
 import { Folder, Home, PlusCircle, Search, Trash2 } from 'lucide-react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Dock from './Dock';
-import { useCreateNoteMutation } from '@/hooks/useNotesMutations';
 
 const NavigationDock = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { folderId } = useParams();
-    const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
 
-    const handleCreateNote = async () => {
-      const targetFolderId = folderId || null;
-      const newNote = await createNoteAsync(targetFolderId);
-      if(newNote) {
-        navigate(targetFolderId ? `/folders/${targetFolderId}/note/${newNote._id}` : `/note/${newNote._id}`)
-      }
+    const handleCreateNote = () => {
+      navigate(folderId ? `/folders/${folderId}/note/new` : `/note/new`);
     }
 
     const dockItems = [
@@ -31,7 +25,7 @@ const NavigationDock = () => {
         { 
           icon: <PlusCircle size={28} className="text-emerald-500 hover:scale-110 transition-transform" />, 
           label: 'New Note', 
-          onClick: handleCreateNote // 👈 Using the smart handler now
+          onClick: handleCreateNote
         },
         { 
           icon: <Folder size={23} className={location.pathname.includes("/folder") ? "text-blue-500" : ""} />, 
@@ -58,4 +52,4 @@ const NavigationDock = () => {
   )
 }
 
-export default NavigationDock
+export default NavigationDock;

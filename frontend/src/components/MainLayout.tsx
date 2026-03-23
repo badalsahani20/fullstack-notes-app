@@ -19,6 +19,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
     showFoldersPanel,
     showNotesPanel,
     showMainPanel,
+    showMobileBottomNav,
     isMobile,
     animationKey
   } = useNotesLayout();
@@ -59,10 +60,10 @@ const MainLayout = ({ middlePanel }: Pops) => {
         <Outlet />
       }
       mobileBottomNav={
-        <MobileBottomNav />
+        showMobileBottomNav ? <MobileBottomNav /> : null
       }
       floatingButton={
-        <MobileCreateButton />
+        showMobileBottomNav ? <MobileCreateButton /> : null
       }
     />
   );

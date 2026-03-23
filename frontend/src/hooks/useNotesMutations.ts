@@ -23,15 +23,18 @@ const addNoteToList = (list: Note[], note: Note) =>
 export const useCreateNoteMutation = () => {
     const queryClient = useQueryClient();
 
+
     return useMutation({
-        mutationFn: async (folderId?: string | null) => {
+        mutationFn: async (params: { folderId?: string | null; title?: string; content?: string } = {}) => {
+            const { folderId = null, title = "Untitled Note", content = "" } = params;
             const res = await api.post("/notes/", {
-                title: "Untitled Note",
-                content: "",
+                title,
+                content,
                 folder: folderId,
             });
             return res.data.note || res.data;
         },
+
         onSuccess: (newNote) => {
             queryClient.setQueryData(["notes"], (old: Note[] = []) => addNoteToList(old, newNote));
             queryClient.setQueryData(["note", newNote._id], newNote); //Single note cache

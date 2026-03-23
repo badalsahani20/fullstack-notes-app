@@ -2,9 +2,9 @@ import { Bell, Moon, Plus, Sun } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useFolderStore } from "@/store/useFolderStore";
-import { useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
+import Logo from "@/components/ui/Logo";
 
 type AppHeaderProps = {
   theme: "light" | "dark";
@@ -13,15 +13,11 @@ type AppHeaderProps = {
 
 const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
   const { addFolder } = useFolderStore();
-  const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
   const { folderId } = useParams();
   const navigate = useNavigate();
 
-  const handleCreateNote = async () => {
-    const newNote = await createNoteAsync(folderId || null);
-    if (newNote?._id) {
-      navigate(folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`);
-    }
+  const handleCreateNote = () => {
+    navigate(folderId ? `/folders/${folderId}/note/new` : `/note/new`);
   };
 
   const handleCreateFolder = async () => {
@@ -38,7 +34,7 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
   return (
     <header className="desktop-header">
       <div className="desktop-brand">
-        <div className="desktop-brand-mark">NS</div>
+        <Logo size={32} />
         <div>
           {/* <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-text)]">Workspace</p> */}
           <h1 className="text-[1.05rem] font-semibold tracking-[-0.04em] md:text-[1.15rem]">Notesify</h1>

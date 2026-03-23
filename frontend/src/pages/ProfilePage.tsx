@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
+import { toast } from "sonner";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -49,7 +50,12 @@ const ProfilePage = () => {
 
         <div className="mobile-profile-list">
           {items.map((item) => (
-            <button key={item.label} type="button" className="mobile-profile-list-item">
+            <button
+              key={item.label}
+              type="button"
+              className="mobile-profile-list-item"
+              onClick={() => toast.info(`${item.label} is coming soon!`)}
+            >
               <item.icon size={18} />
               <span>{item.label}</span>
             </button>

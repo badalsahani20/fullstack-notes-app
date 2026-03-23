@@ -51,7 +51,7 @@ const TopLink = ({
   return (
     <button type="button" onClick={onClick} className={`sidebar-link-row ${active ? "sidebar-link-row-active" : ""}`}>
       <span className="sidebar-link-main">
-        <Icon size={15} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
+        <Icon size={17} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
         <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{label}</span>
       </span>
       <span className="sidebar-count-pill">{count}</span>
@@ -91,9 +91,9 @@ const FolderRow = ({
               onToggle();
             }}
           >
-            {expanded ? <ChevronDown size={14} className="text-[var(--muted-text)]" /> : <ChevronRight size={14} className="text-[var(--muted-text)]" />}
+            {expanded ? <ChevronDown size={15} className="text-[var(--muted-text)]" /> : <ChevronRight size={15} className="text-[var(--muted-text)]" />}
           </span>
-          <Icon size={15} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
+          <Icon size={17} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
           <span className={`sidebar-link-label truncate ${active ? "sidebar-link-label-active" : ""}`}>{folder.name}</span>
         </span>
         <span className="sidebar-count-pill">{count}</span>
@@ -149,7 +149,7 @@ const NoteChildRow = ({
   return (
     <button type="button" onClick={onClick} className={`sidebar-note-child ${active ? "sidebar-note-child-active" : ""}`}>
       <span className="sidebar-link-main">
-        <FileText size={14} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
+        <FileText size={16} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
         <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{title || "Untitled Note"}</span>
       </span>
     </button>

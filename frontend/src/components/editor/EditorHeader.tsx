@@ -1,5 +1,5 @@
 import type { Editor } from "@tiptap/react";
-import { Archive, Star } from "lucide-react";
+import { Archive, Star, Sparkles, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import RelativeTimeLabel from "./RelativeTimeLabel";
 import type { Note } from "@/store/useNoteStore";
@@ -18,9 +18,13 @@ type EditorHeaderProps = {
   /** Called on blur to commit the title if changed */
   onCommitTitle: () => void;
   onTogglePin: (id: string) => void;
+
   onToggleArchive: (id: string) => void;
   onAskAi?: () => void;
+  isAiOpen?: boolean;
+  isMobile?: boolean;
 };
+
 
 /**
  * Top header of the note editor page.
@@ -35,25 +39,41 @@ const EditorHeader = ({
   onDraftTitleChange,
   onCommitTitle,
   onTogglePin,
+
   onToggleArchive,
   onAskAi,
+  isAiOpen,
+  isMobile,
 }: EditorHeaderProps) => {
+
   return (
     <div className="desktop-editor-header">
       <div className="editor-title-row">
-        <input
-          className="editor-title-input"
-          value={draftTitle}
-          placeholder="Untitled Note"
-          onChange={(e) => onDraftTitleChange(e.target.value)}
-          onBlur={onCommitTitle}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              (e.currentTarget as HTMLInputElement).blur();
-            }
-          }}
-        />
+        <div className="flex flex-1 items-center min-w-0">
+          {isMobile && (
+            <button 
+              type="button" 
+              onClick={() => window.history.back()}
+              className="mr-1 -ml-2 p-1.5 rounded-full hover:bg-white/5 active:bg-white/10 transition-colors"
+              aria-label="Go back"
+            >
+              <ChevronLeft size={20} className="text-[var(--text-strong)]" />
+            </button>
+          )}
+          <input
+            className="editor-title-input"
+            value={draftTitle}
+            placeholder="Untitled Note"
+            onChange={(e) => onDraftTitleChange(e.target.value)}
+            onBlur={onCommitTitle}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                (e.currentTarget as HTMLInputElement).blur();
+              }
+            }}
+          />
+        </div>
 
         <div className="editor-meta-stack">
           <button
@@ -90,13 +110,20 @@ const EditorHeader = ({
         </div>
       </div>
 
+
       <div className="editor-title-meta">
-        <span className="editor-folder-label">{folderLabel ?? folder?.name ?? "All Notes"}</span>
+        <span className="editor-folder-label flex items-center gap-1.5 leading-none">
+          {(folderLabel ?? folder?.name ?? "All Notes") === "AI Notes" && (
+            <Sparkles size={12} className="text-[var(--accent-strong)]" />
+          )}
+          {folderLabel ?? folder?.name ?? "All Notes"}
+        </span>
         <RelativeTimeLabel updatedAt={note.updatedAt} />
       </div>
 
-      {editor ? <EditorToolbar editor={editor} onAskAi={onAskAi} /> : null}
+      {editor && !isMobile && !isAiOpen ? <EditorToolbar editor={editor} onAskAi={onAskAi} /> : null}
     </div>
+
   );
 };
 

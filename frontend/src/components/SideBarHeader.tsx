@@ -34,7 +34,7 @@ const SideBarHeader = () => {
     <div className="space-y-4 mb-4">
       <Dialog>
         <DialogTrigger asChild>
-          <button className="flex items-center gap-3 w-full p-2 rounded-xl hover:bg-zinc-800/50 transition-all text-left">
+          <button className="flex items-center gap-4 w-full p-2.5 rounded-xl hover:bg-zinc-800/50 transition-all text-left">
             <Avatar className="h-9 w-9 border border-zinc-800">
               <AvatarImage src="https://github.com/shadcn.png" />
               <AvatarFallback>{getInitials(user?.name || "User")}</AvatarFallback>

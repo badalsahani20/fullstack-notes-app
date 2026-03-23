@@ -10,6 +10,7 @@ import { Toaster } from "sonner";
 import SearchPage from "./pages/SearchPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotesListPanel from "./components/NotesListPanel";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="/folders/:folderId" element={<NoteEditor />} />
         </Route>
       </Route>
+      <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

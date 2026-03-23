@@ -64,7 +64,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
-  const { data: activeNote } = useNoteQuery(noteId);
+  const isNew = noteId === "new";
+  const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
+
   const { mutateAsync: updateNoteAsync } = useUpdateNoteMutation();
 
   // ── Refs ───────────────────────────────────────────────────────────────────
