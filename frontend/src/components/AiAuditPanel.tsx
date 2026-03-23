@@ -1,4 +1,3 @@
-import type { Editor } from "@tiptap/react";
 import { X, RefreshCcw } from "lucide-react";
 import { useAiChat } from "@/hooks/useAiChat";
 import AiGuideDialog from "@/components/ai/AiGuideDialog";
@@ -6,9 +5,7 @@ import AiMessageList from "@/components/ai/AiMessageList";
 import AiCompose from "@/components/ai/AiCompose";
 
 type AiAuditPanelProps = {
-  noteId: string;
-  noteContent: string;
-  editor: Editor | null;
+  aiChat: ReturnType<typeof useAiChat>;
   onClose: () => void;
   mobileMode?: boolean;
 };
@@ -16,11 +13,9 @@ type AiAuditPanelProps = {
 /**
  * AI Assistant panel — the glue layer.
  *
- * This component owns nothing except layout and the onClose button.
- * All state and logic lives in useAiChat.
- * All UI sections live in AiGuideDialog / AiMessageList / AiCompose.
+ * Now receives state from parent so it can be shared with the inline editor menu.
  */
-const AiAuditPanel = ({ noteId, noteContent, editor, onClose, mobileMode = false }: AiAuditPanelProps) => {
+const AiAuditPanel = ({ aiChat, onClose, mobileMode = false }: AiAuditPanelProps) => {
   const {
     hasHistory,
     historyCount,
@@ -42,7 +37,7 @@ const AiAuditPanel = ({ noteId, noteContent, editor, onClose, mobileMode = false
     copySuggestion,
     applySuggestionToSelection,
     startNewChat,
-  } = useAiChat(noteId, noteContent, editor);
+  } = aiChat;
 
   return (
     <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "hidden xl:flex"}`}>

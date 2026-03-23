@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -12,6 +12,7 @@ import EmptyEditorState from "@/components/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useAiChat } from "@/hooks/useAiChat";
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
@@ -31,17 +32,31 @@ const NoteEditor = () => {
   const [aiOpen, setAiOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 960px)");
 
+  const aiChat = useAiChat(noteId || "", note?.content || "", editorInstance);
+
+  const noteRef = useRef(note);
+  useEffect(() => {
+    noteRef.current = note;
+  }, [note]);
+
   const debouncedUpdate = useMemo(
     () =>
-      debounce((id: string, content: string, version: number) => {
-        updateNoteAsync({ noteId: id, updates: { content }, version });
+      debounce((id: string, content: string) => {
+        const latestNote = noteRef.current;
+        if (latestNote && latestNote._id === id) {
+          updateNoteAsync({ 
+            noteId: id, 
+            updates: { content }, 
+            version: latestNote.version 
+          }).catch(() => {}); // Conflict handled in mutation hook
+        }
       }, 600),
     [updateNoteAsync]
   );
 
   useEffect(() => {
     return () => {
-      debouncedUpdate.cancel();
+      debouncedUpdate.flush();
     };
   }, [debouncedUpdate]);
 
@@ -51,14 +66,19 @@ const NoteEditor = () => {
 
   const handleContentChange = (html: string) => {
     if (note) {
-      debouncedUpdate(note._id, html, note.version);
+      debouncedUpdate(note._id, html);
     }
   };
 
   const commitTitle = () => {
     if (!note) return;
-    if (draftTitle !== note.title) {
-      updateNoteAsync({ noteId: note._id, updates: { title: draftTitle }, version: note.version });
+    const currentNote = noteRef.current || note;
+    if (draftTitle !== currentNote.title) {
+      updateNoteAsync({ 
+        noteId: currentNote._id, 
+        updates: { title: draftTitle }, 
+        version: currentNote.version 
+      }).catch(() => {});
     }
   };
 
@@ -111,8 +131,8 @@ const NoteEditor = () => {
           onAskAi={() => setAiOpen(true)}
         />
 
-        <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4 custom-scrollbar">
-          <TipTap key={note._id} content={note.content} onChange={handleContentChange} onEditorReady={setEditorInstance} />
+        <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
+          <TipTap key={note._id} content={note.content} onChange={handleContentChange} onEditorReady={setEditorInstance} aiChat={aiChat} />
         </div>
       </motion.section>
     </AnimatePresence>
@@ -125,9 +145,7 @@ const NoteEditor = () => {
           {editorPane}
           <div className="assistant-mobile-overlay">
             <AiAuditPanel
-              noteId={note._id}
-              noteContent={note.content}
-              editor={editorInstance}
+              aiChat={aiChat}
               onClose={() => setAiOpen(false)}
               mobileMode
             />
@@ -145,7 +163,7 @@ const NoteEditor = () => {
             maxSize="23rem"
             className="assistant-panel-shell h-full"
           >
-            <AiAuditPanel noteId={note._id} noteContent={note.content} editor={editorInstance} onClose={() => setAiOpen(false)} />
+            <AiAuditPanel aiChat={aiChat} onClose={() => setAiOpen(false)} />
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (

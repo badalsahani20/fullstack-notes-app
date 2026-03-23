@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
-import { actionMeta } from "@/components/ai/AiCompose";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
 
 // ─── Pure helpers (no React, no side effects) ────────────────────────────────
@@ -177,24 +176,15 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     }
   };
 
-  /** Runs one of the quick-action presets (Improve, Summarize, Brainstorm, Rewrite) */
+  /** Runs one of the quick-action presets (Improve, Summarize, Brainstorm, Rewrite) directly into the editor */
   const runAction = async (action: AiAction) => {
     const { text: selectedText, range } = getSelection(editor);
     const sourceText = selectedText || plainNoteText;
 
     if (!sourceText) {
-      setMessages((prev) => [
-        ...prev,
-        { id: `${Date.now()}-error`, role: "assistant", text: "No text found to process. Add content or select text first." },
-      ]);
+      toast.error("No text found to process. Add content or select text first.");
       return;
     }
-
-    // Optimistically show the action name as a user message
-    setMessages((prev) => [
-      ...prev,
-      { id: `${Date.now()}-user`, role: "user", text: actionMeta[action].label },
-    ]);
 
     abortControllerRef.current = new AbortController();
 
@@ -207,19 +197,28 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       );
 
       const data = res.data?.data ?? null;
-      setSelectionRange(range);
-      setResult(data);
-      setMessages((prev) => [
-        ...prev,
-        { id: `${Date.now()}-assistant`, role: "assistant", text: data?.suggestion || "No suggestion returned." },
-      ]);
+      
+      if (data?.suggestion && editor) {
+        // Inject directly into the editor as Ghost Text!
+        const targetRange = range || { from: editor.state.selection.from, to: editor.state.selection.to };
+        const isContinue = action === "continue";
+        const insertPos = isContinue ? targetRange.to : targetRange.from;
+
+        const chain = editor.chain().focus();
+        if (!isContinue) {
+          chain.deleteRange(targetRange);
+        }
+
+        chain
+          .insertContentAt(insertPos, `<span data-ai-ghost="true">${data.suggestion}</span>`)
+          .setTextSelection({ from: insertPos, to: insertPos + data.suggestion.length })
+          .run();
+      } else {
+        toast.error("No suggestion returned.");
+      }
     } catch (error) {
       if (error && typeof error === "object" && "name" in error && error.name === "CanceledError") {
-        setMessages((prev) => [
-          ...prev,
-          { id: `${Date.now()}-assistant-cancelled`, role: "assistant", text: "Request cancelled." },
-        ]);
-        setResult(null);
+        toast.message("Request cancelled.");
         return;
       }
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -231,10 +230,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           description: "You've hit the free tier limit for AI requests. Please try again later.",
           duration: 5000,
         });
+      } else {
+        toast.error(message);
       }
-
-      setResult(null);
-      setMessages((prev) => [...prev, { id: `${Date.now()}-assistant-error`, role: "assistant", text: message }]);
     } finally {
       setLoadingAction(null);
     }
@@ -333,10 +331,13 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     toast.success("Chat history cleared");
   };
 
-  /** Replaces the selected text in the editor with the AI suggestion */
+  /** Replaces the selected text in the editor with the AI suggestion as Ghost Text */
   const applySuggestionToSelection = () => {
     if (!editor || !result?.suggestion || !selectionRange) return;
-    editor.chain().focus().insertContentAt(selectionRange, result.suggestion).run();
+    editor.chain()
+      .focus()
+      .insertContentAt(selectionRange, `<span data-ai-ghost="true">${result.suggestion}</span>`)
+      .run();
   };
 
   /** Copies the latest AI suggestion to the clipboard */

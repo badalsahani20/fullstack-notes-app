@@ -24,6 +24,10 @@ const actionMeta: Record<AiAction, { label: string; prompt: string }> = {
     label: "Rewrite",
     prompt: "Rewrite this note for clarity and better flow while keeping meaning intact.",
   },
+  continue: {
+    label: "Continue Writing",
+    prompt: "Continue the content in a consistent tone and style.",
+  },
 };
 
 type AiComposeProps = {

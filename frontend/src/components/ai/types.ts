@@ -4,7 +4,7 @@
  * we update it here and all components stay in sync.
  */
 
-export type AiAction = "grammar" | "summarize" | "explain" | "rewrite";
+export type AiAction = "grammar" | "summarize" | "explain" | "rewrite" | "continue";
 
 export type AssistResult = {
   action: AiAction;

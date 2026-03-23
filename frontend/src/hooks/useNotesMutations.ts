@@ -86,11 +86,25 @@ export const useUpdateNoteMutation = () => {
 
     return useMutation({
         mutationFn: async ({ noteId, updates, version }: { noteId: string, updates: Partial<Note>, version: number }) => {
-            const res = await api.put(`/notes/${noteId}`, {
-                ...updates,
-                version,
-            });
-            return res.data.updatedNote || res.data.note || res.data;
+            try {
+                const res = await api.put(`/notes/${noteId}`, {
+                    ...updates,
+                    version,
+                });
+                return res.data.updatedNote || res.data.note || res.data;
+            } catch (error: any) {
+                // If we get a 409 Conflict, it's highly likely a race condition from rapid debounced auto-saves.
+                // The server conveniently sends back the current database version. Let's grab it and auto-retry!
+                if (error?.response?.status === 409 && error?.response?.data?.serverVersion) {
+                    const newServerVersion = error.response.data.serverVersion.version;
+                    const retryRes = await api.put(`/notes/${noteId}`, {
+                        ...updates,
+                        version: newServerVersion,
+                    });
+                    return retryRes.data.updatedNote || retryRes.data.note || retryRes.data;
+                }
+                throw error;
+            }
         },
         onMutate: async ({ noteId, updates }) => {
             await queryClient.cancelQueries({ queryKey: ["notes"] });
@@ -129,8 +143,17 @@ export const useTogglePinMutation = () => {
 
     return useMutation({
         mutationFn: async ({ noteId, version }: { noteId: string, version: number }) => {
-            const res = await api.patch(`/notes/${noteId}/pin`, { version });
-            return res.data.updatedNote || res.data.note || res.data;
+            try {
+                const res = await api.patch(`/notes/${noteId}/pin`, { version });
+                return res.data.updatedNote || res.data.note || res.data;
+            } catch (error: any) {
+                if (error?.response?.status === 409 && error?.response?.data?.serverVersion) {
+                    const newServerVersion = error.response.data.serverVersion.version;
+                    const retryRes = await api.patch(`/notes/${noteId}/pin`, { version: newServerVersion });
+                    return retryRes.data.updatedNote || retryRes.data.note || retryRes.data;
+                }
+                throw error;
+            }
         },
         onSuccess: (updatedNote, variables) => {
             queryClient.setQueryData(["note", variables.noteId], updatedNote);
@@ -168,8 +191,17 @@ export const useToggleArchiveMutation = () => {
 
     return useMutation({
         mutationFn: async ({ noteId, version }: { noteId: string; version: number }) => {
-            const res = await api.patch(`/notes/${noteId}/archive`, { version });
-            return res.data.note || res.data;
+            try {
+                const res = await api.patch(`/notes/${noteId}/archive`, { version });
+                return res.data.note || res.data;
+            } catch (error: any) {
+                if (error?.response?.status === 409 && error?.response?.data?.serverVersion) {
+                    const newServerVersion = error.response.data.serverVersion.version;
+                    const retryRes = await api.patch(`/notes/${noteId}/archive`, { version: newServerVersion });
+                    return retryRes.data.note || retryRes.data;
+                }
+                throw error;
+            }
         },
         onMutate: async ({ noteId }) => {
             await queryClient.cancelQueries({ queryKey: ["notes"] });

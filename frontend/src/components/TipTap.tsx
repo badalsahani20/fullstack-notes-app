@@ -9,6 +9,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import EditorBubbleMenu from "./editorBubbleMenu";
 import { ImageUploadExtension } from "../extensions/imageUploadExtension";
 import { MarkerHighlightExtension } from "../extensions/markerHighlightExtension";
+import { AiGhostExtension } from "../extensions/aiGhostExtension";
+import { AiInlineMenu } from "./AiInlineMenu";
+
+import { Underline } from "@tiptap/extension-underline";
+import { Link } from "@tiptap/extension-link";
+import { TaskList } from "@tiptap/extension-task-list";
+import { TaskItem } from "@tiptap/extension-task-item";
+import { TextAlign } from "@tiptap/extension-text-align";
+import { Color } from "@tiptap/extension-color";
 
 const CODE_MARKERS = [
   /(^|\n)\s{2,}\S/,
@@ -17,16 +26,121 @@ const CODE_MARKERS = [
   /<\/?[a-z][^>]*>/i,
 ];
 
+import { Extension } from "@tiptap/core";
+
+// Custom Font Size extension
+const FontSize = Extension.create({
+  name: "fontSize",
+  addOptions() {
+    return {
+      types: ["textStyle"],
+    };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element) => element.style.fontSize.replace(/['"]+/g, ""),
+            renderHTML: (attributes) => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      setFontSize: (fontSize: string) => ({ chain }: any) => {
+        return chain().setMark("textStyle", { fontSize }).run();
+      },
+      unsetFontSize: () => ({ chain }: any) => {
+        return chain().setMark("textStyle", { fontSize: null }).removeEmptyTextStyle().run();
+      },
+    } as any;
+  },
+});
+
+// Custom Indent extension
+const Indent = Extension.create({
+  name: "indent",
+  addOptions() {
+    return {
+      types: ["heading", "paragraph"],
+      indentSize: 24,
+    };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          indent: {
+            default: 0,
+            parseHTML: (element) => parseInt(element.style.marginLeft) / this.options.indentSize || 0,
+            renderHTML: (attributes) => {
+              if (!attributes.indent) return {};
+              return { style: `margin-left: ${attributes.indent * this.options.indentSize}px` };
+            },
+          },
+        },
+      },
+    ];
+  },
+  addCommands() {
+    return {
+      indent: () => ({ tr, state, dispatch }: any) => {
+        const { selection } = state;
+        tr = tr.setSelection(selection);
+        state.doc.nodesBetween(selection.from, selection.to, (node: any, pos: any) => {
+          if (this.options.types.includes(node.type.name)) {
+            tr = tr.setNodeMarkup(pos, undefined, {
+              ...node.attrs,
+              indent: (node.attrs.indent || 0) + 1,
+            });
+          }
+        });
+        if (dispatch) dispatch(tr);
+        return true;
+      },
+      outdent: () => ({ tr, state, dispatch }: any) => {
+        const { selection } = state;
+        tr = tr.setSelection(selection);
+        state.doc.nodesBetween(selection.from, selection.to, (node: any, pos: any) => {
+          if (this.options.types.includes(node.type.name)) {
+            const currentIndent = node.attrs.indent || 0;
+            if (currentIndent > 0) {
+              tr = tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                indent: currentIndent - 1,
+              });
+            }
+          }
+        });
+        if (dispatch) dispatch(tr);
+        return true;
+      },
+    } as any;
+  },
+});
+
 const looksLikeCodeSnippet = (text: string) =>
   text.includes("\n") && CODE_MARKERS.some((pattern) => pattern.test(text));
+
+import { useAiChat } from "@/hooks/useAiChat";
 
 type TipTapProps = {
   content: string;
   onChange: (html: string) => void;
   onEditorReady?: (editor: Editor | null) => void;
+  aiChat?: ReturnType<typeof useAiChat>;
 };
 
-const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
+const TipTap = ({ content, onChange, onEditorReady, aiChat }: TipTapProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const editor = useEditor({
@@ -39,12 +153,30 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
         },
       }),
       TextStyle,
+      Underline,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: "editor-link",
+        },
+      }),
+      TextAlign.configure({
+        types: ["heading", "paragraph"],
+      }),
+      Color,
+      FontSize,
+      Indent,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
       BubbleMenu,
       ImageUploadExtension.configure({
         inline: true,
         allowBase64: true,
       }),
       MarkerHighlightExtension,
+      AiGhostExtension,
       FontFamily.configure({
         types: ["textStyle"],
       }),
@@ -132,7 +264,12 @@ const TipTap = ({ content, onChange, onEditorReady }: TipTapProps) => {
 
   return (
     <div className="editor-shell relative mx-auto w-full max-w-[46rem]" style={{ ["--editor-font-size" as string]: `18px` }}>
-      <EditorBubbleMenu editor={editor} />
+      <EditorBubbleMenu 
+        editor={editor} 
+        onAction={aiChat?.runAction}
+        loadingAction={aiChat?.loadingAction}
+      />
+      <AiInlineMenu editor={editor} />
       <EditorContent className="editor-content-shell" editor={editor} spellCheck={true} onKeyDown={handleEditorKeyDown} />
     </div>
   );
