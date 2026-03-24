@@ -14,6 +14,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useAiChat } from "@/hooks/useAiChat";
 import EditorToolbar from "@/tools/EditorToolbar";
+import AiResultDialog from "@/components/ai/AiResultDialog";
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
@@ -251,6 +252,12 @@ const NoteEditor = () => {
       ) : (
         editorPane
       )}
+      
+      <AiResultDialog 
+        result={aiChat.result} 
+        onApply={aiChat.applySuggestionToSelection} 
+        onClose={() => aiChat.setResult(null)} 
+      />
     </div>
   );
 };

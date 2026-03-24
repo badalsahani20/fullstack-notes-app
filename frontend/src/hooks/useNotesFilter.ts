@@ -2,22 +2,8 @@ import { useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import type { Note } from "@/store/useNoteStore";
 import type { Folder } from "@/store/useFolderStore";
+import { stripHtml } from "@/utils/stripHtml";
 
-/**
- * useNotesFilter — derives everything the notes list panel needs to know
- * about "which notes to show" and "what to call this view".
- *
- * Owned here:
- * - Route detection (favorites / archive / trash / folder)
- * - Note filtering by route + search query
- * - Panel title (shown in the header)
- * - Breadcrumb root (the left side of the breadcrumb)
- * - Current folder name (drives the breadcrumb chevron)
- *
- * @param notes    - Already-sanitized note array from the store
- * @param folders  - Full folder list from the store
- * @param query    - Current search string from the search input
- */
 export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, trash: Note[] = [], archivedNotes: Note[] = []) => {
   const location = useLocation();
   const { folderId } = useParams();
@@ -52,9 +38,7 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, 
     if (!normalizedQuery) return base;
 
     return base.filter((note) => {
-      const haystack = `${note.title} ${note.content}`
-        .replace(/<[^>]+>/g, " ")
-        .toLowerCase();
+      const haystack = stripHtml(`${note.title} ${note.content}`).toLowerCase();
       return haystack.includes(normalizedQuery);
     });
   }, [archivedNotes, folderId, isArchiveRoute, isFavoritesRoute, isTrashRoute, notes, query, trash]);

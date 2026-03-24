@@ -158,31 +158,44 @@ export const useTogglePinMutation = () => {
                 throw error;
             }
         },
+        onMutate: async ({ noteId }) => {
+            await queryClient.cancelQueries({ queryKey: ["notes"] });
+            await queryClient.cancelQueries({ queryKey: ["notes", "archive"] });
+            await queryClient.cancelQueries({ queryKey: ["note", noteId] });
+
+            const previousNotes = queryClient.getQueryData<Note[]>(["notes"]);
+            const previousArchive = queryClient.getQueryData<Note[]>(["notes", "archive"]);
+            const previousNote = queryClient.getQueryData<Note>(["note", noteId]);
+
+            const target = previousNotes?.find(n => n._id === noteId) || 
+                           previousArchive?.find(n => n._id === noteId) || 
+                           previousNote;
+
+            if (target) {
+                const updated = { ...target, pinned: !target.pinned };
+                queryClient.setQueryData(["note", noteId], updated);
+                queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, updated));
+                queryClient.setQueryData(["notes", "archive"], (old: Note[] = []) => updateNoteInList(old, updated));
+            }
+
+            return { previousNotes, previousArchive, previousNote };
+        },
         onSuccess: (updatedNote, variables) => {
             queryClient.setQueryData(["note", variables.noteId], updatedNote);
             queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, updatedNote));
+            queryClient.setQueryData(["notes", "archive"], (old: Note[] = []) => updateNoteInList(old, updatedNote));
         },
-        onMutate: async ({ noteId }) => {
-            await queryClient.cancelQueries({ queryKey: ["notes"] });
-
-            const previous = queryClient.getQueryData<Note[]>(["notes"]);
-            const targetNote = previous?.find((n) => n._id === noteId);
-
-            if (targetNote) {
-                queryClient.setQueryData(["notes"], (old: Note[] = []) =>
-                    updateNoteInList(old, { _id: noteId, pinned: !targetNote.pinned })
-                );
-            }
-
-            return { previous };
-        },
-
-        onError: (error: any, _vars, context) => {
+        onError: (error: any, { noteId }, context) => {
             if (error?.response?.status === 404) {
                queryClient.invalidateQueries({ queryKey: ["notes"] });
+               queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
                return;
             }
-            queryClient.setQueryData(["notes"], context?.previous);
+            queryClient.setQueryData(["notes"], context?.previousNotes);
+            queryClient.setQueryData(["notes", "archive"], context?.previousArchive);
+            if (context?.previousNote) {
+                queryClient.setQueryData(["note", noteId], context.previousNote);
+            }
             console.error("Failed to favorite note: ", error);
             toast.error("Failed to update favorites");
         },
@@ -209,13 +222,15 @@ export const useToggleArchiveMutation = () => {
         onMutate: async ({ noteId }) => {
             await queryClient.cancelQueries({ queryKey: ["notes"] });
             await queryClient.cancelQueries({ queryKey: ["notes", "archive"] });
+            await queryClient.cancelQueries({ queryKey: ["note", noteId] });
 
             const previousNotes = queryClient.getQueryData<Note[]>(["notes"]);
             const previousArchive = queryClient.getQueryData<Note[]>(["notes", "archive"]);
             const previousNote = queryClient.getQueryData<Note>(["note", noteId]);
 
-            // Try to find the note to know its current archive status
-            const targetNote = previousNotes?.find(n => n._id === noteId) || previousArchive?.find(n => n._id === noteId) || previousNote;
+            const targetNote = previousNotes?.find(n => n._id === noteId) || 
+                              previousArchive?.find(n => n._id === noteId) || 
+                              previousNote;
 
             if (targetNote) {
                 const isArchived = !targetNote.isArchived;
@@ -237,10 +252,18 @@ export const useToggleArchiveMutation = () => {
             return { previousNotes, previousArchive, previousNote };
         },
         onSuccess: (updatedNote, { noteId }) => {
-            // Minimal correction: Just update the properties of the note wherever it currently resides
             queryClient.setQueryData(["note", noteId], updatedNote);
-            queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, updatedNote));
-            queryClient.setQueryData(["notes", "archive"], (old: Note[] = []) => updateNoteInList(old, updatedNote));
+            
+            // Re-sync both lists based on the new archival status
+            queryClient.setQueryData(["notes"], (old: Note[] = []) => {
+                if (!updatedNote.isArchived) return addNoteToList(old, updatedNote);
+                return removeNoteFromList(old, noteId);
+            });
+
+            queryClient.setQueryData(["notes", "archive"], (old: Note[] = []) => {
+                if (updatedNote.isArchived) return addNoteToList(old, updatedNote);
+                return removeNoteFromList(old, noteId);
+            });
         },
         onError: (error: any, { noteId }, context) => {
             if (error?.response?.status === 404) {
@@ -361,6 +384,52 @@ export const useEmptyTrashMutation = () => {
         onError: (_error, _variables, context) => {
             queryClient.setQueryData(["notes", "trash"], context?.previousTrash);
             toast.error("Failed to empty trash");
+        }
+    });
+};
+
+export const useRestoreFolderMutation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (folderId: string) => {
+            const res = await api.patch(`/trash/restore/folder/${folderId}`);
+            return res.data.folder || res.data;
+        },
+        onMutate: async () => {
+             // Invalidate to refresh both folders and trash
+            await queryClient.cancelQueries({ queryKey: ["folders"] });
+            await queryClient.cancelQueries({ queryKey: ["notes", "trash"] });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["folders"] });
+            queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
+            toast.success("Folder and its notes restored");
+        },
+        onError: (error) => {
+            console.error("Failed to restore folder:", error);
+            toast.error("Failed to restore folder");
+        }
+    });
+};
+
+export const usePermanentDeleteFolderMutation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (folderId: string) => {
+            await api.delete(`/trash/folder/${folderId}`);
+        },
+        onMutate: async () => {
+            await queryClient.cancelQueries({ queryKey: ["notes", "trash"] });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
+            toast.success("Folder permanently deleted");
+        },
+        onError: (error) => {
+            console.error("Failed to permanently delete folder:", error);
+            toast.error("Failed to permanently delete folder");
         }
     });
 };

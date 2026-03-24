@@ -50,7 +50,8 @@ export const useTrashQuery = () => {
         queryKey: ["notes", "trash"],
         queryFn: async () => {
             const res = await api.get("/trash/");
-            return res.data.notes || res.data;
+            // res.data contains { notes, folders }
+            return res.data;
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
         retry: 1

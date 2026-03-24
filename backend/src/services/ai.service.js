@@ -45,13 +45,13 @@ export const checkGrammar = async (text) => {
 
 const actionPrompts = {
   summarize: (text) =>
-    `Summarize the following note in concise bullet points. Keep important facts and action items. Return plain text only.\n\nNote:\n${text}`,
+    `Summarize the following note into concise markdown bullet points. Use hierarchical bullets if necessary. Keep important facts and action items. Return the markdown text only, no code blocks.\n\nNote:\n${text}`,
   explain: (text) =>
-    `Explain the following note in simpler language for a beginner. Keep it accurate and clear. Return plain text only.\n\nNote:\n${text}`,
+    `Explain the following note in simpler language for a beginner. Use markdown for structure (line breaks, bold text for emphasis). Keep it accurate and clear. Return the markdown text only, no code blocks.\n\nNote:\n${text}`,
   rewrite: (text) =>
-    `Rewrite the following text to improve clarity, flow, and grammar while preserving meaning. Return plain text only.\n\nText:\n${text}`,
+    `Rewrite the following text to improve clarity, flow, and grammar while preserving meaning. Use markdown for structural improvements if needed. Return the improved markdown text only, no code blocks.\n\nText:\n${text}`,
   continue: (text) => 
-    `Continue the following text in a way that is consistent with the style and tone of the original text. Return plain text only. Continue from the provided text.\n\nText:\n${text}`,
+    `Continue the following text in a way that is consistent with the style and tone of the original text. Return plain text only. Continue naturally from the provided text.\n\nText:\n${text}`,
 };
 
 export const runAiAssist = async ({ action, text }) => {
@@ -78,7 +78,12 @@ export const runAiAssist = async ({ action, text }) => {
 
   try {
     const result = await model.generateContent(promptBuilder(text));
-    const suggestion = result.response.text().trim();
+    let suggestion = result.response.text().trim();
+
+    // Clean up markdown code blocks if the AI ignored the instruction
+    if (suggestion.startsWith("```")) {
+      suggestion = suggestion.replace(/^```[a-z]*\n?|```$/gi, "").trim();
+    }
 
     return {
       action,

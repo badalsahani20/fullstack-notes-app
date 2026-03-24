@@ -12,8 +12,6 @@ import { MarkerHighlightExtension } from "../extensions/markerHighlightExtension
 import { AiGhostExtension } from "../extensions/aiGhostExtension";
 import { AiInlineMenu } from "./AiInlineMenu";
 
-import { Underline } from "@tiptap/extension-underline";
-import { Link } from "@tiptap/extension-link";
 import { TaskList } from "@tiptap/extension-task-list";
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TextAlign } from "@tiptap/extension-text-align";
@@ -153,13 +151,6 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat }: TipTapProps) => {
         },
       }),
       TextStyle,
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "editor-link",
-        },
-      }),
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),

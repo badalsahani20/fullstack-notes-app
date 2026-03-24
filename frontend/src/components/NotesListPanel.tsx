@@ -18,6 +18,8 @@ import {
   usePermanentDeleteNoteMutation,
   useEmptyTrashMutation,
   useRestoreNoteMutation,
+  useRestoreFolderMutation,
+  usePermanentDeleteFolderMutation,
   useTogglePinMutation,
   useToggleArchiveMutation
 } from "@/hooks/useNotesMutations";
@@ -46,9 +48,8 @@ const NotesListPanel = () => {
   const { mutateAsync : emptyTrash } = useEmptyTrashMutation();
   const { mutateAsync : toggleArchive } = useToggleArchiveMutation();
 
-  const trashFolders: TrashFolder[] = [];
-  const restoreFolder = async (_id: string) => {};
-  const permanentDeleteFolder = async (_id: string) => {};
+  const { mutateAsync : restoreFolder } = useRestoreFolderMutation();
+  const { mutateAsync : permanentDeleteFolder } = usePermanentDeleteFolderMutation();
 
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
   const { noteId, folderId } = useParams();
@@ -63,7 +64,16 @@ const NotesListPanel = () => {
   const [sortOrder, setSortOrder] = useState<"updatedAt" | "title">("updatedAt");
 
   const { data: queryNotes = [], isLoading: isNotesLoading, isError: isNoteError, error: notesError } = useNotesQuery();
-  const { data: trash = [], isLoading: isTrashLoading } = useTrashQuery();
+  const { data: trashData, isLoading: isTrashLoading } = useTrashQuery();
+  
+  const trash = useMemo(() => {
+    return Array.isArray(trashData?.notes) ? trashData.notes : [];
+  }, [trashData]);
+
+  const trashFolders = useMemo<TrashFolder[]>(() => {
+    return Array.isArray(trashData?.folders) ? (trashData.folders as TrashFolder[]) : [];
+  }, [trashData]);
+
   const { data: archivedNotes = [], isLoading: isArchiveLoading } = useArchivedQuery();
 
   const closeNoteList = () => {
@@ -132,7 +142,7 @@ const NotesListPanel = () => {
     if (!isTrashRoute) return [];
     const normalizedQuery = searchQuery.trim().toLowerCase();
     if (!normalizedQuery) return trashFolders;
-    return trashFolders.filter((folder) => folder.name.toLowerCase().includes(normalizedQuery));
+    return trashFolders.filter((folder: TrashFolder) => folder.name.toLowerCase().includes(normalizedQuery));
   }, [isTrashRoute, searchQuery, trashFolders]);
 
 
@@ -140,10 +150,10 @@ const NotesListPanel = () => {
     if (!isTrashRoute) return [];
     return [
       ...filteredNotes.map((note) => ({ type: "note" as const, updatedAt: note.updatedAt, item: note })),
-      ...filteredTrashFolders.map((folder) => ({ type: "folder" as const, updatedAt: folder.updatedAt, item: folder })),
+      ...filteredTrashFolders.map((folder: TrashFolder) => ({ type: "folder" as const, updatedAt: folder.updatedAt, item: folder })),
     ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [filteredNotes, filteredTrashFolders, isTrashRoute]);
-  const totalTrashCount = trash.length + trashFolders.length;
+  const totalTrashCount = (trash?.length || 0) + (trashFolders?.length || 0);
   const currentNoteIndex = useMemo(
     () => processedNotes.findIndex((item) => item._id === noteId),
     [processedNotes, noteId]
@@ -316,7 +326,9 @@ const NotesListPanel = () => {
         </div>
 
         <div className="px-4 pb-2 text-sm text-[var(--muted-text)]">
-          {isTrashRoute ? `Trash (${combinedTrashItems.length})` : `Notes (${processedNotes.length})`}
+          {isTrashRoute 
+             ? `Trash (${combinedTrashItems?.length || 0})` 
+             : `Notes (${processedNotes?.length || 0})`}
         </div>
 
         <div className="custom-scrollbar mobile-notes-scroll flex-1 space-y-3 overflow-y-auto px-3 pb-4">

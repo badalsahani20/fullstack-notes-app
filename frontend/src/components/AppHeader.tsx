@@ -59,7 +59,7 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
         </Button>
         <Button type="button" variant="outline" onClick={handleCreateFolder} className="desktop-secondary-button hidden sm:inline-flex">
           <Plus size={15} />
-          <span className="hidden sm:inline">New Folder</span>
+          <span className="hidden sm:inline">New Notebook</span>
         </Button>
         <UserMenu />
       </div>

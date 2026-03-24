@@ -1,4 +1,5 @@
 import { Archive, RotateCcw, Star, Trash2, X, MoreVertical } from "lucide-react";
+import { stripHtml } from "@/utils/stripHtml";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -27,13 +28,6 @@ type NoteCardProps = {
   onToggleArchive?: (noteId: string) => void;
 };
 
-const toPreviewText = (html: string) =>
-  html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
 const NoteCard = ({
   note,
   isActive,
@@ -46,7 +40,7 @@ const NoteCard = ({
   onTogglePin,
   onToggleArchive,
 }: NoteCardProps) => {
-  const preview = toPreviewText(note.content || "");
+  const preview = stripHtml(note.content || "");
   const queryClient = useQueryClient();
 
   let hoverTimeout: NodeJS.Timeout;

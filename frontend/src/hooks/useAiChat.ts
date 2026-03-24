@@ -6,11 +6,7 @@ import api from "@/lib/api";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
-
-// ─── Pure helpers (no React, no side effects) ────────────────────────────────
-
-const stripHtml = (html = "") =>
-  html.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+import { stripHtml } from "@/utils/stripHtml";
 
 const getSelection = (editor: Editor | null) => {
   if (!editor) return { text: "", range: null as SelectionRange };
@@ -199,22 +195,31 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       );
 
       const data = res.data?.data ?? null;
-      
-      if (data?.suggestion && editor) {
-        // Inject directly into the editor as Ghost Text!
-        const targetRange = range || { from: editor.state.selection.from, to: editor.state.selection.to };
-        const isContinue = action === "continue";
-        const insertPos = isContinue ? targetRange.to : targetRange.from;
 
-        const chain = editor.chain().focus();
-        if (!isContinue) {
-          chain.deleteRange(targetRange);
+      if (data?.suggestion) {
+        setResult({ ...data, action });
+        
+        // Capture the target range for later application (used by dialogs)
+        const targetRange = range || { from: editor?.state.selection.from || 0, to: editor?.state.selection.to || 0 };
+        setSelectionRange(targetRange);
+
+        // Grammar and Continue are "inline" actions
+        const isInline = action === "grammar" || action === "continue";
+
+        if (isInline && editor) {
+          const isContinue = action === "continue";
+          const insertPos = isContinue ? targetRange.to : targetRange.from;
+
+          const chain = editor.chain().focus();
+          if (!isContinue) {
+            chain.deleteRange(targetRange);
+          }
+
+          chain
+            .insertContentAt(insertPos, `<span data-ai-ghost="true">${data.suggestion}</span>`)
+            .setTextSelection({ from: insertPos, to: insertPos + data.suggestion.length })
+            .run();
         }
-
-        chain
-          .insertContentAt(insertPos, `<span data-ai-ghost="true">${data.suggestion}</span>`)
-          .setTextSelection({ from: insertPos, to: insertPos + data.suggestion.length })
-          .run();
       } else {
         toast.error("No suggestion returned.");
       }
@@ -333,12 +338,18 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     toast.success("Chat history cleared");
   };
 
-  /** Replaces the selected text in the editor with the AI suggestion as Ghost Text */
+  /** Replaces the selected text in the editor with the AI suggestion */
   const applySuggestionToSelection = () => {
     if (!editor || !result?.suggestion || !selectionRange) return;
+    
+    const isDialogAction = ["summarize", "explain", "rewrite"].includes(result.action);
+    const content = isDialogAction 
+      ? result.suggestion 
+      : `<span data-ai-ghost="true">${result.suggestion}</span>`;
+
     editor.chain()
       .focus()
-      .insertContentAt(selectionRange, `<span data-ai-ghost="true">${result.suggestion}</span>`)
+      .insertContentAt(selectionRange, content)
       .run();
   };
 
@@ -382,5 +393,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     applySuggestionToSelection,
     loadHistory,
     startNewChat,
+    setResult,
   };
 };

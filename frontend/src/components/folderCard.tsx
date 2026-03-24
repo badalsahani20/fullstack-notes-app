@@ -24,28 +24,29 @@ const FolderCard = ({ folder, isActive, onClick, onDelete, onRestore, onPermanen
         "group relative cursor-pointer rounded-xl border bg-white/[0.02] p-4 transition",
         isActive
           ? "border-primary/50 shadow-[0_10px_24px_rgba(8,24,20,0.28)]"
-          : "border-white/8 hover:border-white/20 hover:bg-white/[0.05]"
+          : "border-white/8 hover:border-white/20 hover:bg-white/[0.05]",
+        isTrashView && "cursor-default opacity-80 border-dashed"
       )}
     >
-      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-200">
-        <span className="text-sm font-bold">{initial}</span>
+      <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-zinc-200 shadow-inner">
+        <span className="text-sm font-bold opacity-70 tracking-tighter">{initial}</span>
       </div>
       <div className="flex items-center gap-2">
-        <Notebook size={14} className="text-zinc-400" />
-        <h3 className="truncate text-sm font-semibold text-zinc-100">{folder.name || "Untitled"}</h3>
+        <Notebook size={14} className={cn("text-zinc-400", isTrashView && "text-zinc-500")} />
+        <h3 className={cn("truncate text-sm font-semibold text-zinc-100", isTrashView && "text-zinc-400")}>{folder.name || "Untitled"}</h3>
       </div>
       {isTrashView ? (
-        <div className="absolute right-3 top-3 flex items-center gap-1">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
           <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
               onRestore?.();
             }}
-            className="rounded-md border border-transparent p-1 text-green-400 transition hover:border-green-400/30 hover:bg-green-500/10 hover:text-green-300"
-            aria-label={`Restore ${folder.name || "folder"}`}
+            className="p-1.5 text-emerald-500 hover:bg-emerald-500/10 rounded-md transition-colors"
+            title="Restore"
           >
-            <RotateCcw size={14} />
+            <RotateCcw size={15} />
           </button>
           <button
             type="button"
@@ -53,10 +54,10 @@ const FolderCard = ({ folder, isActive, onClick, onDelete, onRestore, onPermanen
               event.stopPropagation();
               onPermanentDelete?.();
             }}
-            className="rounded-md border border-transparent p-1 text-red-400 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300"
-            aria-label={`Delete ${folder.name || "folder"} permanently`}
+            className="p-1.5 text-rose-500 hover:bg-rose-500/10 rounded-md transition-colors"
+            title="Delete permanently"
           >
-            <X size={14} />
+            <X size={15} />
           </button>
         </div>
       ) : (
@@ -66,7 +67,7 @@ const FolderCard = ({ folder, isActive, onClick, onDelete, onRestore, onPermanen
             event.stopPropagation();
             onDelete?.();
           }}
-          className="absolute right-3 top-3 rounded-md border border-transparent p-1 text-zinc-400 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300"
+          className="absolute right-3 top-3 rounded-md border border-transparent p-1 text-zinc-400 transition hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 opacity-0 group-hover:opacity-100"
           aria-label={`Delete ${folder.name || "folder"}`}
         >
           <Trash2 size={14} />

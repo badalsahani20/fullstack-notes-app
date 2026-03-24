@@ -45,6 +45,24 @@ export const aiAssistController = catchAsync(async (req, res) => {
     return res.status(400).json({ success: false, message: "noteId and action are required" });
   }
 
+  // Handle "new" notes that aren't in the DB yet
+  if (noteId === "new") {
+    const hasSelection = Boolean(selectedText && selectedText.trim());
+    const sourceType = hasSelection ? "selection" : "note";
+    const sourceText = (selectedText && selectedText.trim()) || (noteText && noteText.trim());
+
+    if (!sourceText || !sourceText.trim()) {
+      return res.status(400).json({ success: false, message: "Text is required for AI assist" });
+    }
+
+    const result = await runAiAssist({ action, text: sourceText });
+    return res.status(200).json({
+      success: true,
+      cached: false,
+      data: { ...result, sourceType },
+    });
+  }
+
   const note = await Notes.findOne({ _id: noteId, user: req.user._id });
   if (!note) {
     return res.status(404).json({ success: false, message: "Note not found" });

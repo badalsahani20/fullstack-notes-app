@@ -174,7 +174,7 @@ const FolderRow = ({
             }}
           >
             <Trash2 size={14} />
-            Delete folder
+            Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -247,7 +247,7 @@ const FolderFormDialog = ({
 
         <div className="space-y-2">
           <label htmlFor="folder-name" className="text-sm font-medium text-[var(--text-strong)]">
-            Folder name
+            Notebook name
           </label>
           <Input
             id="folder-name"
@@ -288,7 +288,7 @@ const FolderDeleteDialog = ({ folder, isDeleting, onCancel, onConfirm }: FolderD
   <Dialog open={folder !== null} onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
     <DialogContent className="desktop-dialog">
       <DialogHeader>
-        <DialogTitle>Delete folder?</DialogTitle>
+        <DialogTitle>Delete Notebook?</DialogTitle>
         <DialogDescription className="text-[var(--muted-text)]">
           {folder
             ? `This will move "${folder.name}" and its notes to trash. You can restore them later from Trash.`

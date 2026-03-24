@@ -31,7 +31,15 @@ const SearchPage = () => {
     if (!normalized) return baseNotes;
 
     return baseNotes.filter((note) => {
-      const haystack = `${note.title} ${note.content}`.replace(/<[^>]+>/g, " ").toLowerCase();
+      const haystack = `${note.title} ${note.content}`
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&gt;/g, ">")
+        .replace(/&lt;/g, "<")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .toLowerCase();
       return haystack.includes(normalized);
     });
   }, [notes, query]);
