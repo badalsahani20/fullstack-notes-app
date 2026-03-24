@@ -183,8 +183,8 @@ export const useTogglePinMutation = () => {
                return;
             }
             queryClient.setQueryData(["notes"], context?.previous);
-            console.error("Failed to pin note: ", error);
-            toast.error("Failed to pin note");
+            console.error("Failed to favorite note: ", error);
+            toast.error("Failed to update favorites");
         },
     });
 }
@@ -361,6 +361,29 @@ export const useEmptyTrashMutation = () => {
         onError: (_error, _variables, context) => {
             queryClient.setQueryData(["notes", "trash"], context?.previousTrash);
             toast.error("Failed to empty trash");
+        }
+    });
+};
+
+export const useMoveNoteToFolderMutation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ noteId, folderId, version }: { noteId: string; folderId: string | null; version: number }) => {
+            const res = await api.put(`/notes/${noteId}`, {
+                folder: folderId,
+                version,
+            });
+            return res.data.updatedNote || res.data.note || res.data;
+        },
+        onSuccess: (updatedNote, { noteId }) => {
+            queryClient.setQueryData(["note", noteId], updatedNote);
+            queryClient.invalidateQueries({ queryKey: ["notes"] });
+            toast.success(updatedNote.folder ? "Note moved to folder" : "Note moved to All Notes");
+        },
+        onError: (error) => {
+            console.error("Failed to move note:", error);
+            toast.error("Failed to move note");
         }
     });
 };

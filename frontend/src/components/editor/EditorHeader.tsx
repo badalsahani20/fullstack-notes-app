@@ -89,7 +89,7 @@ const EditorHeader = ({
             type="button"
             onClick={() => onTogglePin(note._id)}
             className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
-            aria-label={note.pinned ? "Unpin note" : "Pin note"}
+            aria-label={note.pinned ? "Remove from favorites" : "Add to favorites"}
           >
             <motion.div
               key={note.pinned ? "pinned" : "unpinned"}
@@ -98,7 +98,7 @@ const EditorHeader = ({
               whileHover={{ scale: 1.2, rotate: 15 }}
               whileTap={{ scale: 0.8, rotate: -15 }}
               transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              className="flex items-center justify-center"
+              className="flex items-center justify-center p-0.5"
             >
               <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
             </motion.div>

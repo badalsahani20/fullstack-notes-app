@@ -1,10 +1,17 @@
-import { Archive, RotateCcw, Star, Trash2, X } from "lucide-react";
+import { Archive, RotateCcw, Star, Trash2, X, MoreVertical } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/store/useNoteStore";
 import { getRelativeUpdatedLabel } from "@/utils/getRelativeUpdatedLabel";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 type NoteCardProps = {
   note: Note;
@@ -52,7 +59,7 @@ const NoteCard = ({
         queryFn: () => useNoteQuery(noteId),
       });
     }, 150);
-};
+  };
 
   return (
     <motion.article
@@ -74,8 +81,16 @@ const NoteCard = ({
       whileTap={{ scale: 0.985 }}
       onClick={onClick}
       onHoverStart={() => handleHoverStart(note._id)}
+      draggable
+      onDragStart={(e: any) => {
+        e.dataTransfer.setData("application/notesify-note", JSON.stringify({ 
+          noteId: note._id, 
+          version: note.version 
+        }));
+        e.dataTransfer.effectAllowed = "move";
+      }}
       className={cn(
-        "note-list-row",
+        "note-list-row group",
         isActive && "note-list-row-active",
         isTrashView && "cursor-default opacity-80"
       )}
@@ -120,61 +135,58 @@ const NoteCard = ({
       </div>
 
       {/* Action buttons */}
-      {isTrashView ? (
-        /* Trash view: Restore + Delete Permanently */
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRestore?.(note._id);
-            }}
-            className="note-row-delete text-green-500 hover:text-green-400"
-            aria-label="Restore note"
-            title="Restore"
-          >
-            <RotateCcw size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onPermanentDelete?.(note._id);
-            }}
-            className="note-row-delete text-red-500 hover:text-red-400"
-            aria-label="Permanently delete note"
-            title="Delete permanently"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      ) : (
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleArchive?.(note._id);
-            }}
-            className={cn("note-row-delete", isArchiveView && "text-blue-400")}
-            aria-label={isArchiveView ? "Unarchive note" : "Archive note"}
-            title={isArchiveView ? "Unarchive" : "Archive"}
-          >
-            <Archive size={14} />
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete?.(note._id);
-            }}
-            className="note-row-delete"
-            aria-label="Delete note"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      )}
+      <div className="flex shrink-0 items-center">
+        {isTrashView ? (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRestore?.(note._id);
+              }}
+              className="note-row-delete text-green-500 hover:text-green-400"
+              aria-label="Restore note"
+            >
+              <RotateCcw size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onPermanentDelete?.(note._id);
+              }}
+              className="note-row-delete text-red-500 hover:text-red-400"
+              aria-label="Permanently delete note"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="note-row-delete opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 hover:bg-[var(--surface-ghost)] rounded-md text-[var(--muted-text)] hover:text-[var(--text-strong)]"
+                aria-label="More actions"
+              >
+                <MoreVertical size={16} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={() => onToggleArchive?.(note._id)}>
+                <Archive size={14} className="mr-2" />
+                {isArchiveView ? "Unarchive" : "Archive"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onDelete?.(note._id)} className="text-red-500 focus:text-red-500">
+                <Trash2 size={14} className="mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </motion.article>
   );
 };

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Clock, ArrowDownAz, ListFilter } from "lucide-react";
 import NoteCard from "./noteCard";
 import FolderCard from "./folderCard";
 import NoteDeleteDialog, { SKIP_NOTE_DELETE_CONFIRM_KEY } from "@/components/notes/NoteDeleteDialog";
@@ -19,6 +21,15 @@ import {
   useTogglePinMutation,
   useToggleArchiveMutation
 } from "@/hooks/useNotesMutations";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const isRenderableNote = (value: unknown): value is Note => {
   if (!value || typeof value !== "object") return false;
@@ -48,6 +59,9 @@ const NotesListPanel = () => {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "recent">("all");
+  const [sortOrder, setSortOrder] = useState<"updatedAt" | "title">("updatedAt");
+
   const { data: queryNotes = [], isLoading: isNotesLoading, isError: isNoteError, error: notesError } = useNotesQuery();
   const { data: trash = [], isLoading: isTrashLoading } = useTrashQuery();
   const { data: archivedNotes = [], isLoading: isArchiveLoading } = useArchivedQuery();
@@ -69,6 +83,32 @@ const NotesListPanel = () => {
     isArchiveRoute,
     isTrashRoute,
   } = useNotesFilter(safeNotes, folders, searchQuery, trash, archivedNotes);
+
+  const processedNotes = useMemo(() => {
+    let notes = [...filteredNotes];
+
+    if (activeTab === "recent") {
+      notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    } else {
+      // Default "All" view: Favorited first, then by sortOrder
+      notes.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        
+        if (sortOrder === "title") {
+          return (a.title || "").localeCompare(b.title || "");
+        }
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+    }
+
+    if (activeTab !== "recent" && sortOrder === "title") {
+       // if we are in title sort, we still respect pinned but sort the rest by title
+    }
+
+    return notes;
+  }, [filteredNotes, activeTab, sortOrder]);
+
   const isInitialNotesLoad = isTrashRoute
     ? isTrashLoading
     : isArchiveRoute
@@ -105,8 +145,8 @@ const NotesListPanel = () => {
   }, [filteredNotes, filteredTrashFolders, isTrashRoute]);
   const totalTrashCount = trash.length + trashFolders.length;
   const currentNoteIndex = useMemo(
-    () => filteredNotes.findIndex((item) => item._id === noteId),
-    [filteredNotes, noteId]
+    () => processedNotes.findIndex((item) => item._id === noteId),
+    [processedNotes, noteId]
   );
 
   const handleCreateNote = () => {
@@ -146,7 +186,7 @@ const NotesListPanel = () => {
     };
 
     const openNoteAtIndex = (index: number) => {
-      const target = filteredNotes[index];
+      const target = processedNotes[index];
       if (!target || isTrashRoute) return;
 
       const basePath = folderId
@@ -167,7 +207,7 @@ const NotesListPanel = () => {
         return;
       }
 
-      if (isTypingTarget(event.target) || filteredNotes.length === 0 || isTrashRoute) {
+      if (isTypingTarget(event.target) || processedNotes.length === 0 || isTrashRoute) {
         return;
       }
 
@@ -200,6 +240,7 @@ const NotesListPanel = () => {
     isTrashRoute,
     location.search,
     navigate,
+    processedNotes,
   ]);
 
   const shouldShowNotesError = isNoteError && !isTrashRoute && !isArchiveRoute && !isFavoritesRoute;
@@ -227,8 +268,55 @@ const NotesListPanel = () => {
           isFavoritesView={isFavoritesRoute}
         />
 
+        <div className="px-4 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex bg-[var(--surface-ghost)] p-1 rounded-lg">
+              <button
+                onClick={() => setActiveTab("all")}
+                className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                  activeTab === "all" ? "bg-[var(--panel-bg-strong)] text-[var(--accent-strong)] shadow-sm" : "text-[var(--muted-text)] hover:text-[var(--text-strong)]"
+                )}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setActiveTab("recent")}
+                className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                  activeTab === "recent" ? "bg-[var(--panel-bg-strong)] text-[var(--accent-strong)] shadow-sm" : "text-[var(--muted-text)] hover:text-[var(--text-strong)]"
+                )}
+              >
+                Recent
+              </button>
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-1.5 text-[var(--muted-text)] hover:text-[var(--text-strong)] hover:bg-[var(--surface-ghost)] rounded-md transition-colors">
+                  <ListFilter size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
+                  <DropdownMenuRadioItem value="updatedAt">
+                    <Clock size={14} className="mr-2" />
+                    Last Updated
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="title">
+                    <ArrowDownAz size={14} className="mr-2" />
+                    Alphabetical
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
         <div className="px-4 pb-2 text-sm text-[var(--muted-text)]">
-          {isTrashRoute ? `Trash (${combinedTrashItems.length})` : `Notes (${filteredNotes.length})`}
+          {isTrashRoute ? `Trash (${combinedTrashItems.length})` : `Notes (${processedNotes.length})`}
         </div>
 
         <div className="custom-scrollbar mobile-notes-scroll flex-1 space-y-3 overflow-y-auto px-3 pb-4">
@@ -242,7 +330,7 @@ const NotesListPanel = () => {
             >
               {notesErrorMessage}
             </motion.div>
-          ) : (isTrashRoute ? combinedTrashItems.length === 0 : filteredNotes.length === 0) ? (
+          ) : (isTrashRoute ? combinedTrashItems.length === 0 : processedNotes.length === 0) ? (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
@@ -293,7 +381,7 @@ const NotesListPanel = () => {
                       />
                     )
                   )
-                  : filteredNotes.map((note) => (
+                  : processedNotes.map((note) => (
                     <NoteCard
                       key={note._id}
                       note={note}
@@ -325,7 +413,7 @@ const NotesListPanel = () => {
 
       <NoteDeleteDialog
         noteId={pendingDeleteNoteId}
-        noteTitle={filteredNotes.find((n) => n._id === pendingDeleteNoteId)?.title || "this note"}
+        noteTitle={processedNotes.find((n) => n._id === pendingDeleteNoteId)?.title || "this note"}
         onConfirm={handleConfirmDelete}
         onCancel={() => setPendingDeleteNoteId(null)}
         isPending={isDeleteNotePending}

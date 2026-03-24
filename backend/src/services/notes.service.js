@@ -1,4 +1,5 @@
 import Notes from "../models/notes.model.js";
+import { getWelcomeNote } from "../utils/welcomeNote.js";
 // import { $regex } from "sift";
 // Bypasses the Mongoose pre('find') hook while matching missing fields on old docs
 const ANY_ARCHIVE_STATE = { $in: [true, false, null] };
@@ -22,6 +23,11 @@ export const createNewNote = async (userId, noteData) => {
         user: userId,
         ...noteData
     });
+};
+
+export const createWelcomeNote = async (userId) => {
+    const welcomeNote = getWelcomeNote();
+    return await createNewNote(userId, welcomeNote);
 };
 
 export const updateNoteById = async (noteId, userId, updateData, clientVersion) => {

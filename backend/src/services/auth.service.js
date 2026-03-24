@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { createWelcomeNote } from "./notes.service.js";
 
 const hashRefreshToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
 
@@ -16,6 +17,10 @@ export const registerUser = async (userData) => {
     //Data logic
     //he Model's .pre('save') hook handles the hashing automatically
     const user = await User.create(userData);
+    
+    //Add welcome note
+    await createWelcomeNote(user._id);
+
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     const hashedRefreshToken = hashRefreshToken(refreshToken);
@@ -190,6 +195,9 @@ export const findOrCreateGoogleUser = async (profile) => {
             avatar: profile.photos?.[0]?.value || "",
             provider: "google"
         });
+
+        //Add welcome note
+        await createWelcomeNote(user._id);
     } else if (!user.googleId) {
         //existing email user linking google account
         user.googleId = profile.id;

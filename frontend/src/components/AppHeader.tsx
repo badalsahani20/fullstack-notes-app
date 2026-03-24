@@ -8,7 +8,7 @@ import Logo from "@/components/ui/Logo";
 
 type AppHeaderProps = {
   theme: "light" | "dark";
-  onToggleTheme: () => void;
+  onToggleTheme: (event: React.MouseEvent) => void;
 };
 
 const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
@@ -46,7 +46,7 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
       </div>
 
       <div className="desktop-header-actions">
-        <button type="button" onClick={onToggleTheme} className="desktop-icon-button" aria-label="Toggle theme">
+        <button type="button" onClick={(e) => onToggleTheme(e)} className="desktop-icon-button" aria-label="Toggle theme">
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
         <button type="button" className="desktop-icon-button relative hidden sm:inline-flex" aria-label="Notifications">

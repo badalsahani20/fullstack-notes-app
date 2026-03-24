@@ -37,6 +37,49 @@ const MainLayout = ({ middlePanel }: Pops) => {
     ]);
   }, [fetchFolders]);
 
+  const onToggleTheme = (event: React.MouseEvent) => {
+    const isDark = theme === "dark";
+    const nextTheme = isDark ? "light" : "dark";
+
+    // Fallback if view transition is not supported
+    if (!(document as any).startViewTransition) {
+      setTheme(nextTheme);
+      return;
+    }
+
+    const x = event.clientX;
+    const y = event.clientY;
+    const endRadius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+
+    const transition = (document as any).startViewTransition(() => {
+      document.documentElement.classList.add("theme-transitioning");
+      setTheme(nextTheme);
+    });
+
+    transition.finished.finally(() => {
+      document.documentElement.classList.remove("theme-transitioning");
+    });
+
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        {
+          clipPath: [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+          ],
+        },
+        {
+          duration: 450,
+          easing: "ease-in-out",
+          pseudoElement: "::view-transition-new(root)",
+        }
+      );
+    });
+  };
+
   return (
     <AppLayout
       showGlobalHeader={showGlobalHeader}
@@ -46,7 +89,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
       isMobile={isMobile}
       animationKey={animationKey}
       header={
-        <AppHeader theme={theme} onToggleTheme={() => setTheme((c) => (c === "dark" ? "light" : "dark"))} />
+        <AppHeader theme={theme} onToggleTheme={onToggleTheme} />
       }
       activityBar={
         <ActivityBar />

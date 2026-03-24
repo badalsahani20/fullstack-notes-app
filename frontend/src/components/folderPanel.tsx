@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import type { Folder as FolderType } from "@/store/useFolderStore";
 import { useFolderTree } from "@/hooks/useFolderTree";
 import { useFolderStore } from "@/store/useFolderStore";
@@ -21,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMoveNoteToFolderMutation } from "@/hooks/useNotesMutations";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,15 +43,35 @@ const TopLink = ({
   active,
   icon: Icon,
   onClick,
+  onDrop,
 }: {
   label: string;
   count: number;
   active?: boolean;
   icon: IconComponent;
   onClick: () => void;
+  onDrop?: (noteId: string, version: number) => void;
 }) => {
   return (
-    <button type="button" onClick={onClick} className={`sidebar-link-row ${active ? "sidebar-link-row-active" : ""}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      onDragOver={(e) => {
+        if (onDrop) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+        }
+      }}
+      onDrop={(e) => {
+        if (!onDrop) return;
+        const data = e.dataTransfer.getData("application/notesify-note");
+        if (data) {
+          const { noteId, version } = JSON.parse(data);
+          onDrop(noteId, version);
+        }
+      }}
+      className={`sidebar-link-row ${active ? "sidebar-link-row-active" : ""}`}
+    >
       <span className="sidebar-link-main">
         <Icon size={17} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
         <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{label}</span>
@@ -68,6 +90,7 @@ const FolderRow = ({
   onClick,
   onRename,
   onDelete,
+  onDrop,
 }: {
   folder: FolderType;
   count: number;
@@ -77,11 +100,33 @@ const FolderRow = ({
   onClick: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onDrop: (noteId: string, version: number) => void;
 }) => {
   const Icon = getFolderIcon(folder.name);
+  const [isOver, setIsOver] = useState(false);
 
   return (
-    <div className={`sidebar-tree-row sidebar-tree-row-item group ${active ? "sidebar-tree-row-active" : ""}`}>
+    <div
+      className={cn(
+        "sidebar-tree-row sidebar-tree-row-item group",
+        active && "sidebar-tree-row-active",
+        isOver && "bg-[var(--active-surface)] ring-1 ring-[var(--accent-strong)]"
+      )}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        setIsOver(true);
+      }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        setIsOver(false);
+        const data = e.dataTransfer.getData("application/notesify-note");
+        if (data) {
+          const { noteId, version } = JSON.parse(data);
+          onDrop(noteId, version);
+        }
+      }}
+    >
       <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center justify-between">
         <span className="sidebar-link-main">
           <span
@@ -274,6 +319,7 @@ const FoldersPanel = () => {
   const [deleteTarget, setDeleteTarget] = useState<FolderType | null>(null);
   const [isSavingFolder, setIsSavingFolder] = useState(false);
   const [isDeletingFolder, setIsDeletingFolder] = useState(false);
+  const { mutate: moveNote } = useMoveNoteToFolderMutation();
 
   const {
     allNotes,
@@ -357,8 +403,21 @@ const FoldersPanel = () => {
         <div className="sidebar-content custom-scrollbar mt-1">
           <div className="hidden-on-mobile">
             <div className="sidebar-static-links">
-              <TopLink label="All Notes" count={allNotes.length} active={isAllNotesRoute} icon={FileText} onClick={() => navigate(noteId ? `/note/${noteId}` : "/")} />
-              <TopLink label="Favorites" count={favoritesCount} active={isFavoritesRoute} icon={Star} onClick={() => navigate(noteId ? `/favorites/note/${noteId}` : "/favorites")} />
+              <TopLink
+                label="All Notes"
+                count={allNotes.length}
+                active={isAllNotesRoute}
+                icon={FileText}
+                onClick={() => navigate(noteId ? `/note/${noteId}` : "/")}
+                onDrop={(id, ver) => moveNote({ noteId: id, folderId: null, version: ver })}
+              />
+              <TopLink
+                label="Favorites"
+                count={favoritesCount}
+                active={isFavoritesRoute}
+                icon={Star}
+                onClick={() => navigate(noteId ? `/favorites/note/${noteId}` : "/favorites")}
+              />
             </div>
 
             <div className="sidebar-divider" />
@@ -402,6 +461,7 @@ const FoldersPanel = () => {
                           onClick={() => navigate(noteId ? `/folders/${folder._id}/note/${noteId}` : `/folders/${folder._id}`)}
                           onRename={() => void handleRenameFolder(folder)}
                           onDelete={() => void handleDeleteFolder(folder)}
+                          onDrop={(id, ver) => moveNote({ noteId: id, folderId: folder._id, version: ver })}
                         />
 
                       <div className={`sidebar-folder-children ${expanded ? "sidebar-folder-children-open" : ""}`}>
