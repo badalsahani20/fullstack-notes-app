@@ -45,7 +45,7 @@ const SearchPage = () => {
   }, [notes, query]);
 
   return (
-    <div className="mobile-search-page">
+    <div className="mobile-search-page flex flex-col h-full">
       <div className="mobile-screen-header">
         <h2>Search</h2>
         <p>Find notes, ideas, and saved drafts instantly.</p>

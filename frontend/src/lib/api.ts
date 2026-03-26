@@ -65,8 +65,48 @@ api.interceptors.response.use(
         return Promise.reject(refreshErr);
       }
     }
+    // Handle global network/connection errors
+    if (!error.response) {
+      // 1. Client can't reach the Server (Offline, DNS failure, local firewall, server down)
+      const isOffline = !window.navigator.onLine;
+      const message = isOffline 
+        ? "You're offline. Please check your internet connection." 
+        : "Unable to reach the server. Please check your connection.";
+      
+      import("sonner").then(({ toast }) => {
+        toast.error("Network Error", {
+          id: "network-error", 
+          description: message,
+          duration: Infinity, 
+        });
+      });
+    } else {
+      // 2. Server reached, but reported a connection failure (e.g. Server can't reach DB)
+      const data = error.response.data;
+      if (data && typeof data === "object" && "message" in data && typeof data.message === "string") {
+        if (data.message.includes("ENOTFOUND") || data.message.includes("ECONNREFUSED")) {
+          import("sonner").then(({ toast }) => {
+            toast.error("Database Error", {
+              description: "The backend is having trouble connecting to the database. Please check your connection.",
+              duration: 10000,
+            });
+          });
+        }
+      }
+    }
+
     return Promise.reject(error);
   },
 );
+
+// Clear the network error toast when we come back online
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    import("sonner").then(({ toast }) => {
+      toast.dismiss("network-error");
+      toast.success("Back online", { duration: 3000 });
+    });
+  });
+}
 
 export default api;

@@ -47,7 +47,7 @@ const actionPrompts = {
   summarize: (text) =>
     `Summarize the following note into concise markdown bullet points. Use hierarchical bullets if necessary. Keep important facts and action items. Return the markdown text only, no code blocks.\n\nNote:\n${text}`,
   explain: (text) =>
-    `Explain the following note in simpler language for a beginner. Use markdown for structure (line breaks, bold text for emphasis). Keep it accurate and clear. Return the markdown text only, no code blocks.\n\nNote:\n${text}`,
+    `Explain the following note in simpler language for a beginner. Use markdown for structure. Keep it accurate and clear. Return the markdown text only, no code blocks.Or if user asks a question about the note, answer it in a simple and clear way. Return the answer in markdown text only, no code blocks.\n\nNote:\n${text}`,
   rewrite: (text) =>
     `Rewrite the following text to improve clarity, flow, and grammar while preserving meaning. Use markdown for structural improvements if needed. Return the improved markdown text only, no code blocks.\n\nText:\n${text}`,
   continue: (text) => 

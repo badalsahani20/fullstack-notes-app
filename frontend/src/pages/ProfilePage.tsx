@@ -36,12 +36,12 @@ const ProfilePage = () => {
   ];
 
   return (
-    <div className="mobile-profile-page">
-      <div className="mobile-screen-header">
+    <div className="mobile-profile-page flex flex-col h-full">
+      <div className="mobile-screen-header shrink-0">
         <h2>Profile</h2>
       </div>
 
-      <div className="px-4 pb-28">
+      <div className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-28">
         <div className="mobile-profile-card">
           <div className="mobile-profile-avatar">{initials}</div>
           <h3>{user?.name || "Notesify User"}</h3>

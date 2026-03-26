@@ -289,6 +289,12 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       const assistantMessage: Message = { id: `${Date.now()}-chat-assistant`, role: "assistant", text: reply };
       setResult(null);
+      
+      // Synchronously prep the streaming state and add the message
+      // This prevents the "flash" of full text before the effect starts
+      setStreamingMessageId(assistantMessage.id);
+      setStreamedMessageText("");
+      setIsStreaming(true);
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Persist to DB — cap at 50 messages to prevent BSON size bloat
@@ -319,7 +325,13 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       }
 
       setChatHistory((prev) => [...prev, { role: "user", content: trimmed }]);
-      setMessages((prev) => [...prev, { id: `${Date.now()}-chat-error`, role: "assistant", text: message }]);
+      const errorMessage: Message = { id: `${Date.now()}-chat-error`, role: "assistant", text: message };
+      
+      // Also prep streaming for error messages so they don't flash
+      setStreamingMessageId(errorMessage.id);
+      setStreamedMessageText("");
+      setIsStreaming(true);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsSendingChat(false);
     }

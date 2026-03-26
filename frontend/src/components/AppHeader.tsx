@@ -5,6 +5,7 @@ import { useFolderStore } from "@/store/useFolderStore";
 import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
 import Logo from "@/components/ui/Logo";
+import { toast } from "sonner";
 
 type AppHeaderProps = {
   theme: "light" | "dark";
@@ -49,7 +50,12 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
         <button type="button" onClick={(e) => onToggleTheme(e)} className="desktop-icon-button" aria-label="Toggle theme">
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
-        <button type="button" className="desktop-icon-button relative hidden sm:inline-flex" aria-label="Notifications">
+        <button 
+          type="button" 
+          className="desktop-icon-button relative hidden sm:inline-flex" 
+          aria-label="Notifications"
+          onClick={() => toast.info("Notifications are coming soon! Stay tuned.")}
+        >
           <Bell size={16} />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-[var(--panel-bg)]" />
         </button>

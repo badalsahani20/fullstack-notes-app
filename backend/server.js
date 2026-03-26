@@ -10,7 +10,11 @@ import aiRoute from "./src/routes/aiRoute.js"
 import cookieParser from "cookie-parser";
 import trashRoute from "./src/routes/trash.route.js";
 import passport from "./config/passport.js";
-// import { message } from "statuses";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 const app = express();
@@ -18,7 +22,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: ["https://notesify-eta.vercel.app", "http://localhost:5173"],
+    origin: ["https://notesify-eta.vercel.app", "http://localhost:5173", "http://localhost:5500"],
     credentials: true,
 }));
 
@@ -29,6 +33,19 @@ app.use("/api/notes", notesRoute);
 app.use("/api/folders", folderRoute);
 app.use("/api/ai", aiRoute);
 app.use("/api/trash", trashRoute);
+
+// Serve Static Files for Frontend
+const frontendDistPath = path.join(__dirname, "..", "frontend", "dist");
+app.use(express.static(frontendDistPath));
+
+// Catch-all route for SPA (React Router)
+app.use((req, res, next) => {
+    if (!req.path.startsWith("/api")) {
+        res.sendFile(path.join(frontendDistPath, "index.html"));
+    } else {
+        next();
+    }
+});
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
