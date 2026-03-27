@@ -1,11 +1,12 @@
 import { Bell, Moon, Plus, Sun } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useFolderStore } from "@/store/useFolderStore";
 import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
 import Logo from "@/components/ui/Logo";
 import { toast } from "sonner";
+import { useState } from "react";
+import NewNotebookDialog from "@/components/folders/NewNotebookDialog";
 
 type AppHeaderProps = {
   theme: "light" | "dark";
@@ -13,23 +14,17 @@ type AppHeaderProps = {
 };
 
 const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
-  const { addFolder } = useFolderStore();
   const { folderId } = useParams();
   const navigate = useNavigate();
+
+  const [isNewNotebookOpen, setIsNewNotebookOpen] = useState(false);
 
   const handleCreateNote = () => {
     navigate(folderId ? `/folders/${folderId}/note/new` : `/note/new`);
   };
 
-  const handleCreateFolder = async () => {
-    const name = window.prompt("Folder name");
-    const normalized = name?.trim();
-    if (!normalized) return;
-
-    const folder = await addFolder(normalized);
-    if (folder?._id) {
-      navigate(`/folders/${folder._id}`);
-    }
+  const handleOpenNewNotebook = () => {
+    setIsNewNotebookOpen(true);
   };
 
   return (
@@ -63,12 +58,17 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
           <Plus size={15} />
           <span className="hidden sm:inline">New Note</span>
         </Button>
-        <Button type="button" variant="outline" onClick={handleCreateFolder} className="desktop-secondary-button hidden sm:inline-flex">
+        <Button type="button" variant="outline" onClick={handleOpenNewNotebook} className="desktop-secondary-button hidden sm:inline-flex">
           <Plus size={15} />
           <span className="hidden sm:inline">New Notebook</span>
         </Button>
         <UserMenu />
       </div>
+
+      <NewNotebookDialog 
+        isOpen={isNewNotebookOpen} 
+        onClose={() => setIsNewNotebookOpen(false)} 
+      />
     </header>
   );
 };
