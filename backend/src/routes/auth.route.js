@@ -1,5 +1,5 @@
     import express from "express";
-    import { registerUser, loginUser, getAllUsers, refreshToken, logoutUser, getMe, googleCallback } from "../controllers/auth.controller.js";
+    import { registerUser, loginUser, getAllUsers, refreshToken, logoutUser, getMe, googleCallback, forgotPassword, resetPassword } from "../controllers/auth.controller.js";
     import authMiddleware from "../middleware/auth.middleware.js";
     import passport from "passport";
 
@@ -15,6 +15,8 @@
     //protected routes
     router.post("/logout", logoutUser);
     router.get("/me", authMiddleware, getMe);
+    router.post("/forgot-password", forgotPassword);
+    router.post("/reset-password/:token", resetPassword);
 
     //For testing purpose
     router.get("/", authMiddleware, getAllUsers);

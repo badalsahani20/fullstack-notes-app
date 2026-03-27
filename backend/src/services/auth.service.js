@@ -37,6 +37,7 @@ export const registerUser = async (userData) => {
         }
     );
 
+    //Send welcome email
     return { user, accessToken, refreshToken };
 }
 
@@ -213,6 +214,53 @@ export const findOrCreateGoogleUser = async (profile) => {
         user.name = profile.displayName || email.split("@")[0];
         await user.save();
     }
+
+    return user;
+}
+
+// Forgot password
+export const generatePasswordResetToken = async (email) => {
+    const user = await User.findOne({email});
+    if(!user) {
+        const error = new Error("User not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    //Generate plain text token
+    const resetToken = crypto.randomBytes(20).toString("hex");
+    //Generate hashed token to store in DB
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    
+    user.forgotPasswordToken = hashedToken;
+    user.forgotPasswordExpiry = Date.now() + 15 * 60 * 1000;
+    await user.save();
+    return resetToken;
+}
+
+export const resetUserPassword = async (token, newPassword) => {
+    //Hash the incoming plain text token to compare
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    //Find user with valid token and not expired one
+    const user = await User.findOne({
+        forgotPasswordToken: hashedToken,
+        forgotPasswordExpiry: { $gt: Date.now() },
+    });
+
+    if(!user) {
+        const error = new Error("Token is invalid or has expired");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    //Update password (pre save hook will hash this)
+    user.password = newPassword;
+    user.forgotPasswordToken = undefined;
+    user.forgotPasswordExpiry = undefined;
+
+    user.refreshToken = [];
+
+    await user.save();
 
     return user;
 }

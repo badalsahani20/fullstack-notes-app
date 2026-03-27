@@ -46,10 +46,12 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#080d18] p-4">
-      {/* Ambient glow blobs */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-[500px] w-[600px] -translate-x-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-violet-600/8 blur-[100px]" />
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#070b14] p-4">
+      {/* Ambient glow + subtle grid */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#1f2a44_0%,transparent_55%)] opacity-60" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-15" />
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[640px] -translate-x-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-violet-600/10 blur-[110px]" />
 
       <div className="relative w-full max-w-md">
         {/* Logo mark */}
@@ -62,11 +64,11 @@ const Login = () => {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f1625]/90 p-8 shadow-[0_24px_64px_rgba(0,0,0,0.4)] backdrop-blur-xl">
+        <div className="rounded-2xl border border-white/10 bg-[#0f1625]/90 p-8 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
           <form onSubmit={handleLogin} className="space-y-5">
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Email</label>
+              <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">Email</label>
               <Input
                 type="email"
                 placeholder="name@example.com"
@@ -80,7 +82,9 @@ const Login = () => {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">Password</label>
+              </div>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -99,6 +103,15 @@ const Login = () => {
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Link 
+                to="/forgot-password" 
+                className="text-[11px] font-medium text-zinc-500 transition hover:text-zinc-300"
+              >
+                Forgot password?
+              </Link>
             </div>
 
             {/* Submit */}
@@ -129,10 +142,15 @@ const Login = () => {
               type="button"
               onClick={handleGoogleLogin}
               variant="outline"
-              className="h-11 w-full border-white/10 bg-white/5 font-medium text-white hover:bg-white/10"
+              className="group relative h-11 w-full cursor-pointer overflow-hidden border-white/10 bg-white/5 font-medium text-white transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/10 hover:shadow-[0_12px_24px_rgba(0,0,0,0.4)] active:scale-[0.97] hover:text-white"
             >
-              <img src={Google} alt="Google" width={18} className="mr-2" />
-              Continue with Google
+              {/* Shine effect sweep */}
+              <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-700 group-hover:translate-x-[100%]" />
+              
+              <span className="relative flex items-center justify-center gap-[10px]">
+                <img src={Google} alt="Google" width={18} />
+                Continue with Google
+              </span>
             </Button>
           </form>
 

@@ -46,6 +46,8 @@ const userSchema = new mongoose.Schema({
             }
         },
     ],
+    forgotPasswordToken: { type: String, select: false},
+    forgotPasswordExpiry: { type: Date, select: false}
 } , {timestamps: true});
 
 userSchema.index(

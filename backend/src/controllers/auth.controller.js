@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import * as AuthService from "../services/auth.service.js";
 import catchAsync from "../utils/catchAsync.js";
 import crypto from "crypto";
+import * as MailService from "../services/mail.service.js";
 
 const getRefreshCookieOptions = () => ({
   httpOnly: true,
@@ -32,6 +33,8 @@ export const registerUser = catchAsync(async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
+  //Send welcome email
+  await MailService.sendWelcomeEmail(user.email, user.name);
   res.status(201).json({
     success: true,
     message: "User registered successfully",
@@ -144,3 +147,32 @@ export const googleCallback = catchAsync(async (req, res) => {
     `${process.env.FRONTEND_URL}/oauth-success`
   );
 })
+
+export const forgotPassword = catchAsync(async(req, res) => {
+  const { email } = req.body;
+
+  //Let the service handle the logic
+  const resetToken = await AuthService.generatePasswordResetToken(email);
+
+  //Construct the URL
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+  //For now, log it (Setting up emil is next step)
+  await MailService.sendResetPasswordEmail(email, resetUrl);
+
+  res.status(200).json({
+    success: true,
+    message: "A reset link has been sent to your email."
+  });
+});
+
+export const resetPassword = catchAsync(async(req, res) => {
+  const{ token } = req.params;
+  const { password } = req.body;
+  await AuthService.resetUserPassword(token, password);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successfully. You can now login with your new password."
+  });
+});
