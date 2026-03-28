@@ -2,6 +2,8 @@ import User from "../models/user.model.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { createWelcomeNote } from "./notes.service.js";
+import { sendWelcomeEmail } from "./mail.service.js";
+
 
 const hashRefreshToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
 
@@ -38,6 +40,8 @@ export const registerUser = async (userData) => {
     );
 
     //Send welcome email
+    sendWelcomeEmail(user.email, user.name).catch(err => console.error("Welcome email failed:", err));
+
     return { user, accessToken, refreshToken };
 }
 
@@ -199,6 +203,10 @@ export const findOrCreateGoogleUser = async (profile) => {
 
         //Add welcome note
         await createWelcomeNote(user._id);
+
+        //Send welcome email
+        sendWelcomeEmail(user.email, user.name).catch(err => console.error("Welcome email failed (Google):", err));
+
     } else if (!user.googleId) {
         //existing email user linking google account
         user.googleId = profile.id;

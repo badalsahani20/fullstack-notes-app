@@ -33,8 +33,6 @@ export const registerUser = catchAsync(async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
-  //Send welcome email
-  await MailService.sendWelcomeEmail(user.email, user.name);
   res.status(201).json({
     success: true,
     message: "User registered successfully",

@@ -162,10 +162,10 @@ const Login = () => {
           </p>
         </div>
 
-        <p className="mt-6 text-center text-xs text-zinc-700">
+        <p className="mt-6 text-center text-xs text-zinc-200">
           By signing in you agree to our{" "}
-          <span className="text-zinc-500">Terms of Service</span> and{" "}
-          <span className="text-zinc-500">Privacy Policy</span>.
+          <span className="text-zinc-200">Terms of Service</span> and{" "}
+          <span className="text-zinc-200">Privacy Policy</span>.
         </p>
       </div>
     </div>

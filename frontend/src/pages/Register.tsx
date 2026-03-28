@@ -72,10 +72,10 @@ const Register = () => {
           <form onSubmit={handleRegister} className="space-y-5">
             {/* Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Full name</label>
+              <label className="text-xs font-medium uppercase tracking-widest text-white">Full name</label>
               <Input
                 type="text"
-                placeholder="Badal Sahani"
+                placeholder="john doe"
                 className="h-11 border-white/10 bg-white/5 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500/50"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -86,7 +86,7 @@ const Register = () => {
 
             {/* Email */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Email</label>
+              <label className="text-xs font-medium uppercase tracking-widest text-white">Email</label>
               <Input
                 type="email"
                 placeholder="name@example.com"
@@ -99,7 +99,7 @@ const Register = () => {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium uppercase tracking-widest text-zinc-500">Password</label>
+              <label className="text-xs font-medium uppercase tracking-widest text-white">Password</label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -164,10 +164,10 @@ const Register = () => {
         </div>
 
         {/* Footer note */}
-        <p className="mt-6 text-center text-xs text-zinc-700">
+        <p className="mt-6 text-center text-xs text-zinc-200">
           By signing up you agree to our{" "}
-          <span className="text-zinc-500">Terms of Service</span> and{" "}
-          <span className="text-zinc-500">Privacy Policy</span>.
+          <span className="text-zinc-200">Terms of Service</span> and{" "}
+          <span className="text-zinc-200">Privacy Policy</span>.
         </p>
       </div>
     </div>
