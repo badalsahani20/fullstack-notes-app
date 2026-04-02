@@ -57,22 +57,29 @@ const NoteCard = ({
 
   return (
     <motion.article
-      layout
+      layout="position"
       layoutId={note._id}
       variants={{
-        hidden: { opacity: 0, y: 12, scale: 0.97 },
+        hidden: { opacity: 0, y: 16, scale: 0.96, filter: "blur(4px)" },
         show: {
           opacity: 1,
           y: 0,
           scale: 1,
-          transition: { type: "spring", stiffness: 500, damping: 35 },
+          filter: "blur(0px)",
+          transition: { type: "spring", stiffness: 400, damping: 28, mass: 0.8 },
         },
       }}
       initial="hidden"
       animate="show"
-      exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.12, ease: "easeOut" } }}
-      whileHover={{ scale: isTrashView ? 1 : 1.015, transition: { type: "spring", stiffness: 400, damping: 25 } }}
-      whileTap={{ scale: 0.985 }}
+      exit={{
+        opacity: 0,
+        y: -8,
+        scale: 0.96,
+        filter: "blur(2px)",
+        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] },
+      }}
+      whileHover={{ scale: isTrashView ? 1 : 1.018, y: isTrashView ? 0 : -1, transition: { type: "spring", stiffness: 400, damping: 20 } }}
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
       onHoverStart={() => handleHoverStart(note._id)}
       draggable

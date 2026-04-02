@@ -67,6 +67,13 @@ export const findNotesById = async (noteId, userId) => {
     return await Notes.findOne({ _id: noteId, user: userId, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE });
 };
 
+export const stampNoteAccess = async (noteId, userId) => {
+    await Notes.updateOne(
+        { _id: noteId, user: userId },
+        { $set: { lastAccessedAt: new Date() } }
+    ).setOptions({ timestamps: false });
+};
+
 export const removeNote = async (noteId, userId, clientVersion) => {
     // 1. Find the note first to check the version
     const existingNote = await Notes.findOne({ _id: noteId, user: userId, isDeleted: { $ne: true }, isArchived: ANY_ARCHIVE_STATE });

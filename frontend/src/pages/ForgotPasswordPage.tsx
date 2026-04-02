@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import Logo from "@/components/ui/Logo";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
@@ -26,35 +25,49 @@ export default function ForgotPasswordPage() {
 
     if (sent) {
         return (
-            <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#070b14] p-4">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#1f2a44_0%,transparent_55%)] opacity-60" />
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-15" />
-                <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[640px] -translate-x-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
-                <div className="pointer-events-none absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-violet-600/10 blur-[110px]" />
-
+            <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black p-4">
+                {/* Dynamic Background Elements */}
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                
                 <div className="relative w-full max-w-md">
-                    <div className="mb-8 flex flex-col items-center gap-3 text-center">
-                        <Logo size={56} className="shadow-2xl" />
-                        <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-white">Check your email</h1>
-                            <p className="mt-1 text-sm text-zinc-500">We sent a reset link to {email}.</p>
+                    <div className="mb-10 flex flex-col items-center gap-4 text-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 rounded-2xl bg-white/10 blur-[30px] scale-110" />
+                            <img
+                                src="/notesify-favicon.png"
+                                alt="Notesify"
+                                width={64}
+                                height={64}
+                                className="relative rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <h1 className="text-3xl font-bold tracking-tight text-white">Check your email</h1>
+                            <p className="text-sm text-zinc-500">We sent a reset link to <span className="text-white font-medium">{email}</span>.</p>
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-[#0f1625]/90 p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                        <p className="text-sm text-zinc-400">
-                            If you don’t see it, check your spam folder or try again.
-                        </p>
-                        <div className="mt-6 space-y-3">
-                            <Link
-                                to="/login"
-                                className="inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500"
-                            >
-                                Return to Login
-                            </Link>
-                            <Link to="/forgot-password" className="text-xs font-medium text-zinc-500 transition hover:text-zinc-300">
-                                Send another link
-                            </Link>
+                    <div className="group relative">
+                        <div className="absolute -inset-[1px] rounded-[21px] bg-gradient-to-b from-white/20 via-white/5 to-white/20 opacity-100" />
+                        <div className="relative rounded-2xl bg-gradient-to-b from-[#121212] to-black p-8 text-center shadow-[0_32px_100px_rgba(0,0,0,1)] backdrop-blur-3xl">
+                            <p className="text-sm text-zinc-400 leading-relaxed">
+                                If you don’t see it, check your spam folder or try again with a different email address.
+                            </p>
+                            <div className="mt-8 space-y-4">
+                                <Link
+                                    to="/login"
+                                    className="inline-flex w-full items-center justify-center h-12 rounded-xl bg-white text-sm font-bold text-black transition hover:bg-zinc-200 active:scale-[0.98] shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                                >
+                                    Return to Login
+                                </Link>
+                                <button 
+                                    onClick={() => setSent(false)} 
+                                    className="text-xs font-semibold uppercase tracking-widest text-zinc-500 transition hover:text-white"
+                                >
+                                    Try a different email
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -63,43 +76,66 @@ export default function ForgotPasswordPage() {
     }
 
     return (
-        <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#070b14] p-4">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#1f2a44_0%,transparent_55%)] opacity-60" />
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:48px_48px] opacity-15" />
-            <div className="pointer-events-none absolute -top-32 left-1/2 h-[520px] w-[640px] -translate-x-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
-            <div className="pointer-events-none absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-violet-600/10 blur-[110px]" />
+        <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black p-4">
+            {/* Dynamic Background Elements */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+            
+            {/* Sophisticated Glows */}
+            <div className="pointer-events-none absolute -top-24 left-1/4 h-[500px] w-[500px] rounded-full bg-white/5 blur-[120px] animate-pulse" />
+            <div className="pointer-events-none absolute -bottom-24 right-1/4 h-[500px] w-[500px] rounded-full bg-white/5 blur-[120px] animate-pulse" />
 
             <div className="relative w-full max-w-md">
-                <div className="mb-8 flex flex-col items-center gap-3 text-center">
-                    <Logo size={56} className="shadow-2xl" />
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-white">Forgot your password?</h1>
-                        <p className="mt-1 text-sm text-zinc-500">We’ll email you a secure reset link.</p>
+                <div className="mb-10 flex flex-col items-center gap-4 text-center">
+                    <div className="relative">
+                        <div className="absolute inset-0 rounded-2xl bg-white/10 blur-[30px] scale-110" />
+                        <img
+                            src="/notesify-favicon.png"
+                            alt="Notesify"
+                            width={64}
+                            height={64}
+                            className="relative rounded-2xl shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-bold tracking-tight text-white">Reset Password</h1>
+                        <p className="text-sm text-zinc-500">We’ll email you a secure link to reset your account.</p>
                     </div>
                 </div>
 
-                <div className="rounded-2xl border border-white/10 bg-[#0f1625]/90 p-8 shadow-[0_24px_70px_rgba(0,0,0,0.45)] backdrop-blur-xl">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-medium uppercase tracking-widest text-zinc-400">Email</label>
-                            <Input 
-                                placeholder="name@example.com" 
-                                type="email" 
-                                required 
-                                value={email} 
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="h-11 border-white/10 bg-white/5 text-white placeholder:text-zinc-600 focus-visible:ring-indigo-500/50"
-                            />
+                <div className="group relative">
+                    <div className="absolute -inset-[1px] rounded-[21px] bg-gradient-to-b from-white/20 via-white/5 to-white/20 opacity-100" />
+                    <div className="relative rounded-2xl bg-gradient-to-b from-[#121212] to-black p-8 shadow-[0_32px_100px_rgba(0,0,0,1)] backdrop-blur-3xl">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500 ml-1">Email Address</label>
+                                <Input 
+                                    placeholder="name@example.com" 
+                                    type="email" 
+                                    required 
+                                    value={email} 
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-700 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
+                                />
+                            </div>
+                            <Button className="h-12 w-full bg-white font-bold text-black hover:bg-zinc-200 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 shadow-[0_0_20px_rgba(255,255,255,0.1)]" disabled={loading}>
+                                {loading ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
+                                        Sending…
+                                    </span>
+                                ) : "Send Reset Link"}
+                            </Button>
+                        </form>
+                        <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                            <Link to="/login" className="text-xs font-semibold uppercase tracking-widest text-zinc-500 transition-colors hover:text-white">
+                                Back to Login
+                            </Link>
                         </div>
-                        <Button className="h-11 w-full bg-indigo-600 font-semibold text-white hover:bg-indigo-500 disabled:opacity-60" disabled={loading}>
-                            {loading ? "Sending..." : "Send Reset Link"}
-                        </Button>
-                    </form>
-                    <Link to="/login" className="mt-4 inline-flex w-full justify-center text-xs font-medium text-zinc-500 transition hover:text-zinc-300">
-                        Back to Login
-                    </Link>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
+

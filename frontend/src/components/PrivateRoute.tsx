@@ -22,6 +22,7 @@ const PrivateRoute = () => {
             id: currentUser._id || currentUser.id,
             name: currentUser.name,
             email: currentUser.email,
+            avatar: currentUser.avatar,
           },
           accessToken,
         );

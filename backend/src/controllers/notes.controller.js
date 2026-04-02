@@ -103,6 +103,10 @@ export const getNoteById = catchAsync(async (req, res) => {
     if(!note) {
       return res.status(404).json({message: "Note not found."});
     }
+
+    // Silently update lastAccessedAt without bumping updatedAt
+    NoteService.stampNoteAccess(req.params.id, req.user._id).catch(() => {});
+
     res.json(note);
 })
 

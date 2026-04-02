@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
-import Logo from "@/components/ui/Logo";
+
 import { toast } from "sonner";
 import { useState } from "react";
 import NewNotebookDialog from "@/components/folders/NewNotebookDialog";
@@ -30,7 +30,10 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
   return (
     <header className="desktop-header">
       <div className="desktop-brand">
-        <Logo size={32} />
+        <div className="relative">
+          <div className="absolute inset-0 rounded-lg bg-white/5 blur-md" />
+          <img src="/notesify-favicon.png" alt="Notesify" width={32} height={32} className="relative shadow-[0_0_15px_rgba(255,255,255,0.05)]" />
+        </div>
         <div>
           {/* <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-text)]">Workspace</p> */}
           <h1 className="text-[1.05rem] font-semibold tracking-[-0.04em] md:text-[1.15rem]">Notesify</h1>

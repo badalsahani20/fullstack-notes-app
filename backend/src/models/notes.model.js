@@ -41,6 +41,10 @@ const notesSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    lastAccessedAt: {
+        type: Date,
+        default: null
+    },
     grammarErrors: [{
         start: Number,
         end: Number,

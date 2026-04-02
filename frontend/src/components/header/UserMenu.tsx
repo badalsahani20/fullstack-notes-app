@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { ChevronDown, LogOut, Settings, User as UserIcon, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import GoogleIcon from "@/assets/google.svg";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,16 +48,14 @@ const UserMenu = () => {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="desktop-profile cursor-pointer transition-colors hover:bg-white/5 rounded-md p-1"
+          className="flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 rounded-full ring-2 ring-transparent hover:ring-zinc-700/50 p-0 outline-none focus-visible:ring-zinc-500"
         >
-          <Avatar className="h-8 w-8 border border-[var(--divider)]">
-            <AvatarFallback>{initials}</AvatarFallback>
+          <Avatar className="h-9 w-9 border border-zinc-700/60 shadow-[0_4px_14px_rgba(0,0,0,0.5)]">
+            <AvatarImage src={user?.avatar || GoogleIcon} referrerPolicy="no-referrer" />
+            <AvatarFallback className="bg-[#818cf8]/10 text-[#818cf8] font-bold text-sm tracking-wider">
+              {initials}
+            </AvatarFallback>
           </Avatar>
-          <div className="hidden text-left md:block">
-            <p className="text-[13px] font-semibold leading-tight">{user?.name || "Guest"}</p>
-            <p className="text-xs text-[var(--muted-text)]">{user?.email || "Research workspace"}</p>
-          </div>
-          <ChevronDown size={14} className="text-[var(--muted-text)]" />
         </button>
       </DropdownMenuTrigger>
       

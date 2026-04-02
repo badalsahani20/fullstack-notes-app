@@ -37,7 +37,7 @@ export const registerUser = catchAsync(async (req, res) => {
     success: true,
     message: "User registered successfully",
     accessToken,
-    user: { id: user._id, name: user?.name, email: user.email },
+    user: { id: user._id, name: user?.name, email: user.email, avatar: user.avatar },
   });
 });
 
@@ -60,6 +60,7 @@ export const loginUser = catchAsync(async (req, res, next) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar,
     },
   });
   // const user = await User.findOne({email});
@@ -80,6 +81,11 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
   res.status(200).json({ success: true, users});
 });
 
+export const getShowcaseUsers = catchAsync(async (req, res, next) => {
+  const users = await User.find().select("name avatar provider").limit(5);
+  res.status(200).json({ success: true, users });
+});
+
 export const refreshToken = catchAsync(async (req, res, next) => {
   const refreshTokenFromCookie = req.cookies.refreshToken;
 
@@ -94,6 +100,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar,
     }
   })
 })
@@ -116,6 +123,7 @@ export const getMe = catchAsync(async (req, res, next) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      avatar: user.avatar,
     },
   });
 });

@@ -13,6 +13,7 @@ import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteStore, type Note, type TrashFolder } from "@/store/useNoteStore";
 import { NotesListSkeleton } from "@/components/ui/notesListSkeleton";
 import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   useDeleteNoteMutation,
   usePermanentDeleteNoteMutation,
@@ -52,6 +53,7 @@ const NotesListPanel = () => {
   const { mutateAsync : permanentDeleteFolder } = usePermanentDeleteFolderMutation();
 
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
+  const queryClient = useQueryClient();
   const { noteId, folderId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,7 +100,10 @@ const NotesListPanel = () => {
     let notes = [...filteredNotes];
 
     if (activeTab === "recent") {
-      notes.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+      notes = notes
+        .filter((n) => n.lastAccessedAt && new Date(n.lastAccessedAt).getTime() > twentyFourHoursAgo)
+        .sort((a, b) => new Date(b.lastAccessedAt!).getTime() - new Date(a.lastAccessedAt!).getTime());
     } else {
       // Default "All" view: Favorited first, then by sortOrder
       notes.sort((a, b) => {
@@ -162,6 +167,13 @@ const NotesListPanel = () => {
   const handleCreateNote = () => {
     const basePath = folderId ? `/folders/${folderId}/note/new` : `/note/new`;
     navigate(`${basePath}${location.search}`);
+  };
+
+  const stampAccess = (id: string) => {
+    const now = new Date().toISOString();
+    queryClient.setQueryData<Note[]>(["notes"], (old) =>
+      old?.map((n) => (n._id === id ? { ...n, lastAccessedAt: now } : n))
+    );
   };
 
   const performDeleteNote = async (id: string) => {
@@ -348,7 +360,9 @@ const NotesListPanel = () => {
               animate={{ opacity: 1, y: 0 }}
               className="empty-pane-message"
             >
-              {location.pathname === "/favorites"
+              {activeTab === "recent"
+                ? "No notes opened in the last 24 hours."
+                : location.pathname === "/favorites"
                 ? "Star a note to keep it here."
                 : location.pathname === "/archive"
                   ? "Archive a note to keep it out of your main workspace."
@@ -356,11 +370,12 @@ const NotesListPanel = () => {
             </motion.div>
           ) : (
             <motion.div
+              key={`${activeTab}-${location.pathname}-${sortOrder}`}
               variants={{
                 hidden: { opacity: 0 },
                 show: {
                   opacity: 1,
-                  transition: { staggerChildren: 0.04 },
+                  transition: { staggerChildren: 0.05, delayChildren: 0.02 },
                 },
               }}
               initial="hidden"
@@ -401,6 +416,7 @@ const NotesListPanel = () => {
                       isTrashView={false}
                       isArchiveView={isArchiveRoute}
                       onClick={() => {
+                        stampAccess(note._id);
                         const basePath = folderId
                           ? `/folders/${folderId}/note/${note._id}`
                           : isArchiveRoute

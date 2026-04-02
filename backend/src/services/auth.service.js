@@ -223,6 +223,12 @@ export const findOrCreateGoogleUser = async (profile) => {
         await user.save();
     }
 
+    // retroactively pull the google avatar if they never had one before
+    if (user && !user.avatar && profile.photos?.[0]?.value) {
+        user.avatar = profile.photos[0].value;
+        await user.save();
+    }
+
     return user;
 }
 

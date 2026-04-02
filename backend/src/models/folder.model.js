@@ -38,6 +38,6 @@
         }
         next();
     });
-    folderSchema.index({ user: 1, name: 1 }, { unique: true });
+    folderSchema.index({ user: 1, name: 1 }, { unique: true, partialFilterExpression: { isDeleted: false } });
     const Folder = mongoose.model("Folder", folderSchema);
     export default Folder;

@@ -10,6 +10,7 @@ import {
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useNavigate } from "react-router-dom";
+import GoogleIcon from "../assets/google.svg";
 
 const SideBarHeader = () => {
   const {user, clearAuth} = useAuthStore();
@@ -30,21 +31,18 @@ const SideBarHeader = () => {
       ? name.split(" ").map((n) => n[0]).join("").toUpperCase()
       : "??";
   };
+
   return (
     <div className="space-y-4 mb-4">
       <Dialog>
         <DialogTrigger asChild>
-          <button className="flex items-center gap-4 w-full p-2.5 rounded-xl hover:bg-zinc-800/50 transition-all text-left">
-            <Avatar className="h-9 w-9 border border-zinc-800">
-              <AvatarImage src="https://github.com/shadcn.png" />
-              <AvatarFallback>{getInitials(user?.name || "User")}</AvatarFallback>
+          <button className="group relative flex items-center justify-center p-0 h-10 w-10 mt-2 mb-2 rounded-full ring-2 ring-transparent hover:ring-zinc-700/50 transition-all duration-300 outline-none focus-visible:ring-zinc-500">
+            <Avatar className="h-full w-full border border-zinc-800/80 shadow-md transition-transform duration-300 group-hover:scale-110">
+              <AvatarImage src={user?.avatar || GoogleIcon} referrerPolicy="no-referrer" />
+              <AvatarFallback className="bg-[#818cf8]/10 text-[#818cf8] font-bold text-xs tracking-wider">
+                {getInitials(user?.name || "U")}
+              </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-medium text-zinc-200 truncate">
-                {user?.name || "Guest User"}
-              </span>
-              <span className="text-xs text-zinc-500">{user?.email || "No email"}</span>
-            </div>
           </button>
         </DialogTrigger>
 

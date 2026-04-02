@@ -11,6 +11,7 @@ export interface Note {
   isDeleted: boolean;
   isArchived: boolean;
   updatedAt: string;
+  lastAccessedAt: string | null;
   chatHistory?: { id: string; role: 'user' | 'assistant'; content: string }[];
 }
 

@@ -1,5 +1,5 @@
     import express from "express";
-    import { registerUser, loginUser, getAllUsers, refreshToken, logoutUser, getMe, googleCallback, forgotPassword, resetPassword } from "../controllers/auth.controller.js";
+    import { registerUser, loginUser, getAllUsers, refreshToken, logoutUser, getMe, googleCallback, forgotPassword, resetPassword, getShowcaseUsers } from "../controllers/auth.controller.js";
     import authMiddleware from "../middleware/auth.middleware.js";
     import passport from "passport";
 
@@ -11,6 +11,7 @@
     router.post("/refresh", refreshToken);
     router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
     router.get("/google/callback", passport.authenticate("google", { session: false }), googleCallback);
+    router.get("/showcase", getShowcaseUsers);
 
     //protected routes
     router.post("/logout", logoutUser);
