@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ChevronDown, LogOut, Settings, User as UserIcon, CreditCard } from "lucide-react";
+import { LogOut, Settings, User as UserIcon, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import GoogleIcon from "@/assets/google.svg";
