@@ -2581,3 +2581,92 @@ span[data-ai-ghost] {
 .logo {
   box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
 }
+
+@layer components {
+  .auth-card-group {
+    position: relative;
+    z-index: 10;
+  }
+
+  .auth-card-border {
+    position: absolute;
+    inset: -1px;
+    border-radius: 21px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent, rgba(255, 255, 255, 0.05));
+    opacity: 0.5;
+    transition: opacity 2.5s ease;
+  }
+
+  .auth-card-group:hover .auth-card-border {
+    opacity: 1;
+  }
+
+  .auth-card {
+    position: relative;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 2rem;
+    box-shadow:
+      inset 0 1px 1px rgba(255, 255, 255, 0.05),
+      0 32px 100px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .auth-primary-button {
+    height: 3rem;
+    width: 100%;
+    background-image: linear-gradient(90deg, #818cf8, #c4b5fd, #818cf8);
+    background-size: 200% auto;
+    background-position: 0% 50%;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    color: #000000;
+    transition:
+      background-position 0.5s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease,
+      opacity 0.2s ease !important;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    will-change: background-position;
+  }
+
+  .auth-primary-button:hover {
+    background-position: 100% 50%;
+    transform: scale(1.02);
+  }
+
+  .auth-primary-button:active {
+    transform: scale(0.98);
+  }
+
+  .auth-primary-button:disabled {
+    opacity: 0.5;
+  }
+
+  .auth-google-button {
+    transition:
+      background-position 0.5s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease !important;
+    will-change: transform, background-position;
+  }
+
+  .auth-google-button:hover {
+    transform: scale(1.02);
+  }
+
+  .auth-google-button:active {
+    transform: scale(0.98);
+  }
+
+  .auth-gradient-hover {
+    background-size: 200% auto;
+    background-position: 0% 50%;
+    /* Handled by specific buttons to prevent override conflicts */
+  }
+
+  .auth-gradient-hover:hover {
+    background-position: 100% 50%;
+  }
+}

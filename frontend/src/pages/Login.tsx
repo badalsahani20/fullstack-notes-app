@@ -46,22 +46,7 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black p-4">
-      {/* Dynamic Background Elements */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
-      
-      {/* Premium Moving Dark Theme Background Elements */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-80">
-        <div className="absolute -left-[50%] -top-[50%] h-[200%] w-[200%] animate-[spin_25s_linear_infinite]">
-          {/* Subtle slow moving white & indigo blurs */}
-          <div className="absolute bottom-1/4 right-1/4 h-[500px] w-[500px] rounded-full bg-white/5 blur-[120px]" />
-          <div className="absolute top-1/4 left-1/4 h-[400px] w-[400px] rounded-full bg-indigo-500/10 blur-[100px]" />
-          <div className="absolute bottom-1/3 left-1/3 h-[600px] w-[600px] rounded-full bg-purple-500/10 blur-[120px]" />
-        </div>
-      </div>
-
-      <div className="relative w-full max-w-md">
+    <>
         {/* Logo & Header */}
         <div className="mb-10 flex flex-col items-center gap-4 text-center">
           <div className="relative">
@@ -76,7 +61,7 @@ const Login = () => {
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-white">Welcome back</h1>
-            <p className="text-sm text-zinc-500">The minimalist way to organize your thoughts.</p>
+            <p className="text-sm text-zinc-200">The minimalist way to <span className="text-indigo-400 font-semibold">organize</span> your <span className="text-indigo-400 font-semibold">thoughts</span>.</p>
           </div>
         </div>
 
@@ -88,11 +73,11 @@ const Login = () => {
             <form onSubmit={handleLogin} className="space-y-6">
               {/* Email */}
               <div className="space-y-2">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500 ml-1">Email Address</label>
+                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1">Email Address</label>
                 <Input
                   type="email"
                   placeholder="name@example.com"
-                  className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-700 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
+                  className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-400 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -103,13 +88,13 @@ const Login = () => {
               {/* Password */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-500">Password</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300">Password</label>
                 </div>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="h-12 border-white/10 bg-white/[0.03] pr-12 text-white placeholder:text-zinc-700 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
+                    placeholder="min. 6 characters"
+                    className="h-12 border-white/10 bg-white/[0.03] pr-12 text-white placeholder:text-zinc-400 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -117,7 +102,7 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 transition-colors hover:text-white"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-white"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -128,17 +113,17 @@ const Login = () => {
               <div className="flex justify-end">
                 <Link
                   to="/forgot-password"
-                  className="text-xs font-medium text-zinc-500 transition-colors hover:text-white"
+                  className="text-xs font-medium text-zinc-400 transition-colors hover:text-white"
                 >
                   Forgot password?
                 </Link>
               </div>
 
-              {/* Submit - Pure Premium White */}
+              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-12 w-full bg-[#818cf8] font-bold text-black hover:bg-zinc-200 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+                className="auth-primary-button auth-gradient-hover h-12 w-full active:scale-[0.98] cursor-pointer"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -153,7 +138,7 @@ const Login = () => {
               {/* Divider */}
               <div className="relative flex items-center gap-4 py-2">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-700">security</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">security</span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>
 
@@ -162,7 +147,7 @@ const Login = () => {
                 type="button"
                 onClick={handleGoogleLogin}
                 variant="outline"
-                className="group relative h-12 w-full cursor-pointer overflow-hidden border-white/10 bg-white/[0.03] font-semibold text-white transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] active:scale-[0.98]"
+                className="auth-google-button auth-gradient-hover group relative h-12 w-full cursor-pointer overflow-hidden border-white/10 bg-gradient-to-r from-white/[0.03] via-indigo-400/10 to-white/[0.03] font-semibold text-white hover:border-white/20 active:scale-[0.98]"
               >
                 <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
                 <span className="relative flex items-center justify-center gap-3">
@@ -173,7 +158,7 @@ const Login = () => {
             </form>
 
             <div className="mt-8 pt-6 border-t border-white/5 text-center">
-              <p className="text-sm text-zinc-500">
+              <p className="text-sm text-zinc-400">
                 New to Notesify?{" "}
                 <Link to="/register" className="font-semibold text-white transition-all hover:underline decoration-white/30 underline-offset-4">
                   Create an account
@@ -185,17 +170,13 @@ const Login = () => {
 
         {/* Footer */}
         <div className="mt-8 flex flex-col items-center gap-4 text-center">
-          <p className="text-[10px] text-zinc-600 max-w-[280px] leading-relaxed">
-            By continuing, you agree to our <span className="text-zinc-500 transition-colors hover:text-zinc-400 cursor-pointer">Terms</span> and <span className="text-zinc-500 transition-colors hover:text-zinc-400 cursor-pointer">Privacy Policy</span>.
+          <p className="text-[10px] text-white max-w-[280px] leading-relaxed">
+            By continuing, you agree to our <span className="text-[#818cf8] font-bold transition-colors hover:text-indigo-100 cursor-pointer">Terms</span> and <span className="text-[#818cf8] font-semibold transition-colors hover:text-indigo-100 cursor-pointer">Privacy Policy</span>.
           </p>
         </div>
-      </div>
-    </div>
+    </>
   );
 };
 
 export default Login;
-
-
-
 

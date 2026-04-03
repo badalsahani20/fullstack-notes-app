@@ -4,7 +4,7 @@ import illustration from "@/components/signup/illustrations/dark.png";
 
 const Register = () => {
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-background lg:flex lg:bg-black">
+    <div className="relative h-screen w-full overflow-hidden bg-black lg:flex lg:bg-black">
       {/* Immersive Background Image (Desktop Only) */}
       <div className="absolute inset-0 z-0 hidden lg:block">
         <img 

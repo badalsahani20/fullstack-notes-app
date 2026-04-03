@@ -68,15 +68,15 @@ const SignupForm = () => {
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-white">Create account</h1>
-            <p className="text-sm text-zinc-400">Join the minimalist workspace for your <span className="text-white">ideas</span>.</p>
+            <p className="text-sm text-zinc-200">Join the minimalist workspace for your <span className="text-white">ideas</span>.</p>
           </div>
         </div>
 
         {/* Translucent Obsidian Glass Card */}
-        <div className="group relative z-10">
-          <div className="absolute -inset-[1px] rounded-[21px] bg-gradient-to-b from-white/15 via-transparent to-white/5 opacity-50 transition-opacity duration-500 group-hover:opacity-100" />
-          
-          <div className="relative rounded-2xl bg-white/[0.02] p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_32px_100px_rgba(0,0,0,0.8)] backdrop-blur-[40px] border border-white/[0.08] [@media(max-height:800px)]:p-6">
+        <div className="group auth-card-group">
+          <div className="auth-card-border" />
+
+          <div className="auth-card [@media(max-height:800px)]:p-6">
             <form onSubmit={handleRegister} className="space-y-5 [@media(max-height:800px)]:space-y-4">
               {/* Name */}
               <div className="space-y-1.5">
@@ -84,7 +84,7 @@ const SignupForm = () => {
                 <Input
                   type="text"
                   placeholder="John Doe"
-                  className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-600 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
+                  className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -98,7 +98,7 @@ const SignupForm = () => {
                 <Input
                   type="email"
                   placeholder="name@example.com"
-                  className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-600 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
+                  className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -112,7 +112,7 @@ const SignupForm = () => {
                   <Input
                     type={showPassword ? "text" : "password"}
                     placeholder="Min. 6 characters"
-                    className="h-12 border-white/10 bg-white/[0.03] pr-12 text-white placeholder:text-zinc-600 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
+                    className="h-12 border-white/10 bg-white/[0.03] pr-12 text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -120,7 +120,7 @@ const SignupForm = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-white"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-white"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -128,11 +128,12 @@ const SignupForm = () => {
                 </div>
               </div>
 
-              {/* Submit - Modular Button Color */}
+              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-12 w-full bg-[#818cf8] font-bold text-black hover:bg-zinc-200 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 shadow-[0_0_20px_rgba(255,255,255,0.1)] mt-2 [@media(max-height:800px)]:h-10"
+                variant="ghost"
+                className="auth-primary-button auth-gradient-hover mt-2 h-12 w-full [@media(max-height:800px)]:h-10 active:scale-[0.98]"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -147,7 +148,7 @@ const SignupForm = () => {
               {/* Divider */}
               <div className="relative flex items-center gap-4 py-1 [@media(max-height:800px)]:py-0.5">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">or</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">or</span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>
 
@@ -156,7 +157,7 @@ const SignupForm = () => {
                 type="button"
                 onClick={handleGoogleSignup}
                 variant="outline"
-                className="group relative h-12 w-full cursor-pointer overflow-hidden border-white/10 bg-white/[0.03] font-semibold text-white transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] active:scale-[0.98] [@media(max-height:800px)]:h-10"
+                className="auth-google-button auth-gradient-hover group relative h-12 w-full cursor-pointer overflow-hidden border-white/10 bg-gradient-to-r from-white/[0.03] via-indigo-400/10 to-white/[0.03] font-semibold text-white hover:border-white/20 active:scale-[0.98] [@media(max-height:800px)]:h-10"
               >
                 <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-transparent via-white/5 to-transparent transition-transform duration-1000 group-hover:translate-x-[100%]" />
                 <span className="relative flex items-center justify-center gap-3">

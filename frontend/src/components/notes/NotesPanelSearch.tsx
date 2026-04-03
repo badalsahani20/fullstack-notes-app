@@ -39,7 +39,7 @@ const NotesPanelSearch = forwardRef<HTMLInputElement, NotesPanelSearchProps>(({
         />
         <button
           type="button"
-          className={`notes-panel-favorites-button ${isFavoritesView ? "notes-panel-favorites-button-active" : ""}`}
+          className={`notes-panel-favorites-button cursor-pointer ${isFavoritesView ? "notes-panel-favorites-button-active" : ""}`}
           aria-label="Open starred notes"
           onClick={onOpenFavorites}
         >
@@ -57,7 +57,7 @@ const NotesPanelSearch = forwardRef<HTMLInputElement, NotesPanelSearchProps>(({
         </button>
         <button
           type="button"
-          className="notes-panel-plus-button"
+          className="notes-panel-plus-button cursor-pointer"
           aria-label="Create note"
           onClick={onCreateNote}
           disabled={isPending}

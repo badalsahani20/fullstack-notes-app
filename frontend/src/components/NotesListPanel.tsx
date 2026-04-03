@@ -296,7 +296,7 @@ const NotesListPanel = () => {
               <button
                 onClick={() => setActiveTab("all")}
                 className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                  "px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
                   activeTab === "all" ? "bg-[var(--panel-bg-strong)] text-[var(--accent-strong)] shadow-sm" : "text-[var(--muted-text)] hover:text-[var(--text-strong)]"
                 )}
               >
@@ -305,7 +305,7 @@ const NotesListPanel = () => {
               <button
                 onClick={() => setActiveTab("recent")}
                 className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-all",
+                  "px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
                   activeTab === "recent" ? "bg-[var(--panel-bg-strong)] text-[var(--accent-strong)] shadow-sm" : "text-[var(--muted-text)] hover:text-[var(--text-strong)]"
                 )}
               >
@@ -315,7 +315,7 @@ const NotesListPanel = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 text-[var(--muted-text)] hover:text-[var(--text-strong)] hover:bg-[var(--surface-ghost)] rounded-md transition-colors">
+                <button className="p-1.5 cursor-pointer text-[var(--muted-text)] hover:text-[var(--text-strong)] hover:bg-[var(--surface-ghost)] rounded-md transition-colors">
                   <ListFilter size={16} />
                 </button>
               </DropdownMenuTrigger>
@@ -323,11 +323,11 @@ const NotesListPanel = () => {
                 <DropdownMenuLabel>Sort by</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuRadioGroup value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
-                  <DropdownMenuRadioItem value="updatedAt">
+                  <DropdownMenuRadioItem className="cursor-pointer" value="updatedAt">
                     <Clock size={14} className="mr-2" />
                     Last Updated
                   </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="title">
+                  <DropdownMenuRadioItem className="cursor-pointer" value="title">
                     <ArrowDownAz size={14} className="mr-2" />
                     Alphabetical
                   </DropdownMenuRadioItem>

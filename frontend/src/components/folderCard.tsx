@@ -21,7 +21,7 @@ const FolderCard = ({ folder, isActive, onClick, onDelete, onRestore, onPermanen
     <div
       onClick={onClick}
       className={cn(
-        "group relative cursor-pointer rounded-xl border bg-white/[0.02] p-4 transition",
+        "group relative cursor-pointer rounded-xl border bg-white/[0.02] p-4 transition cursor-pointer",
         isActive
           ? "border-primary/50 shadow-[0_10px_24px_rgba(8,24,20,0.28)]"
           : "border-white/8 hover:border-white/20 hover:bg-white/[0.05]",

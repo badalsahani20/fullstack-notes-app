@@ -71,10 +71,11 @@ const NewNotebookDialog = ({ isOpen, onClose }: NewNotebookDialogProps) => {
               variant="outline"
               onClick={onClose}
               disabled={isPending}
+              className="cursor-pointer"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || !name.trim()}>
+            <Button type="submit" className="cursor-pointer" disabled={isPending || !name.trim()}>
               {isPending ? "Creating..." : "Create Notebook"}
             </Button>
           </DialogFooter>

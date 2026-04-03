@@ -97,7 +97,7 @@ const NoteCard = ({
       )}
       style={{ borderLeftColor: isActive ? "var(--accent-strong)" : "transparent" }}
     >
-      <div className="flex min-w-0 flex-1 gap-3">
+      <div className="flex min-w-0 flex-1 gap-3 cursor-pointer">
         {/* Star / favorite button — hidden in trash view */}
         {!isTrashView && (
           <button
@@ -106,7 +106,7 @@ const NoteCard = ({
               event.stopPropagation();
               onTogglePin?.(note._id);
             }}
-            className="transition focus:outline-none"
+            className="transition focus:outline-none cursor-pointer"
             aria-label={note.pinned ? "Unfavorite note" : "Favorite note"}
           >
             <motion.div
@@ -168,19 +168,19 @@ const NoteCard = ({
               <button
                 type="button"
                 onClick={(e) => e.stopPropagation()}
-                className="note-row-delete opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 hover:bg-[var(--surface-ghost)] rounded-md text-[var(--muted-text)] hover:text-[var(--text-strong)]"
+                className="cursor-pointer note-row-delete opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 hover:bg-[var(--surface-ghost)] rounded-md text-[var(--muted-text)] hover:text-[var(--text-strong)]"
                 aria-label="More actions"
               >
                 <MoreVertical size={16} />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40" onClick={(e) => e.stopPropagation()}>
-              <DropdownMenuItem onClick={() => onToggleArchive?.(note._id)}>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => onToggleArchive?.(note._id)}>
                 <Archive size={14} className="mr-2" />
                 {isArchiveView ? "Unarchive" : "Archive"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onDelete?.(note._id)} className="text-red-500 focus:text-red-500">
+              <DropdownMenuItem onClick={() => onDelete?.(note._id)} className="text-red-500 focus:text-red-500 cursor-pointer">
                 <Trash2 size={14} className="mr-2" />
                 Delete
               </DropdownMenuItem>

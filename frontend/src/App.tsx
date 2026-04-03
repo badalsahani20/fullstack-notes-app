@@ -13,6 +13,7 @@ import NotesListPanel from "./components/NotesListPanel";
 import NotFound from "./pages/NotFound";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AuthLayout from "./components/AuthLayout";
 
 function App() {
   return (
@@ -20,11 +21,13 @@ function App() {
       <Toaster position="bottom-right" />
       <Routes>
       {/* Public routes */}
-      <Route path="/login" element={<Login />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      </Route>
       <Route path="/register" element={<Register />} />
       <Route path="/oauth-success" element={<OAuthSuccess />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
       {/* Protected routes — redirect to /login if not authenticated */}
       <Route element={<PrivateRoute />}>

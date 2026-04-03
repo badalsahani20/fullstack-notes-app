@@ -70,7 +70,7 @@ const TopLink = ({
           onDrop(noteId, version);
         }
       }}
-      className={`sidebar-link-row ${active ? "sidebar-link-row-active" : ""}`}
+      className={`sidebar-link-row cursor-pointer ${active ? "sidebar-link-row-active" : ""}`}
     >
       <span className="sidebar-link-main">
         <Icon size={17} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
@@ -128,9 +128,9 @@ const FolderRow = ({
       }}
     >
       <button type="button" onClick={onClick} className="flex min-w-0 flex-1 items-center justify-between">
-        <span className="sidebar-link-main">
+        <span className="sidebar-link-main cursor-pointer">
           <span
-            className="sidebar-folder-chevron"
+            className="sidebar-folder-chevron cursor-pointer"
             onClick={(event) => {
               event.stopPropagation();
               onToggle();
