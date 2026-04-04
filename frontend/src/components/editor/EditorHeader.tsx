@@ -42,7 +42,6 @@ const EditorHeader = ({
 
   onToggleArchive,
   onAskAi,
-  isAiOpen,
   isMobile,
 }: EditorHeaderProps) => {
 
@@ -121,7 +120,7 @@ const EditorHeader = ({
         <RelativeTimeLabel updatedAt={note.updatedAt} />
       </div>
 
-      {editor && !isMobile && !isAiOpen ? <EditorToolbar editor={editor} onAskAi={onAskAi} /> : null}
+      {editor && !isMobile ? <EditorToolbar editor={editor} onAskAi={onAskAi} /> : null}
     </div>
 
   );
