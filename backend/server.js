@@ -38,29 +38,9 @@ app.get("/api/keep-alive", (req, res) => {
     res.status(200).json({ status: "alive" });
 });
 
-// Self-ping logic to prevent Render free tier from sleeping (every 5 minutes)
-const RELOAD_URL = process.env.BACKEND_URL;
-if (RELOAD_URL) {
-    setInterval(async () => {
-        try {
-            const response = await fetch(RELOAD_URL + "/api/keep-alive");
-            console.log(`Self-ping status: ${response.status}`);
-        } catch (err) {
-            console.error(`Self-ping error: ${err.message}`);
-        }
-    }, 5 * 60 * 1000); // 5 minutes
-}
-// Serve Static Files for Frontend
-const frontendDistPath = path.join(__dirname, "..", "frontend", "dist");
-app.use(express.static(frontendDistPath));
-
-// Catch-all route for SPA (React Router)
-app.use((req, res, next) => {
-    if (!req.path.startsWith("/api")) {
-        res.sendFile(path.join(frontendDistPath, "index.html"));
-    } else {
-        next();
-    }
+// Basic route for health checks on the root domain
+app.get("/", (req, res) => {
+    res.status(200).send("API is running");
 });
 const PORT = process.env.PORT || 5000;
 
