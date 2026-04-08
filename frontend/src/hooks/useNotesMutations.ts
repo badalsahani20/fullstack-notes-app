@@ -98,15 +98,23 @@ export const useUpdateNoteMutation = () => {
             } catch (error: any) {
                 // If we get a 409 Conflict, it's highly likely a race condition from rapid debounced auto-saves.
                 // The server conveniently sends back the current database version. Let's grab it and auto-retry!
-                if (error?.response?.status === 409 && error?.response?.data?.serverVersion) {
-                    const newServerVersion = error.response.data.serverVersion.version;
-                    const retryRes = await api.put(`/notes/${noteId}`, {
-                        ...updates,
-                        version: newServerVersion,
-                    });
-                    return retryRes.data.updatedNote || retryRes.data.note || retryRes.data;
+                let currentError = error;
+                let retries = 0;
+                
+                while (currentError?.response?.status === 409 && currentError?.response?.data?.serverVersion && retries < 3) {
+                    try {
+                        const newServerVersion = currentError.response.data.serverVersion.version;
+                        const retryRes = await api.put(`/notes/${noteId}`, {
+                            ...updates,
+                            version: newServerVersion,
+                        });
+                        return retryRes.data.updatedNote || retryRes.data.note || retryRes.data;
+                    } catch (retryError: any) {
+                        currentError = retryError;
+                        retries++;
+                    }
                 }
-                throw error;
+                throw currentError;
             }
         },
         onMutate: async ({ noteId, updates }) => {
@@ -150,12 +158,19 @@ export const useTogglePinMutation = () => {
                 const res = await api.patch(`/notes/${noteId}/pin`, { version });
                 return res.data.updatedNote || res.data.note || res.data;
             } catch (error: any) {
-                if (error?.response?.status === 409 && error?.response?.data?.serverVersion) {
-                    const newServerVersion = error.response.data.serverVersion.version;
-                    const retryRes = await api.patch(`/notes/${noteId}/pin`, { version: newServerVersion });
-                    return retryRes.data.updatedNote || retryRes.data.note || retryRes.data;
+                let currentError = error;
+                let retries = 0;
+                while (currentError?.response?.status === 409 && currentError?.response?.data?.serverVersion && retries < 3) {
+                    try {
+                        const newServerVersion = currentError.response.data.serverVersion.version;
+                        const retryRes = await api.patch(`/notes/${noteId}/pin`, { version: newServerVersion });
+                        return retryRes.data.updatedNote || retryRes.data.note || retryRes.data;
+                    } catch (retryErr: any) {
+                        currentError = retryErr;
+                        retries++;
+                    }
                 }
-                throw error;
+                throw currentError;
             }
         },
         onMutate: async ({ noteId }) => {
@@ -211,12 +226,19 @@ export const useToggleArchiveMutation = () => {
                 const res = await api.patch(`/notes/${noteId}/archive`, { version });
                 return res.data.note || res.data;
             } catch (error: any) {
-                if (error?.response?.status === 409 && error?.response?.data?.serverVersion) {
-                    const newServerVersion = error.response.data.serverVersion.version;
-                    const retryRes = await api.patch(`/notes/${noteId}/archive`, { version: newServerVersion });
-                    return retryRes.data.note || retryRes.data;
+                let currentError = error;
+                let retries = 0;
+                while (currentError?.response?.status === 409 && currentError?.response?.data?.serverVersion && retries < 3) {
+                    try {
+                        const newServerVersion = currentError.response.data.serverVersion.version;
+                        const retryRes = await api.patch(`/notes/${noteId}/archive`, { version: newServerVersion });
+                        return retryRes.data.note || retryRes.data;
+                    } catch (retryErr: any) {
+                        currentError = retryErr;
+                        retries++;
+                    }
                 }
-                throw error;
+                throw currentError;
             }
         },
         onMutate: async ({ noteId }) => {

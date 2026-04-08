@@ -80,7 +80,7 @@ const NoteEditor = () => {
             version: latestNote.version 
           }).catch(() => {}); // Conflict handled in mutation hook
         }
-      }, 600),
+      }, 1000),
     [updateNoteAsync]
   );
 
