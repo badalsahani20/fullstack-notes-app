@@ -19,7 +19,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "15mb" })); // Increased limit to allow large Base64 Image Uploads
+app.use(express.urlencoded({ limit: "15mb", extended: true }));
 app.use(cookieParser());
 app.use(cors({
     origin: ["https://notesify-eta.vercel.app", "http://localhost:5173", "http://localhost:5500"],

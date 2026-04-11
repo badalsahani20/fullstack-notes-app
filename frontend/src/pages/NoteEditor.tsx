@@ -212,7 +212,6 @@ const NoteEditor = () => {
         {isMobile && editorInstance && !aiOpen && (
           <EditorToolbar 
             editor={editorInstance} 
-            onAskAi={() => setAiOpen(true)} 
             isMobile={true} 
             yOffset={keyboardOffset}
           />

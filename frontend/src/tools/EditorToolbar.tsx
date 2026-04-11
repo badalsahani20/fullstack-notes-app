@@ -15,12 +15,11 @@ import { toast } from "sonner";
 
 type Props = {
   editor: Editor;
-  onAskAi?: () => void;
   isMobile?: boolean;
   yOffset?: number;
 };
 
-const EditorToolbar = ({ editor, onAskAi, isMobile, yOffset = 0 }: Props) => {
+const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -101,21 +100,9 @@ const EditorToolbar = ({ editor, onAskAi, isMobile, yOffset = 0 }: Props) => {
 
             <div className="w-px h-5 bg-[var(--divider)] opacity-50" />
 
-            {/* Group 5: Clear Formatting & AI */}
+            {/* Group 5: Clear Formatting */}
             <div className="flex items-center gap-1.5">
               <ToolbarButton active={false} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} icon={<Eraser size={18} />} title="Clear Formatting" />
-
-              {onAskAi && (
-                <button 
-                  type="button" 
-                  onClick={onAskAi} 
-                  onMouseDown={(e) => e.preventDefault()}
-                  className={cn(toolbarButtonClass(false), "bg-[var(--accent-subtle)] text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]")}
-                  title="Ask AI"
-                >
-                  <Sparkles size={18} />
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -174,21 +161,9 @@ const EditorToolbar = ({ editor, onAskAi, isMobile, yOffset = 0 }: Props) => {
 
         <div className="w-px h-4 bg-[var(--divider)] opacity-50" />
 
-        {/* Group 6: Cleanup & AI */}
+        {/* Group 6: Cleanup */}
         <div className="flex items-center gap-1">
           <ToolbarButton active={false} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} icon={<Eraser size={16} />} title="Clear Formatting" />
-          
-          {onAskAi && (
-            <button 
-              type="button" 
-              onClick={onAskAi} 
-              onMouseDown={(e) => e.preventDefault()}
-              className={cn(toolbarButtonClass(false), "bg-[var(--accent-subtle)] text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]")}
-              title="Ask AI"
-            >
-              <Sparkles size={16} />
-            </button>
-          )}
         </div>
       </div>
 

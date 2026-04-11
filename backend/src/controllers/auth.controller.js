@@ -82,9 +82,27 @@ export const getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 export const getShowcaseUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find().select("name avatar provider").limit(5);
+  // Get the 5 most-recently joined users that have a real avatar first,
+  // then fall back to any recent users to fill up to 5 total
+  const withAvatar = await User.find({ avatar: { $exists: true, $ne: "" } })
+    .select("name avatar provider createdAt")
+    .sort({ createdAt: -1 })
+    .limit(5);
+
+  let users = withAvatar;
+
+  if (users.length < 5) {
+    const withAvatarIds = users.map((u) => u._id);
+    const rest = await User.find({ _id: { $nin: withAvatarIds } })
+      .select("name avatar provider createdAt")
+      .sort({ createdAt: -1 })
+      .limit(5 - users.length);
+    users = [...users, ...rest];
+  }
+
   res.status(200).json({ success: true, users });
 });
+
 
 export const refreshToken = catchAsync(async (req, res, next) => {
   const refreshTokenFromCookie = req.cookies.refreshToken;

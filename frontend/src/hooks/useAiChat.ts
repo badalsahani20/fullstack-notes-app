@@ -57,6 +57,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [isStreaming, setIsStreaming] = useState(false);
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
@@ -266,20 +267,25 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   /** Sends the current chatInput as a message to the AI */
   const sendChatMessage = async () => {
     const trimmed = chatInput.trim();
-    if (!trimmed || isSendingChat) return;
+    if ((!trimmed && !attachedImage) || isSendingChat) return;
 
-    const userMessage: Message = { id: `${Date.now()}-chat-user`, role: "user", text: trimmed };
+    // Default to "Image Context" if they just send an image without text
+    const textToSend = trimmed || "Describe this image context.";
+    
+    const userMessage: Message = { id: `${Date.now()}-chat-user`, role: "user", text: textToSend };
     setMessages((prev) => [...prev, userMessage]);
     setChatInput("");
+    const sentImage = attachedImage;
+    setAttachedImage(null);
 
     try {
       abortControllerRef.current = new AbortController();
       setIsSendingChat(true);
 
-      const { history, message, noteContext, contextChanged } = buildChatHistory(trimmed);
+      const { history, message, noteContext, contextChanged } = buildChatHistory(textToSend);
       const res = await api.post(
         "/ai/chat",
-        { message, history, noteContext, contextChanged },
+        { message, history, noteContext, contextChanged, imageBase64: sentImage },
         { signal: abortControllerRef.current.signal }
       );
 
@@ -395,6 +401,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     // Compose bar state
     chatInput,
     setChatInput,
+    attachedImage,
+    setAttachedImage,
     loadingAction,
     isSendingChat,
     // Actions

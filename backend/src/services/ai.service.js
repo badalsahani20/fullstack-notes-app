@@ -3,14 +3,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mapDiffsToError } from "../utils/mapDiffsToError.js";
 import { client } from "../utils/groqClient.js";
 import { summarizeHistory } from "../utils/summarizeHistory.js";
+import { OpenRouter } from '@openrouter/sdk';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 const NOTE_CONTEXT_PREFIX = "__NOTE_CONTEXT__:";
 
-const ensureGeminiApiKey = () => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error(`GEMINI api key is missing from environment variables`);
+const ensureAiApiKey = () => {
+  if (!process.env.GEMINI_API_KEY && !process.env.OPEN_ROUTER) {
+    throw new Error(`Both GEMINI and OPENROUTER api keys are missing from environment variables`);
   }
 };
 
@@ -20,14 +21,48 @@ const ensureGroqApiKey = () => {
   }
 };
 
-export const checkGrammar = async (text) => {
-  ensureGeminiApiKey();
+// Helper: Tries Gemini first, falls back to OpenRouter if Gemini fails or is missing
+const generateContentWithFallback = async (prompt) => {
+  ensureAiApiKey();
 
+  // Try Gemini first if key exists
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result.response.text().trim();
+    } catch (error) {
+      console.warn("Gemini Error, falling back to OpenRouter:", error.message);
+      if (!process.env.OPEN_ROUTER) throw error;
+    }
+  }
+
+  // Fallback to OpenRouter using their official SDK
+  if (process.env.OPEN_ROUTER) {
+    const openRouter = new OpenRouter({
+      apiKey: process.env.OPEN_ROUTER,
+      defaultHeaders: {
+        'HTTP-Referer': process.env.BACKEND_URL || 'http://localhost:5000',
+        'X-OpenRouter-Title': 'Notesify', 
+      },
+    });
+
+    const completion = await openRouter.chat.completions.create({
+      model: "meta-llama/llama-3.1-8b-instruct:free", // Using free, high-speed LLaMA 3 for free fallback
+      messages: [{ role: 'user', content: prompt }],
+      stream: false,
+    });
+
+    return completion.choices[0].message.content.trim();
+  }
+
+  throw new Error("No AI feature keys configured");
+};
+
+export const checkGrammar = async (text) => {
   const prompt = `You are a professional editor. Fix grammar, spelling, punctuation, and awkward phrasing while preserving meaning. Return only corrected text.\n\nText:\n${text}`;
 
   try {
-    const result = await model.generateContent(prompt);
-    const correctedText = result.response.text().trim();
+    const correctedText = await generateContentWithFallback(prompt);
 
     const differences = diffWords(text, correctedText);
     const errorCoordinates = mapDiffsToError(differences);
@@ -38,7 +73,7 @@ export const checkGrammar = async (text) => {
       errors: errorCoordinates,
     };
   } catch (error) {
-    console.error("Gemini Service Error:", error.message);
+    console.error("AI Service Error:", error.message);
     throw error;
   }
 };
@@ -55,8 +90,6 @@ const actionPrompts = {
 };
 
 export const runAiAssist = async ({ action, text }) => {
-  ensureGeminiApiKey();
-
   if (!text || !text.trim()) {
     throw new Error("Text is required for AI assist");
   }
@@ -77,8 +110,7 @@ export const runAiAssist = async ({ action, text }) => {
   }
 
   try {
-    const result = await model.generateContent(promptBuilder(text));
-    let suggestion = result.response.text().trim();
+    let suggestion = await generateContentWithFallback(promptBuilder(text));
 
     // Clean up markdown code blocks if the AI ignored the instruction
     if (suggestion.startsWith("```")) {
@@ -92,63 +124,105 @@ export const runAiAssist = async ({ action, text }) => {
       errors: [],
     };
   } catch (error) {
-    console.error("Gemini Service Error:", error.message);
+    console.error("AI Service Error:", error.message);
     throw error;
   }
 };
 
-const PROMPT = `You are Iris, a smart and adaptive AI assistant.
+const PROMPT = `You are Iris, an advanced AI learning assistant integrated into Notesify, a premium note-taking and learning platform.
 
-* Respond based on user intent.
-* Be concise by default; expand only if needed.
+## Your Core Role
+* You act as a highly intelligent, encouraging, and deeply knowledgeable tutor (similar to the helpful, clear nature of ChatGPT or Gemini).
+* Your primary goal is to help the user learn faster, understand complex topics, and organize their thoughts brilliantly.
+* Always actively consider the context of the user's current notes when answering.
 
-## Style
-* Casual chat → short, natural, human-like
-* No dramatic, poetic, or overly emotional tone
-* No generic assistant phrases
+## Communication & Aesthetic Style (CRITICAL)
+* Be extremely clear, pedagogical, and structured. 
+* Use EXTENSIVE emojis to make the content highly visual and engaging (e.g., 🚨, ✅, ❌, 👉, 🧠, 💡, 💀, 🔍, ⚠️).
+* Structure your responses with clear sections, bullet points, headers, and visual breaks. 
+* Break things down logically. For example:
+  - Use ✅ and ❌ for diagnostics or pros/cons.
+  - Use 👉 for translations or key takeaways.
+  - Use headers like "🚨 What this means" or "🔍 What YOU should do".
+* Keep a warm, encouraging, but professional tone.
 
-## Behavior
-* Coding → minimal, correct snippets
-* Learning → clear, structured answers
-* Chat → relaxed, conversational (can be witty/sarcastic)
+## Educational Guidelines
+* When explaining a complex concept, break it down step-by-step and use simple, relatable analogies.
+* When a user asks you to summarize or review their notes, pull out the most actionable insights and key takeaways.
+* Do not hallucinate. If a user asks a highly specific factual question that you don't know, suggest how they can research it.
 
-## Conversation Refinement
-* Prefer shorter, simpler phrasing
-* Avoid sounding like an interviewer or analyst
-* Do not over-guide with too many questions
-* Keep curiosity natural and minimal
+## Formatting Rules
+* Whenever you provide code, always use proper fenced code blocks with language tags.
+* Never respond with massive walls of unformatted text. Keep paragraphs punchy and digestible.
+* When appropriate, actively suggest how they might group or structure their ideas within their notes.`;
 
-## Realism Rules
-* Do not hallucinate unknown facts, names, or references
-* If unsure, say you don’t know
+// export const chatWithAi = async ({
+//   message,
+//   history = [],
+//   summary = "",
+//   noteContext = "",
+// }) => {
+//   ensureGroqApiKey();
 
-## Humor & Personality
-* Prefer quick, witty or sarcastic replies when appropriate
-* Add light reactions if it fits
-* Avoid safe or generic responses
-* Do not explain jokes
+//   if (!message || !message.trim()) {
+//     throw new Error("Message is required for AI assist");
+//   }
 
-## Avoid
-* Over-explaining
-* Repetition or filler
-* Unnecessary long responses
+//   if (history.length > 20 && !summary) {
+//     summary = await summarizeHistory(history);
+//     history = history.slice(-5);
+//   }
 
-## Goal
-Sound like a real, relaxed, intelligent human — not a scripted assistant.
+//   const trimmedHistory = history.slice(-6);
+//   const safeContext = noteContext?.slice(0, 1500);
+//   const messages = [
+//     {
+//       role: "system",
+//       content: PROMPT,
+//     },
+//     safeContext && {
+//       role: "system",
+//       content: `Relevant content from the user's note:\n ${safeContext}`,
+//     },
+//     summary && {
+//       role: "system",
+//       content: `Conversation summary: \n${summary}`,
+//     },
+//     ...trimmedHistory,
+//     { role: "user", content: message },
+//   ].filter(Boolean);
+//   try {
+//     const response = await client.chat.completions.create({
+//       model: "llama-3.3-70b-versatile",
+//       messages,
+//     });
 
-.
-`;
+//     const reply = response.choices[0].message.content;
+
+//     return {
+//       reply,
+//       history: [
+//         ...trimmedHistory,
+//         { role: "user", content: message },
+//         { role: "assistant", content: reply },
+//       ],
+//     };
+//   } catch (error) {
+//     throw new Error(`Groq Chat Error: ${error.message}`);
+//   }
+// };
 
 export const chatWithAi = async ({
   message,
   history = [],
   summary = "",
   noteContext = "",
+  imageBase64 = null // Ready for the UI!
 }) => {
   ensureGroqApiKey();
 
-  if (!message || !message.trim()) {
-    throw new Error("Message is required for AI assist");
+  if (!message || !message.trim() && !imageBase64) {
+    throw new Error("Message or Image is required for AI assist");
   }
 
   if (history.length > 20 && !summary) {
@@ -158,39 +232,102 @@ export const chatWithAi = async ({
 
   const trimmedHistory = history.slice(-6);
   const safeContext = noteContext?.slice(0, 1500);
-  const messages = [
-    {
-      role: "system",
-      content: PROMPT,
-    },
-    safeContext && {
-      role: "system",
-      content: `Relevant content from the user's note:\n ${safeContext}`,
-    },
-    summary && {
-      role: "system",
-      content: `Conversation summary: \n${summary}`,
-    },
+
+  // Combine all system rules into ONE message to prevent Nvidia 400 Error (Gemma strictly demands alternating formats)
+  const combinedSystemPrompt = [
+    PROMPT,
+    safeContext && `Relevant content from the user's note:\n ${safeContext}`,
+    summary && `Conversation summary: \n${summary}`
+  ].filter(Boolean).join("\n\n---\n\n");
+
+  // 1. Build the base system messages
+  const baseMessages = [
+    { role: "system", content: combinedSystemPrompt },
     ...trimmedHistory,
-    { role: "user", content: message },
   ].filter(Boolean);
-  try {
-    const response = await client.chat.completions.create({
-      model: "llama-3.1-8b-instant",
-      messages,
+
+  // 2. Build the NVIDIA-specific User Prompt (Handles Image tag if it exists)
+  const nvidiaUserContent = imageBase64 ? [
+  { 
+    type: "text", 
+    text: `[System Directive: Provide a highly detailed description of what you see in the attached image, then answer the user's prompt.]\n\nUser prompt: ${message}` 
+  },
+  { 
+    type: "image_url", 
+    image_url: { 
+      url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` 
+    } 
+  }
+] : message;
+
+  // 3. Build the GROQ-specific User Prompt (Strictly Text Only)
+  const groqUserContent = imageBase64 
+    ? `${message}\n\n[System Note: The user attached an image, but this model cannot view images. Please politely inform them you can only read text.]` 
+    : message;
+
+  const groqMessages = [
+    ...baseMessages,
+    { role: "user", content: groqUserContent }
+  ];
+
+  /* --- EXECUTION --- */
+
+  const executeNvidia = async () => {
+    if (!process.env.NVIDIA_API_KEY) throw new Error("No NVIDIA API Key");
+    
+    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "google/gemma-3n-e4b-it",
+        messages: [...baseMessages, { role: "user", content: nvidiaUserContent }],
+        stream: false,
+        max_tokens: 1024,
+      })
     });
 
-    const reply = response.choices[0].message.content;
+    if (!response.ok) throw new Error(`NVIDIA returned ${response.status}`);
 
-    return {
-      reply,
-      history: [
-        ...trimmedHistory,
-        { role: "user", content: message },
-        { role: "assistant", content: reply },
-      ],
-    };
-  } catch (error) {
-    throw new Error(`Groq Chat Error: ${error.message}`);
+    const data = await response.json();
+    console.log("✅ Chat answered by NVIDIA Gemma 3!");
+    return data.choices[0].message.content;
+  };
+
+  const executeGroq = async () => {
+    const response = await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile", 
+      messages: groqMessages,
+    });
+    console.log("⚡ Chat answered by GROQ Llama 70B!");
+    return response.choices[0].message.content;
+  };
+
+  let reply = "";
+
+  // Dynamic Routing
+  if (imageBase64) {
+    // 📸 IMAGE PAYLOAD: Nvidia Primary -> Groq Text-Only Fallback
+    try {
+      reply = await executeNvidia();
+    } catch (error) {
+      console.warn("Nvidia Vision Failed, falling back to Groq text-only:", error.message);
+      reply = await executeGroq();
+    }
+  } else {
+    // 📝 TEXT PAYLOAD: Groq Primary (Lightning Fast) -> Nvidia Fallback
+    try {
+      reply = await executeGroq();
+    } catch (error) {
+      console.warn("Groq Text Failed, falling back to Nvidia:", error.message);
+      reply = await executeNvidia();
+    }
   }
+
+  return {
+    reply,
+    history: [...trimmedHistory, { role: "user", content: message }, { role: "assistant", content: reply }],
+  };
 };

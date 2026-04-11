@@ -88,6 +88,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
       showMainPanel={showMainPanel}
       isMobile={isMobile}
       animationKey={animationKey}
+      
       header={
         <AppHeader theme={theme} onToggleTheme={onToggleTheme} />
       }

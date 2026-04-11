@@ -29,6 +29,8 @@ const AiAuditPanel = ({ aiChat, onClose, mobileMode = false }: AiAuditPanelProps
     copied,
     chatInput,
     setChatInput,
+    attachedImage,
+    setAttachedImage,
     loadingAction,
     isSendingChat,
     sendChatMessage,
@@ -86,6 +88,8 @@ const AiAuditPanel = ({ aiChat, onClose, mobileMode = false }: AiAuditPanelProps
         loadingAction={loadingAction}
         isSending={isSendingChat}
         mobileMode={mobileMode}
+        attachedImage={attachedImage}
+        setAttachedImage={setAttachedImage}
         onInputChange={setChatInput}
         onSend={() => void sendChatMessage()}
         onStop={stopRequest}

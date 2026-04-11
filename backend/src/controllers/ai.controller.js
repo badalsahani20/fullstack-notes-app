@@ -143,12 +143,12 @@ export const aiAssistController = catchAsync(async (req, res) => {
 
 
 export const chatWithAiController = catchAsync( async (req, res) => {
-  const { message, history = [], summary = "", noteContext = "", contextChanged = false } = req.body;
+  const { message, history = [], summary = "", noteContext = "", contextChanged = false, imageBase64 } = req.body;
 
-  if (!message || !message.trim()) {
+  if ((!message || !message.trim()) && !imageBase64) {
     return res.status(400).json({
       success: false,
-      message: "Message is required",
+      message: "Message or Image is required",
     });
   }
 
@@ -165,6 +165,7 @@ export const chatWithAiController = catchAsync( async (req, res) => {
     summary,
     noteContext,
     contextChanged,
+    imageBase64,
   });
 
   res.status(200).json({

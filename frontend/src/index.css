@@ -430,6 +430,12 @@
   background: var(--panel-bg);
 }
 
+/* Smooth resize animation for resizable panel flex items */
+[data-panel] {
+  transition: flex 0.38s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+
 .desktop-main-panel {
   display: flex;
   flex-direction: column;
@@ -438,18 +444,18 @@
 }
 
 .desktop-folder-column {
-  width: 15.625rem;
-  min-width: 15.625rem;
-  max-width: 15.625rem;
-  flex: 0 0 15.625rem;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
 .desktop-notes-column {
-  width: 24rem;
-  min-width: 24rem;
-  max-width: 24rem;
-  flex: 0 0 24rem;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
