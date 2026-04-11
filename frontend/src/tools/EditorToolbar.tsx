@@ -4,7 +4,7 @@ import {
   List, ListOrdered, CheckSquare,
   Image as ImageIcon, Table as TableIcon,
   Minus, Quote, Code, Eraser,
-  Maximize2, Minimize2, Sparkles
+  Maximize2, Minimize2
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Editor } from "@tiptap/react";
