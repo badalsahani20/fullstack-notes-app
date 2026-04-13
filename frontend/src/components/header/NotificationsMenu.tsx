@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useNotificationStore, type AppNotification } from "@/store/useNotificationStore";
+import { useNotificationStore, type AppNotification, timeAgo } from "@/store/useNotificationStore";
 import { useAuthStore } from "@/store/useAuthStore";
 
 export default function NotificationsMenu() {
@@ -125,7 +125,7 @@ export default function NotificationsMenu() {
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className="text-[10px] uppercase font-medium text-zinc-400 dark:text-zinc-500 tracking-wider">
-                        {notification.time}
+                        {timeAgo(notification.createdAt)}
                       </span>
                     </div>
                   </div>
