@@ -318,15 +318,19 @@ export const useRestoreNoteMutation = () => {
             await queryClient.cancelQueries({ queryKey: ["notes", "trash"] });
 
             const previousNotes = queryClient.getQueryData<Note[]>(["notes"]);
-            const previousTrash = queryClient.getQueryData<Note[]>(["notes", "trash"]);
+            // Trash cache holds { notes: Note[], folders: [...] }
+            const previousTrash = queryClient.getQueryData<{ notes: Note[]; folders: any[] }>(["notes", "trash"]);
             
-            const noteToRestore = previousTrash?.find(n => n._id === noteId);
+            const noteToRestore = previousTrash?.notes?.find(n => n._id === noteId);
 
             if (noteToRestore) {
-                const restoredPlaceholder = { ...noteToRestore, isArchived: false, isTrashed: false }; // Assuming these fields
+                const restoredPlaceholder = { ...noteToRestore, isArchived: false, isTrashed: false };
 
                 // remove from trash optimistically
-                queryClient.setQueryData(["notes", "trash"], (old: Note[] = []) => removeNoteFromList(old, noteId));
+                queryClient.setQueryData(["notes", "trash"], (old: { notes: Note[]; folders: any[] }) => ({
+                    ...old,
+                    notes: removeNoteFromList(old?.notes ?? [], noteId),
+                }));
                 
                 // add to active notes optimistically
                 queryClient.setQueryData(["notes"], (old: Note[] = []) => addNoteToList(old, restoredPlaceholder));
@@ -366,12 +370,14 @@ export const usePermanentDeleteNoteMutation = () => {
         onMutate: async (noteId) => {
             await queryClient.cancelQueries({ queryKey: ["notes", "trash"] });
 
-            const previousTrash = queryClient.getQueryData<Note[]>(["notes", "trash"]);
+            // The trash cache holds { notes: Note[], folders: [...] }, not a flat array
+            const previousTrash = queryClient.getQueryData<{ notes: Note[]; folders: any[] }>(["notes", "trash"]);
 
             if (previousTrash) {
-                queryClient.setQueryData(["notes", "trash"], (old: Note[] = []) => 
-                    removeNoteFromList(old, noteId)
-                );
+                queryClient.setQueryData(["notes", "trash"], (old: { notes: Note[]; folders: any[] }) => ({
+                    ...old,
+                    notes: removeNoteFromList(old?.notes ?? [], noteId),
+                }));
             }
 
             return { previousTrash };
