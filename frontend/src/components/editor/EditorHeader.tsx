@@ -51,8 +51,8 @@ const EditorHeader = ({
       <div className="editor-title-row">
         <div className="flex flex-1 items-center min-w-0">
           {isMobile && (
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => window.history.back()}
               className="mr-1 -ml-2 p-1.5 rounded-full hover:bg-white/5 active:bg-white/10 transition-colors"
               aria-label="Go back"
@@ -104,23 +104,19 @@ const EditorHeader = ({
             </motion.div>
             <span className="hidden md:inline">{note.pinned ? "Starred" : "Star"}</span>
           </button>
-          
+
           <button
             type="button"
             onClick={onAskAi}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-              isAiOpen 
-                ? "bg-[var(--accent-strong)] text-white shadow-md shadow-[var(--accent-strong)]/20" 
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${isAiOpen
+                ? "bg-[var(--accent-strong)] text-white shadow-md shadow-[var(--accent-strong)]/20"
                 : "bg-[var(--accent-subtle)] text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
-            }`}
+              }`}
             aria-label="Toggle AI Assistant"
           >
             <Sparkles size={15} className={isAiOpen ? "animate-pulse" : ""} />
             <span className="hidden md:inline">Ask AI</span>
           </button>
-          <div className="editor-updated-mobile md:hidden">
-            <RelativeTimeLabel updatedAt={note.updatedAt} />
-          </div>
         </div>
       </div>
 
@@ -140,5 +136,4 @@ const EditorHeader = ({
 
   );
 };
-
 export default EditorHeader;

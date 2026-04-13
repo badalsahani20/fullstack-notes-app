@@ -33,7 +33,7 @@ const NoteEditor = () => {
   const [draftTitle, setDraftTitle] = useState("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
 
-  const note = isNew 
+  const note = isNew
     ? { _id: "new", title: draftTitle, content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
     : fetchedNote;
 
@@ -45,7 +45,7 @@ const NoteEditor = () => {
 
   useEffect(() => {
     if (!isMobile || !window.visualViewport) return;
-    
+
     const handler = () => {
       if (!window.visualViewport) return;
       const viewport = window.visualViewport;
@@ -74,11 +74,11 @@ const NoteEditor = () => {
       debounce((id: string, content: string) => {
         const latestNote = noteRef.current;
         if (latestNote && latestNote._id === id && id !== "new") {
-          updateNoteAsync({ 
-            noteId: id, 
-            updates: { content }, 
-            version: latestNote.version 
-          }).catch(() => {}); // Conflict handled in mutation hook
+          updateNoteAsync({
+            noteId: id,
+            updates: { content },
+            version: latestNote.version
+          }).catch(() => { }); // Conflict handled in mutation hook
         }
       }, 1000),
     [updateNoteAsync]
@@ -137,11 +137,11 @@ const NoteEditor = () => {
     }
     const currentNote = noteRef.current || note;
     if (draftTitle !== currentNote.title) {
-      updateNoteAsync({ 
-        noteId: currentNote._id, 
-        updates: { title: draftTitle }, 
-        version: currentNote.version 
-      }).catch(() => {});
+      updateNoteAsync({
+        noteId: currentNote._id,
+        updates: { title: draftTitle },
+        version: currentNote.version
+      }).catch(() => { });
     }
   };
 
@@ -200,19 +200,19 @@ const NoteEditor = () => {
         />
 
         <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
-          <TipTap 
-            key={note._id} 
-            content={isNew ? "" : note.content} 
-            onChange={handleContentChange} 
-            onEditorReady={setEditorInstance} 
-            aiChat={aiChat} 
+          <TipTap
+            key={note._id}
+            content={isNew ? "" : note.content}
+            onChange={handleContentChange}
+            onEditorReady={setEditorInstance}
+            aiChat={aiChat}
           />
         </div>
 
         {isMobile && editorInstance && !aiOpen && (
-          <EditorToolbar 
-            editor={editorInstance} 
-            isMobile={true} 
+          <EditorToolbar
+            editor={editorInstance}
+            isMobile={true}
             yOffset={keyboardOffset}
           />
         )}
@@ -240,9 +240,9 @@ const NoteEditor = () => {
           </ResizablePanel>
           <ResizableHandle withHandle className="assistant-resize-handle" />
           <ResizablePanel
-            defaultSize="20rem"
+            defaultSize="22rem"
             minSize="20rem"
-            maxSize="23rem"
+            maxSize="50rem"
             className="assistant-panel-shell h-full"
           >
             <AiAuditPanel aiChat={aiChat} onClose={() => setAiOpen(false)} />
@@ -251,11 +251,11 @@ const NoteEditor = () => {
       ) : (
         editorPane
       )}
-      
-      <AiResultDialog 
-        result={aiChat.result} 
-        onApply={aiChat.applySuggestionToSelection} 
-        onClose={() => aiChat.setResult(null)} 
+
+      <AiResultDialog
+        result={aiChat.result}
+        onApply={aiChat.applySuggestionToSelection}
+        onClose={() => aiChat.setResult(null)}
       />
     </div>
   );

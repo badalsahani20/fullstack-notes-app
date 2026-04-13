@@ -1195,17 +1195,20 @@
 
 .assistant-rail-mobile {
   display: flex;
-  width: min(100%, 42rem);
+  flex-direction: column;
+  width: 100%;
   height: min(88dvh, 100%);
   border-left: 0;
-  margin-inline: auto;
+  border-right: 0;
+  margin-inline: 0;
   margin-top: auto;
   border: 1px solid var(--divider);
   border-bottom: 0;
-  border-radius: 1.85rem 1.85rem 0 0;
+  border-radius: 1.25rem 1.25rem 0 0;
   background: var(--panel-bg-strong);
   box-shadow: 0 -24px 54px rgba(0, 0, 0, 0.15);
   overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .assistant-mobile-overlay {
@@ -1215,7 +1218,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 3.5rem 0.75rem 0;
+  padding: 3.5rem 0 0;
   background: color-mix(in srgb, #000 48%, transparent);
   backdrop-filter: blur(10px);
 }
@@ -2350,9 +2353,9 @@
   }
 
   .editor-meta-stack {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.22rem;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
   }
 
   .editor-star-toggle {
@@ -2366,19 +2369,6 @@
 
   .editor-title-meta {
     margin-top: 0.06rem;
-  }
-
-  .editor-title-meta .editor-folder-label,
-  .editor-title-meta :last-child {
-    display: none;
-  }
-
-  .editor-updated-mobile {
-    display: block;
-    font-size: 0.74rem;
-    line-height: 1.2;
-    color: var(--muted-text);
-    text-align: right;
   }
 
   .editor-workspace {

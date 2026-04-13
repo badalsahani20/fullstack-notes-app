@@ -66,7 +66,7 @@ const AiCompose = ({
   selectionRange,
   loadingAction,
   isSending,
-  mobileMode = false,
+  // mobileMode = false,
   attachedImage,
   setAttachedImage,
   onInputChange,
@@ -118,22 +118,6 @@ const AiCompose = ({
 
           {/* Right side: quick actions dropdown */}
           <div className="flex items-center gap-2">
-            {mobileMode ? (
-              <div className="assistant-mobile-actions">
-                {(Object.keys(actionMeta) as AiAction[]).map((action) => (
-                  <button
-                    key={action}
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() => onAction(action)}
-                    className={`assistant-mobile-action ${loadingAction === action ? "assistant-mobile-action-active" : ""}`}
-                    title={actionMeta[action].prompt}
-                  >
-                    {actionMeta[action].label}
-                  </button>
-                ))}
-              </div>
-            ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -155,7 +139,8 @@ const AiCompose = ({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="assistant-actions-menu w-48 shadow-md"
+                  sideOffset={8}
+                  className="assistant-actions-menu w-48 shadow-md z-[99999]"
                 >
                   {(Object.keys(actionMeta) as AiAction[]).map((action) => (
                     <DropdownMenuItem
@@ -169,7 +154,6 @@ const AiCompose = ({
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
 
             {/* Image Attach Button */}
             <button

@@ -146,7 +146,7 @@ const AppLayout = ({
               {/* Folder panel: hidden by default, toggled from activity bar */}
               <ResizablePanel
                 id="folders"
-                defaultSize="0%"
+                defaultSize="20%"
                 maxSize="30%"
                 minSize="15%"
                 collapsible={true}
@@ -163,9 +163,9 @@ const AppLayout = ({
               {/* Notes panel: always visible by default */}
               <ResizablePanel
                 id="notes"
-                defaultSize="30%"
-                maxSize="50%"
-                minSize="15%"
+                defaultSize="25%"
+                maxSize="30%"
+                minSize="25%"
                 collapsible={true}
                 collapsedSize="0%"
                 panelRef={notesPanelRef}

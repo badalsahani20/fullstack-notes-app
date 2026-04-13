@@ -15,6 +15,7 @@ type AiMessageListProps = {
   copied: boolean;
   onCopy: () => void;
   onApply: () => void;
+  isSending?: boolean;
 };
 
 /**
@@ -38,6 +39,7 @@ const AiMessageList = ({
   copied,
   onCopy,
   onApply,
+  isSending,
 }: AiMessageListProps) => {
   // The ref lives here now — only AiMessageList needs to touch the DOM node
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -87,6 +89,19 @@ const AiMessageList = ({
           />
         );
       })}
+
+      {isSending && (
+        <div className="assistant-message assistant-message-assistant w-full">
+          <div className="assistant-message-meta mb-1">
+            <span className="assistant-message-role">AI</span>
+          </div>
+          <div className="flex items-center gap-1.5 h-5 px-1 opacity-70">
+            <span className="w-1.5 h-1.5 bg-[var(--text-strong)] rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
+            <span className="w-1.5 h-1.5 bg-[var(--text-strong)] rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
+            <span className="w-1.5 h-1.5 bg-[var(--text-strong)] rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

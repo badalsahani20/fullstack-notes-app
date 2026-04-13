@@ -80,6 +80,7 @@ const AiAuditPanel = ({ aiChat, onClose, mobileMode = false }: AiAuditPanelProps
         copied={copied}
         onCopy={copySuggestion}
         onApply={applySuggestionToSelection}
+        isSending={isSendingChat}
       />
 
       <AiCompose
