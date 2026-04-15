@@ -169,7 +169,7 @@ export const chatWithAi = async ({
 }) => {
   ensureGroqApiKey();
 
-  if (!message || !message.trim() && !imageBase64) {
+  if ((!message || !message.trim()) && !imageBase64) {
     throw new Error("Message or Image is required for AI assist");
   }
 
