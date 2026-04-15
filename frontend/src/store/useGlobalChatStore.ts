@@ -82,7 +82,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   },
 
   sendMessage: async (text: string, image?: string | null) => {
-    const { activeSessionId, messages, sessions } = get();
+    const { activeSessionId, messages } = get();
 
     // Optimistically add user message
     const userMsg: ChatMessage = {
