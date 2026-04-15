@@ -4,7 +4,7 @@ import AiAssistCache from "../models/aiAssistCache.model.js";
 import catchAsync from "../utils/catchAsync.js";
 import { checkGrammar, chatWithAi, runAiAssist, generateTitle } from "../services/ai.service.js";
 import GlobalChatSession from "../models/globalChatSession.model.js";
-import { stripHtml } from "../utils/stripHTML.js";
+import { stripHtml } from "../utils/stripHtml.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
