@@ -5,7 +5,7 @@ import { redis } from "../../config/redis.js";
 import { sanitizeNoteHtml } from "../utils/sanitizeNoteHtml.js";
 import { generateTitle } from "../services/ai.service.js";
 import Notes from "../models/notes.model.js";
-import { stripHtml } from "../utils/stripHTML.js";
+import { stripHtml } from "../utils/stripHtml.js";
 
 const clearNoteCaches = async (userId) =>
   Promise.all([
