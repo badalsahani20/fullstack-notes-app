@@ -3,12 +3,51 @@ import catchAsync from "../utils/catchAsync.js";
 import mongoose from "mongoose";
 import { redis } from "../../config/redis.js";
 import { sanitizeNoteHtml } from "../utils/sanitizeNoteHtml.js";
+import { generateTitle } from "../services/ai.service.js";
+import Notes from "../models/notes.model.js";
+import { stripHtml } from "../utils/stripHTML.js";
 
 const clearNoteCaches = async (userId) =>
   Promise.all([
     redis.del(`notes:${userId}`),
     redis.del(`notes:archive:${userId}`),
   ]);
+
+const DEFAULT_NOTE_TITLES = ["Untitled Note", "Untitled"];
+
+const queueAutoTitleGeneration = (note, userId) => {
+  if (!note || !DEFAULT_NOTE_TITLES.includes(note.title) || !note.content) {
+    return;
+  }
+
+  const plainText = stripHtml(note.content).trim();
+  if (!plainText) {
+    return;
+  }
+
+  generateTitle(plainText)
+    .then(async (title) => {
+      const normalizedTitle = title?.trim();
+      if (!normalizedTitle) {
+        return;
+      }
+
+      const updated = await Notes.findOneAndUpdate(
+        {
+          _id: note._id,
+          user: userId,
+          title: { $in: DEFAULT_NOTE_TITLES },
+        },
+        { title: normalizedTitle },
+        { new: true }
+      ).exec();
+
+      if (updated) {
+        await clearNoteCaches(userId);
+      }
+    })
+    .catch((err) => console.error("[AutoTitle] failed:", err));
+};
 
 export const getAllNotes = catchAsync(async (req, res) => {
     const userId = req.user._id;
@@ -95,6 +134,8 @@ export const createNote = catchAsync(async (req, res) => {
     // Invalidate cache
     await clearNoteCaches(req.user._id);
 
+    queueAutoTitleGeneration(note, req.user._id);
+
     res.status(201).json(note);
 });
 
@@ -146,6 +187,8 @@ export const updateNote = catchAsync(async (req, res) => {
 
     // Invalidate cache
     await clearNoteCaches(req.user._id);
+
+    queueAutoTitleGeneration(result.updatedNote, req.user._id);
 
     res.status(200).json(result.updatedNote);
 });

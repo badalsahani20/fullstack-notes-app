@@ -8,6 +8,7 @@ export type AppNotification = {
   type: "info" | "success" | "warning" | "ai" | "error";
   isRead: boolean;
   createdAt: string; // ISO timestamp
+  action?: { label: string; href: string }; // optional CTA
 };
 
 export const timeAgo = (isoString: string): string => {
@@ -51,6 +52,23 @@ const STATIC_NOTIFICATIONS: AppNotification[] = [
     type: "success",
     isRead: false,
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif-mobile-nav-v1",
+    title: "New Mobile Navigation 🗂️",
+    message: "The bottom navigation bar has been replaced with a sleek side drawer. Tap the Notesify logo in the header to open it — access your notebooks, archive, trash, and Iris AI from one place.",
+    type: "info",
+    isRead: false,
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  },
+  {
+    id: "notif-iris-global-v1",
+    title: "Iris AI is Now Global ✨",
+    message: "Meet the new Iris AI chat — a dedicated space to ask anything, explore ideas, and learn faster. Your full conversation history is saved across sessions.",
+    type: "ai",
+    isRead: false,
+    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    action: { label: "Open Iris AI", href: "/chat" },
   },
 ];
 

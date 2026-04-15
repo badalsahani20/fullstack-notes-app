@@ -7,6 +7,7 @@ import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
 import { stripHtml } from "@/utils/stripHtml";
+import { useTypewriter } from "@/hooks/useTypewriter";
 
 const getSelection = (editor: Editor | null) => {
   if (!editor) return { text: "", range: null as SelectionRange };
@@ -52,14 +53,18 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [loadingAction, setLoadingAction] = useState<AiAction | null>(null);
   const [result, setResult] = useState<AssistResult | null>(null);
   const [selectionRange, setSelectionRange] = useState<SelectionRange>(null);
-  const [streamedMessageText, setStreamedMessageText] = useState("");
-  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [copied, setCopied] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  // Shared typewriter animation — skip the static welcome message
+  const { streamingMessageId, streamedMessageText, isStreaming } = useTypewriter(
+    messages,
+    new Set(["welcome"]),
+    () => setCopied(false),
+  );
 
   const isNew = noteId === "new";
   const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
@@ -132,38 +137,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       editor.off("selectionUpdate", handleSelectionUpdate);
     };
   }, [editor]);
-
-  // Typewriter streaming animation — fires whenever a new assistant message arrives
-  useEffect(() => {
-    const latestMessage = messages[messages.length - 1];
-
-    if (!latestMessage || latestMessage.role !== "assistant" || latestMessage.id === "welcome" || latestMessage.skipAnimation) {
-      setStreamingMessageId(null);
-      setStreamedMessageText("");
-      setIsStreaming(false);
-      return;
-    }
-
-    setCopied(false);
-    setIsStreaming(true);
-    setStreamingMessageId(latestMessage.id);
-    setStreamedMessageText("");
-
-    // Adaptive step size: longer messages advance faster so they finish in ~1.7s
-    const step = Math.max(4, Math.ceil(latestMessage.text.length / 120));
-    let index = 0;
-
-    const timer = window.setInterval(() => {
-      index = Math.min(latestMessage.text.length, index + step);
-      setStreamedMessageText(latestMessage.text.slice(0, index));
-      if (index >= latestMessage.text.length) {
-        window.clearInterval(timer);
-        setIsStreaming(false);
-      }
-    }, 14);
-
-    return () => window.clearInterval(timer);
-  }, [messages]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -295,12 +268,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       const assistantMessage: Message = { id: `${Date.now()}-chat-assistant`, role: "assistant", text: reply };
       setResult(null);
-      
-      // Synchronously prep the streaming state and add the message
-      // This prevents the "flash" of full text before the effect starts
-      setStreamingMessageId(assistantMessage.id);
-      setStreamedMessageText("");
-      setIsStreaming(true);
       setMessages((prev) => [...prev, assistantMessage]);
 
       // Persist to DB — cap at 50 messages to prevent BSON size bloat
@@ -332,11 +299,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       setChatHistory((prev) => [...prev, { role: "user", content: trimmed }]);
       const errorMessage: Message = { id: `${Date.now()}-chat-error`, role: "assistant", text: message };
-      
-      // Also prep streaming for error messages so they don't flash
-      setStreamingMessageId(errorMessage.id);
-      setStreamedMessageText("");
-      setIsStreaming(true);
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsSendingChat(false);

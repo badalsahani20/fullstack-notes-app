@@ -3,6 +3,12 @@ import api from "@/lib/api";
 import type { Note } from "@/store/useNoteStore";
 import { toast } from "sonner";
 
+// Tracks pending title-refresh timers per noteId so autosave doesn't stack them
+const titleRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const DEFAULT_TITLES = new Set(["Untitled Note", "Untitled"]);
+const AUTO_TITLE_POLL_INTERVAL_MS = 2000;
+const AUTO_TITLE_POLL_MAX_ATTEMPTS = 6;
+
 // --- NORMALIZED UPDATE HELPERS ---
 const sortNotes = (notes: Note[]) => {
     return [...notes].sort((a, b) => {
@@ -19,6 +25,47 @@ const removeNoteFromList = (list: Note[], noteId: string) =>
 
 const addNoteToList = (list: Note[], note: Note) =>
     sortNotes([note, ...removeNoteFromList(list, note._id)]);
+
+const scheduleAutoTitleSync = (
+    queryClient: ReturnType<typeof useQueryClient>,
+    noteId: string,
+    attempt = 0
+) => {
+    const existing = titleRefreshTimers.get(noteId);
+    if (existing) clearTimeout(existing);
+
+    if (attempt >= AUTO_TITLE_POLL_MAX_ATTEMPTS) {
+        titleRefreshTimers.delete(noteId);
+        return;
+    }
+
+    const timer = setTimeout(async () => {
+        try {
+            const res = await api.get(`/notes/${noteId}`);
+            const latestNote = res.data.note || res.data;
+
+            if (!latestNote?._id) {
+                titleRefreshTimers.delete(noteId);
+                return;
+            }
+
+            queryClient.setQueryData(["note", noteId], latestNote);
+            queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, latestNote));
+
+            if (DEFAULT_TITLES.has(latestNote.title)) {
+                scheduleAutoTitleSync(queryClient, noteId, attempt + 1);
+                return;
+            }
+
+            titleRefreshTimers.delete(noteId);
+        } catch (error) {
+            console.error("Failed to sync AI title:", error);
+            titleRefreshTimers.delete(noteId);
+        }
+    }, AUTO_TITLE_POLL_INTERVAL_MS);
+
+    titleRefreshTimers.set(noteId, timer);
+};
 
 export const useCreateNoteMutation = () => {
     const queryClient = useQueryClient();
@@ -38,6 +85,10 @@ export const useCreateNoteMutation = () => {
         onSuccess: (newNote) => {
             queryClient.setQueryData(["notes"], (old: Note[] = []) => addNoteToList(old, newNote));
             queryClient.setQueryData(["note", newNote._id], newNote); //Single note cache
+
+            if (DEFAULT_TITLES.has(newNote?.title)) {
+                scheduleAutoTitleSync(queryClient, newNote._id);
+            }
         },
         onError: (error) => {
             console.error("Failed to create note: ", error);
@@ -137,6 +188,10 @@ export const useUpdateNoteMutation = () => {
         onSuccess: (updatedNote, variables) => {
             queryClient.setQueryData(["note", variables.noteId], updatedNote);
             queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, updatedNote));
+
+            if (DEFAULT_TITLES.has(updatedNote?.title)) {
+                scheduleAutoTitleSync(queryClient, variables.noteId);
+            }
         },
         onError: (error, { noteId }, context) => {
             queryClient.setQueryData(["notes"], context?.previousNotes);
@@ -484,3 +539,4 @@ export const useMoveNoteToFolderMutation = () => {
         }
     });
 };
+

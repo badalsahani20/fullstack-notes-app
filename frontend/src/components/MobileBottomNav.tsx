@@ -1,4 +1,4 @@
-import { Folder, Search, StickyNote, User } from "lucide-react";
+import { Bot, Folder, Search, StickyNote, User } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const MobileBottomNav = () => {
@@ -17,6 +17,12 @@ const MobileBottomNav = () => {
       icon: Search,
       active: location.pathname.startsWith("/search"),
       onClick: () => navigate("/search"),
+    },
+    {
+      label: "Iris AI",
+      icon: Bot,
+      active: location.pathname.startsWith("/chat"),
+      onClick: () => navigate("/chat"),
     },
     {
       label: "Folders",

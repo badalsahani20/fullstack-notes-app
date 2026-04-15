@@ -34,14 +34,30 @@ export const requestSessionRefresh = async () => {
   return refreshPromise;
 };
 
-//Request interceptor
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
+const isAuthRoute = (url = "") =>
+  url.includes("/users/login") ||
+  url.includes("/users/register") ||
+  url.includes("/users/refresh") ||
+  url.includes("/users/forgot-password") ||
+  url.includes("/users/reset-password");
+
+// Request interceptor
+api.interceptors.request.use(async (config) => {
+  let token = useAuthStore.getState().accessToken;
+
+  if (!token && !isAuthRoute(config.url)) {
+    try {
+      token = await requestSessionRefresh();
+    } catch {
+      token = null;
+    }
+  }
 
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 

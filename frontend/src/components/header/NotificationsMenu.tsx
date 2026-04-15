@@ -1,4 +1,4 @@
-import { Bell, CheckCircle2, Sparkles, AlertCircle, Info, X } from "lucide-react";
+import { Bell, CheckCircle2, Sparkles, AlertCircle, Info, X, ArrowRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,11 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotificationStore, type AppNotification, timeAgo } from "@/store/useNotificationStore";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useNavigate } from "react-router-dom";
 
 export default function NotificationsMenu() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const { 
     notifications, 
     markAllAsRead, 
@@ -133,6 +135,19 @@ export default function NotificationsMenu() {
                     <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
                       {notification.message}
                     </p>
+                    {notification.action && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(notification.id);
+                          navigate(notification.action!.href);
+                        }}
+                        className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                      >
+                        {notification.action.label}
+                        <ArrowRight size={11} />
+                      </button>
+                    )}
                     <button 
                       onClick={(e) => handleRemove(notification.id, e)}
                       className="absolute right-0 top-0 p-1 rounded-md text-zinc-400 dark:text-zinc-600 opacity-0 group-hover:opacity-100 hover:bg-zinc-200 dark:hover:bg-white/10 hover:text-rose-500 dark:hover:text-rose-400 transition-all focus:outline-none"

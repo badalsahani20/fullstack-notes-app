@@ -1,4 +1,5 @@
 import {
+  Bot,
   FileText,
   Folder,
   Search,
@@ -54,6 +55,13 @@ const ActivityBar = () => {
               to={noteId ? `/favorites/note/${noteId}` : "/favorites"}
               icon={Star}
               label="Favorites"
+            />
+
+            {/* AI Chat */}
+            <NavItem
+              to="/chat"
+              icon={Bot}
+              label="Iris AI"
             />
 
             {/* Folders — toggle button, not a nav link */}

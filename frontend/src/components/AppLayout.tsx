@@ -18,16 +18,13 @@ type Props = {
   middlePanel: React.ReactNode;
   main: React.ReactNode;
 
-  mobileBottomNav: React.ReactNode;
-  floatingButton: React.ReactNode;
-
   animationKey: string;
 }
 
 const AppLayout = ({
   showGlobalHeader, activityBar, showFoldersPanel, showNotesPanel,
   showMainPanel, isMobile, header, leftPanel, middlePanel, main,
-  mobileBottomNav, floatingButton, animationKey
+  animationKey
 }: Props) => {
   const foldersPanelRef = useRef<PanelImperativeHandle | null>(null);
   const notesPanelRef = useRef<PanelImperativeHandle | null>(null);
@@ -186,9 +183,6 @@ const AppLayout = ({
             </ResizablePanelGroup>
           )}
         </div>
-
-        {isMobile ? mobileBottomNav : null}
-        {isMobile ? floatingButton : null}
       </div>
     </div>
   );

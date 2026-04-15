@@ -10,9 +10,10 @@ import NewNotebookDialog from "@/components/folders/NewNotebookDialog";
 type AppHeaderProps = {
   theme: "light" | "dark";
   onToggleTheme: (event: React.MouseEvent) => void;
+  onMenuOpen?: () => void;
 };
 
-const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
+const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
   const { folderId } = useParams();
   const navigate = useNavigate();
 
@@ -28,7 +29,14 @@ const AppHeader = ({ theme, onToggleTheme }: AppHeaderProps) => {
 
   return (
     <header className="desktop-header">
-      <div className="desktop-brand">
+      <div
+        className={`desktop-brand ${onMenuOpen ? "mobile-menu-trigger" : ""}`}
+        onClick={onMenuOpen}
+        role={onMenuOpen ? "button" : undefined}
+        tabIndex={onMenuOpen ? 0 : undefined}
+        onKeyDown={(e) => e.key === "Enter" && onMenuOpen?.()}
+        aria-label={onMenuOpen ? "Open menu" : undefined}
+      >
         <div className="relative">
           <div className="absolute inset-0 rounded-lg bg-white/5 blur-md" />
           <img src="/notesify-favicon.png" alt="Notesify" width={32} height={32} className="relative shadow-[0_0_15px_rgba(255,255,255,0.05)]" />

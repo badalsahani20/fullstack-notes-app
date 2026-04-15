@@ -11,6 +11,7 @@ export const useNotesLayout = () => {
   const isMobile = useMediaQuery("(max-width: 960px)");
   const isSearchRoute = location.pathname.startsWith("/search");
   const isProfileRoute = location.pathname.startsWith("/profile");
+  const isChatRoute = location.pathname.startsWith("/chat");
   const showGlobalHeader = !(isEditorFocusMode || (isMobile && Boolean(noteId)));
 
   const animationKey = noteId ? `note-${noteId}` : "empty-state";
@@ -25,21 +26,18 @@ export const useNotesLayout = () => {
     : isFolderPanelOpen && !isEditorFocusMode;
 
   const showNotesPanel = isMobile
-    ? !noteId && !showFoldersPanel && !isSearchRoute && !isProfileRoute
+    ? !noteId && !showFoldersPanel && !isSearchRoute && !isProfileRoute && !isChatRoute
     : !isNotesHidden;
 
   const showMainPanel = isMobile
-    ? Boolean(noteId) || isSearchRoute || isProfileRoute
+    ? Boolean(noteId) || isSearchRoute || isProfileRoute || isChatRoute
     : true;
-
-  const showMobileBottomNav = isMobile && !noteId;
 
   return {
     showGlobalHeader,
     showFoldersPanel,
     showNotesPanel,
     showMainPanel,
-    showMobileBottomNav,
     isMobile,
     animationKey,
   };

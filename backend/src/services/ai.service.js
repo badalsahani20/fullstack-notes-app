@@ -132,85 +132,33 @@ export const runAiAssist = async ({ action, text }) => {
 const PROMPT = `You are Iris, an advanced AI learning assistant integrated into Notesify, a premium note-taking and learning platform.
 
 ## Your Core Role
-* You act as a highly intelligent, encouraging, and deeply knowledgeable tutor (similar to the helpful, clear nature of ChatGPT or Gemini).
+* You act as a highly intelligent, encouraging, and deeply knowledgeable tutor.
 * Your primary goal is to help the user learn faster, understand complex topics, and organize their thoughts brilliantly.
 * Always actively consider the context of the user's current notes when answering.
 
 ## Communication & Aesthetic Style (CRITICAL)
-* Be extremely clear, pedagogical, and structured. 
-* Use EXTENSIVE emojis to make the content highly visual and engaging (e.g., 🚨, ✅, ❌, 👉, 🧠, 💡, 💀, 🔍, ⚠️).
-* Structure your responses with clear sections, bullet points, headers, and visual breaks. 
-* Break things down logically. For example:
-  - Use ✅ and ❌ for diagnostics or pros/cons.
-  - Use 👉 for translations or key takeaways.
-  - Use headers like "🚨 What this means" or "🔍 What YOU should do".
+* Be extremely clear, pedagogical, and structured.
+* Use emojis to make the content visual and engaging (e.g., 🚨, ✅, ❌, 👉, 🧠, 💡, 🔍, ⚠️) — but use them purposefully, not excessively.
 * Keep a warm, encouraging, but professional tone.
 
+## Formatting Rules (FOLLOW STRICTLY)
+* **Headings**: Use ## or ### for section titles — never # (too large in chat).
+* **Tables**: Use markdown tables whenever comparing things, listing pros/cons, summarizing multiple items, or showing structured data side-by-side. Example:
+  | Feature | Option A | Option B |
+  |---------|----------|----------|
+  | Speed   | Fast     | Slow     |
+* **Section dividers**: Use --- (horizontal rule) between distinct major sections of a response to visually separate them.
+* **Bullet lists**: Use for step-by-step breakdowns or feature lists.
+* **Code**: Always use fenced code blocks with language tags.
+* **Never** respond with massive walls of unformatted text. Keep paragraphs punchy and scannable.
+
 ## Educational Guidelines
-* When explaining a complex concept, break it down step-by-step and use simple, relatable analogies.
-* When a user asks you to summarize or review their notes, pull out the most actionable insights and key takeaways.
-* Do not hallucinate. If a user asks a highly specific factual question that you don't know, suggest how they can research it.
+* When explaining a complex concept, break it down step-by-step with simple analogies.
+* Use ✅/❌ for pros/cons or diagnostics. Use 👉 for key takeaways.
+* When summarizing notes, pull out the most actionable insights.
+* Do not hallucinate. If unsure, say so and suggest how the user can research it.
+* When appropriate, suggest how they might organize their ideas in their notes.`;
 
-## Formatting Rules
-* Whenever you provide code, always use proper fenced code blocks with language tags.
-* Never respond with massive walls of unformatted text. Keep paragraphs punchy and digestible.
-* When appropriate, actively suggest how they might group or structure their ideas within their notes.`;
-
-// export const chatWithAi = async ({
-//   message,
-//   history = [],
-//   summary = "",
-//   noteContext = "",
-// }) => {
-//   ensureGroqApiKey();
-
-//   if (!message || !message.trim()) {
-//     throw new Error("Message is required for AI assist");
-//   }
-
-//   if (history.length > 20 && !summary) {
-//     summary = await summarizeHistory(history);
-//     history = history.slice(-5);
-//   }
-
-//   const trimmedHistory = history.slice(-6);
-//   const safeContext = noteContext?.slice(0, 1500);
-//   const messages = [
-//     {
-//       role: "system",
-//       content: PROMPT,
-//     },
-//     safeContext && {
-//       role: "system",
-//       content: `Relevant content from the user's note:\n ${safeContext}`,
-//     },
-//     summary && {
-//       role: "system",
-//       content: `Conversation summary: \n${summary}`,
-//     },
-//     ...trimmedHistory,
-//     { role: "user", content: message },
-//   ].filter(Boolean);
-//   try {
-//     const response = await client.chat.completions.create({
-//       model: "llama-3.3-70b-versatile",
-//       messages,
-//     });
-
-//     const reply = response.choices[0].message.content;
-
-//     return {
-//       reply,
-//       history: [
-//         ...trimmedHistory,
-//         { role: "user", content: message },
-//         { role: "assistant", content: reply },
-//       ],
-//     };
-//   } catch (error) {
-//     throw new Error(`Groq Chat Error: ${error.message}`);
-//   }
-// };
 
 export const chatWithAi = async ({
   message,
@@ -331,3 +279,12 @@ export const chatWithAi = async ({
     history: [...trimmedHistory, { role: "user", content: message }, { role: "assistant", content: reply }],
   };
 };
+
+export const generateTitle = async (text) => {
+  const prompt = `Generate a short, descriptive 4-6 word title for the following content.
+Return only the title. No quotes, no punctuation at the end, no explanations.
+Content:
+${text.slice(0, 500)}`; // cap at 500 chars, we don't need more for a title
+
+return await generateContentWithFallback(prompt);
+}

@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
 import FoldersPanel from "./folderPanel";
 import AppHeader from "./AppHeader";
-import MobileBottomNav from "./MobileBottomNav";
-import MobileCreateButton from "./MobileCreateButton";
+import MobileDrawer from "./MobileDrawer";
 import AppLayout from "./AppLayout";
 import { useNotesLayout } from "@/hooks/useNotesLayout";
 import ActivityBar from "./SideBar";
@@ -19,12 +18,12 @@ const MainLayout = ({ middlePanel }: Pops) => {
     showFoldersPanel,
     showNotesPanel,
     showMainPanel,
-    showMobileBottomNav,
     isMobile,
     animationKey
   } = useNotesLayout();
   const { fetchFolders } = useFolderStore();
   const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
@@ -81,35 +80,38 @@ const MainLayout = ({ middlePanel }: Pops) => {
   };
 
   return (
-    <AppLayout
-      showGlobalHeader={showGlobalHeader}
-      showFoldersPanel={showFoldersPanel}
-      showNotesPanel={showNotesPanel}
-      showMainPanel={showMainPanel}
-      isMobile={isMobile}
-      animationKey={animationKey}
-      
-      header={
-        <AppHeader theme={theme} onToggleTheme={onToggleTheme} />
-      }
-      activityBar={
-        <ActivityBar />
-      }
-      leftPanel={
-        <FoldersPanel />
-      }
+    <>
+      <AppLayout
+        showGlobalHeader={showGlobalHeader}
+        showFoldersPanel={showFoldersPanel}
+        showNotesPanel={showNotesPanel}
+        showMainPanel={showMainPanel}
+        isMobile={isMobile}
+        animationKey={animationKey}
+        
+        header={
+          <AppHeader
+            theme={theme}
+            onToggleTheme={onToggleTheme}
+            onMenuOpen={isMobile ? () => setDrawerOpen(true) : undefined}
+          />
+        }
+        activityBar={
+          <ActivityBar />
+        }
+        leftPanel={
+          <FoldersPanel />
+        }
 
-      middlePanel={middlePanel}
-      main={
-        <Outlet />
-      }
-      mobileBottomNav={
-        showMobileBottomNav ? <MobileBottomNav /> : null
-      }
-      floatingButton={
-        showMobileBottomNav ? <MobileCreateButton /> : null
-      }
-    />
+        middlePanel={middlePanel}
+        main={
+          <Outlet />
+        }
+      />
+      {isMobile && (
+        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
+    </>
   );
 };
 

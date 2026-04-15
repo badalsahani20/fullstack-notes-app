@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuthLayout from "./components/AuthLayout";
+import GlobalChatPage from "./pages/GlobalChatPage";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           <Route index element={<HomeEmptyState />} />
           <Route path="/search" element={<SearchPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/chat" element={<GlobalChatPage />} />
           <Route path="/folders" element={<HomeEmptyState />} />
           <Route path="/favorites" element={<HomeEmptyState />} />
           <Route path="/favorites/note/:noteId" element={<NoteEditor />} />

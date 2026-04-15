@@ -44,12 +44,13 @@ const AiMessageList = ({
   // The ref lives here now — only AiMessageList needs to touch the DOM node
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // Auto-scroll to bottom whenever messages grow or streamed text updates
+  // Auto-scroll to bottom on real message events (new message or sending state),
+  // NOT on every typewriter character — avoids viewport jumping during streaming.
   useEffect(() => {
     const container = listRef.current;
     if (!container) return;
     container.scrollTop = container.scrollHeight;
-  }, [messages, streamedMessageText]);
+  }, [messages, isSending]);
 
   return (
     <div ref={listRef} className="custom-scrollbar assistant-message-list">

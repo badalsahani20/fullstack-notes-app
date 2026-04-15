@@ -2,14 +2,9 @@ import crypto from "crypto";
 import Notes from "../models/notes.model.js";
 import AiAssistCache from "../models/aiAssistCache.model.js";
 import catchAsync from "../utils/catchAsync.js";
-import { checkGrammar, chatWithAi, runAiAssist } from "../services/ai.service.js";
-
-const stripHtml = (html = "") =>
-  html
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+import { checkGrammar, chatWithAi, runAiAssist, generateTitle } from "../services/ai.service.js";
+import GlobalChatSession from "../models/globalChatSession.model.js";
+import { stripHtml } from "../utils/stripHTML.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
@@ -142,8 +137,8 @@ export const aiAssistController = catchAsync(async (req, res) => {
 });
 
 
-export const chatWithAiController = catchAsync( async (req, res) => {
-  const { message, history = [], summary = "", noteContext = "", contextChanged = false, imageBase64 } = req.body;
+export const chatWithAiController = catchAsync(async (req, res) => {
+  const { message, noteContext = "", imageBase64, sessionId } = req.body;
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res.status(400).json({
@@ -152,27 +147,115 @@ export const chatWithAiController = catchAsync( async (req, res) => {
     });
   }
 
-  if (!Array.isArray(history)) {
-    return res.status(400).json({
-      success: false,
-      message: "History must be an array",
-    });
+  const isGlobalChat = !noteContext || !noteContext.trim();
+
+  // Load stored history from DB
+  let session = null;
+  let history = [];
+
+  if (isGlobalChat) {
+    if (sessionId) {
+      // Resume an existing session — verify it belongs to this user
+      session = await GlobalChatSession.findOne({ _id: sessionId, user: req.user._id });
+      if (!session) {
+        return res.status(404).json({ success: false, message: "Session not found" });
+      }
+    }
+    // If no sessionId: null session → will create a brand new one after the AI replies
+
+    if (session) {
+      history = session.messages.map((m) => ({ role: m.role, content: m.content }));
+    }
+  } else {
+    // In-editor chat: frontend still manages history
+    history = Array.isArray(req.body.history) ? req.body.history : [];
   }
 
+  // Call the AI service
   const result = await chatWithAi({
     message,
     history,
-    summary,
+    summary: req.body.summary || "",
     noteContext,
-    contextChanged,
     imageBase64,
   });
+
+  // Persist to DB if global chat
+  let activeSessionId = sessionId;
+  if (isGlobalChat) {
+    const safeUserContent = imageBase64
+      ? `[User attached an image] ${message}`.trim()
+      : message;
+
+    const newMessages = [
+      { role: "user", content: safeUserContent },
+      { role: "assistant", content: result.reply },
+    ];
+
+    if (session) {
+      // Append to existing session
+      const isFirstMessage = session.messages.length === 0;
+      session.messages.push(...newMessages);
+      await session.save(); // pre-save hook trims to cap
+
+      if (isFirstMessage) {
+        generateTitle(message)
+          .then((title) => GlobalChatSession.findByIdAndUpdate(session._id, { title }).exec())
+          .catch(() => {});
+      }
+    } else {
+      // Create a brand new session
+      const newSession = await GlobalChatSession.create({
+        user: req.user._id,
+        messages: newMessages,
+      });
+      activeSessionId = newSession._id; // return new sessionId to frontend
+
+      generateTitle(message)
+        .then((title) => GlobalChatSession.findByIdAndUpdate(newSession._id, { title }).exec())
+        .catch(() => {});
+    }
+  }
 
   res.status(200).json({
     success: true,
     data: {
       reply: result.reply,
-      history: result.history,
+      sessionId: activeSessionId, // frontend stores this for subsequent messages
     },
+  });
+});
+
+// GET /api/ai/chat/session/:sessionId — load messages for a specific session
+export const getChatSessionController = catchAsync(async (req, res) => {
+  const session = await GlobalChatSession
+    .findOne({ _id: req.params.sessionId, user: req.user._id })
+    .lean();
+
+  if (!session) {
+    return res.status(404).json({ success: false, message: "Session not found" });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      messages: session.messages,
+      title: session.title,
+    },
+  });
+});
+
+// GET /api/ai/sessions — sidebar: list all sessions (no messages, just metadata)
+export const getAllSessionsController = catchAsync(async (req, res) => {
+  const sessions = await GlobalChatSession
+    .find({ user: req.user._id })
+    .select("title updatedAt") // only what the sidebar needs
+    .sort({ updatedAt: -1 })   // newest first
+    .limit(20)                 // cap at 20 — sidebar doesn't need more
+    .lean();
+
+  res.status(200).json({
+    success: true,
+    data: { sessions },
   });
 });
