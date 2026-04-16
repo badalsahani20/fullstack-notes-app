@@ -1,13 +1,13 @@
 import {
-  Bot,
-  FileText,
-  Folder,
+  Archive,
+  FileStack,
+  Folders,
   Search,
   Settings,
   Star,
+  Trash2,
 } from "lucide-react";
-import NavItem from "./navItem";
-import { useParams } from "react-router-dom";
+import { NavLink, useParams } from "react-router-dom";
 import { useState } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { usePanelStore } from "@/store/usePanelStore";
@@ -44,38 +44,55 @@ const ActivityBar = () => {
         ) : (
           <nav className="flex w-full flex-row sm:flex-col gap-2 justify-around sm:justify-start">
             {/* All Notes */}
-            <NavItem
+            <NavLink
               to={noteId ? `/note/${noteId}` : "/"}
-              icon={FileText}
-              label="Notes"
-            />
+              className={({ isActive }) =>
+                cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
+              }
+              style={{ "--highlight-color": "#10b981" } as any}
+              title="All Notes"
+            >
+              <FileStack size={18} className="nav-icon" />
+            </NavLink>
 
             {/* Favorites */}
-            <NavItem
+            <NavLink
               to={noteId ? `/favorites/note/${noteId}` : "/favorites"}
-              icon={Star}
-              label="Favorites"
-            />
+              className={({ isActive }) =>
+                cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
+              }
+              style={{ "--highlight-color": "#fbbf24" } as any}
+              title="Favorites"
+            >
+              <Star size={18} className="nav-icon" />
+            </NavLink>
 
             {/* AI Chat */}
-            <NavItem
+            {/* Iris AI */}
+            <NavLink
               to="/chat"
-              icon={Bot}
-              label="Iris AI"
-            />
+              className={({ isActive }) =>
+                cn(
+                  "ai-rail-button group mx-auto mb-2 flex items-center justify-center transition-all",
+                  isActive && "ai-rail-button-active"
+                )
+              }
+              title="Iris AI"
+            >
+              <div className="iris-orb" />
+            </NavLink>
 
-            {/* Folders — toggle button, not a nav link */}
+            {/* Folders toggle */}
             <button
               onClick={toggleFolderPanel}
               className={cn(
-                "group relative mx-auto flex h-10 w-10 items-center justify-center rounded-md transition",
-                isFolderPanelOpen
-                  ? "bg-[#2563eb] text-white shadow-none"
-                  : "text-(--muted-text) hover:bg-white/5 hover:text-[#d1d5db]"
+                "nav-action-btn transition-all duration-300",
+                isFolderPanelOpen && "nav-action-btn-active"
               )}
+              style={{ "--highlight-color": "#3b82f6" } as any}
               title="Folders"
             >
-              <Folder size={16} className="transition group-hover:scale-105" />
+              <Folders size={18} className="nav-icon" />
             </button>
 
             {/* Mobile search button */}
@@ -91,13 +108,34 @@ const ActivityBar = () => {
       </div>
 
       <div className="flex flex-row sm:flex-col items-center gap-2 px-2 sm:px-0 pb-2 sm:pb-4 dark:bg-zinc-900">
+        <NavLink
+          to="/archive"
+          className={({ isActive }) =>
+            cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
+          }
+          style={{ "--highlight-color": "#94a3b8" } as any}
+          title="Archive"
+        >
+          <Archive size={18} className="nav-icon" />
+        </NavLink>
+
+        <NavLink
+          to="/trash"
+          className={({ isActive }) =>
+            cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
+          }
+          style={{ "--highlight-color": "#ef4444" } as any}
+          title="Trash"
+        >
+          <Trash2 size={18} className="nav-icon" />
+        </NavLink>
+
         <button
-          className="desktop-icon-button desktop-rail-utility"
-          type="button"
+          className="nav-action-btn"
           aria-label="Settings"
           onClick={() => toast.info("Settings are coming soon!")}
         >
-          <Settings size={15} />
+          <Settings size={18} className="nav-icon" />
         </button>
       </div>
     </aside>

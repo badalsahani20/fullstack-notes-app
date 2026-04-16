@@ -18,9 +18,19 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, 
     ? folders.find((f) => f._id === folderId)?.name ?? null
     : null;
 
+  // ── Pre-calculate searchable content (Cache) ───────────────────────────────
+  // We do this only when the actual notes change, not when the query changes.
+  const searchableNotesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const allNotes = [...notes, ...trash, ...archivedNotes];
+    allNotes.forEach(note => {
+      map.set(note._id, stripHtml(`${note.title} ${note.content}`).toLowerCase());
+    });
+    return map;
+  }, [notes, trash, archivedNotes]);
+
   // ── Filtered note list ───────────────────────────────────────────────────────
   const filteredNotes = useMemo(() => {
-    // On the trash route, show the trash array (already all isDeleted: true)
     const base = isTrashRoute
       ? trash
       : isArchiveRoute
@@ -38,14 +48,12 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, 
     if (!normalizedQuery) return base;
 
     return base.filter((note) => {
-      const haystack = stripHtml(`${note.title} ${note.content}`).toLowerCase();
+      const haystack = searchableNotesMap.get(note._id) || "";
       return haystack.includes(normalizedQuery);
     });
-  }, [archivedNotes, folderId, isArchiveRoute, isFavoritesRoute, isTrashRoute, notes, query, trash]);
+  }, [archivedNotes, folderId, isArchiveRoute, isFavoritesRoute, isTrashRoute, notes, query, trash, searchableNotesMap]);
 
   // ── Display strings ──────────────────────────────────────────────────────────
-
-  /** The active section name shown on the right side of the breadcrumb */
   const panelTitle = useMemo(() => {
     if (isFavoritesRoute) return "Favorites";
     if (isArchiveRoute)   return "Archive";
@@ -54,7 +62,6 @@ export const useNotesFilter = (notes: Note[], folders: Folder[], query: string, 
     return "All Notes";
   }, [currentFolderName, isArchiveRoute, isFavoritesRoute, isTrashRoute]);
 
-  /** The root label on the left side of the breadcrumb */
   const breadcrumbRoot = useMemo(() => {
     if (isFavoritesRoute) return "Favorites";
     if (isArchiveRoute)   return "Archive";

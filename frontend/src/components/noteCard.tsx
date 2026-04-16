@@ -1,3 +1,4 @@
+import React, { useMemo } from "react";
 import { Archive, RotateCcw, Star, Trash2, X, MoreVertical } from "lucide-react";
 import { stripHtml } from "@/utils/stripHtml";
 import { motion } from "framer-motion";
@@ -26,6 +27,7 @@ type NoteCardProps = {
   onPermanentDelete?: (noteId: string) => void;
   onTogglePin?: (noteId: string) => void;
   onToggleArchive?: (noteId: string) => void;
+  stableNow: number;
 };
 
 const NoteCard = ({
@@ -39,8 +41,9 @@ const NoteCard = ({
   onPermanentDelete,
   onTogglePin,
   onToggleArchive,
+  stableNow,
 }: NoteCardProps) => {
-  const preview = stripHtml(note.content || "");
+  const preview = useMemo(() => stripHtml(note.content || ""), [note.content]);
   const queryClient = useQueryClient();
 
   let hoverTimeout: NodeJS.Timeout;
@@ -56,32 +59,9 @@ const NoteCard = ({
   };
 
   return (
-    <motion.article
-      layout="position"
-      layoutId={note._id}
-      variants={{
-        hidden: { opacity: 0, y: 16, scale: 0.96, filter: "blur(4px)" },
-        show: {
-          opacity: 1,
-          y: 0,
-          scale: 1,
-          filter: "blur(0px)",
-          transition: { type: "spring", stiffness: 400, damping: 28, mass: 0.8 },
-        },
-      }}
-      initial="hidden"
-      animate="show"
-      exit={{
-        opacity: 0,
-        y: -8,
-        scale: 0.96,
-        filter: "blur(2px)",
-        transition: { duration: 0.2, ease: [0.32, 0, 0.67, 0] },
-      }}
-      whileHover={{ scale: isTrashView ? 1 : 1.018, y: isTrashView ? 0 : -1, transition: { type: "spring", stiffness: 400, damping: 20 } }}
-      whileTap={{ scale: 0.98 }}
+    <article
       onClick={onClick}
-      onHoverStart={() => handleHoverStart(note._id)}
+      onMouseEnter={() => handleHoverStart(note._id)}
       draggable
       onDragStart={(e: any) => {
         e.dataTransfer.setData("application/notesify-note", JSON.stringify({ 
@@ -95,7 +75,6 @@ const NoteCard = ({
         isActive && "note-list-row-active",
         isTrashView && "cursor-default opacity-80"
       )}
-      style={{ borderLeftColor: isActive ? "var(--accent-strong)" : "transparent" }}
     >
       <div className="flex min-w-0 flex-1 gap-3 cursor-pointer">
         {/* Star / favorite button — hidden in trash view */}
@@ -109,24 +88,21 @@ const NoteCard = ({
             className="transition focus:outline-none cursor-pointer"
             aria-label={note.pinned ? "Unfavorite note" : "Favorite note"}
           >
-            <motion.div
-              key={note.pinned ? "pinned" : "unpinned"}
-              initial={{ scale: 0.5, rotate: -30 }}
-              animate={{ scale: 1, rotate: 0 }}
-              whileHover={{ scale: 1.2, rotate: 15 }}
-              whileTap={{ scale: 0.8, rotate: -15 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              className={cn("flex items-center justify-center rounded-full p-1 transition-colors", note.pinned ? "hover:bg-amber-500/20 text-amber-500" : "hover:bg-gray-500/20 text-[var(--muted-text)] hover:text-[var(--text-strong)]")}
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-full p-1 transition-all duration-300 hover:scale-110 active:scale-90", 
+                note.pinned ? "hover:bg-amber-500/20 text-amber-500" : "hover:bg-gray-500/20 text-[var(--muted-text)] hover:text-[var(--text-strong)]"
+              )}
             >
               <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
-            </motion.div>
+            </div>
           </button>
         )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <h3 className="truncate text-sm font-semibold text-[var(--text-strong)]">{note.title || "Untitled note"}</h3>
-            <span className="shrink-0 text-xs text-[var(--muted-text)]">{getRelativeUpdatedLabel(note.updatedAt, Date.now())}</span>
+            <span className="shrink-0 text-xs text-[var(--muted-text)]">{getRelativeUpdatedLabel(note.updatedAt, stableNow)}</span>
           </div>
 
           <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-[var(--muted-text)]">
@@ -188,8 +164,9 @@ const NoteCard = ({
           </DropdownMenu>
         )}
       </div>
-    </motion.article>
+    </article>
   );
 };
 
-export default NoteCard;
+export default React.memo(NoteCard);
+

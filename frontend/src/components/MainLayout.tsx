@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
-import FoldersPanel from "./folderPanel";
+import { FolderPanelSkeleton } from "@/components/ui/folderPanelSkeleton";
+
+const FoldersPanel = lazy(() => import("./folderPanel"));
 import AppHeader from "./AppHeader";
 import MobileDrawer from "./MobileDrawer";
 import AppLayout from "./AppLayout";
@@ -31,9 +33,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
   useEffect(() => {
     if (bootstrapStartedRef.current) return;
     bootstrapStartedRef.current = true;
-    void Promise.all([
-      fetchFolders()
-    ]);
+    void fetchFolders();
   }, [fetchFolders]);
 
   const onToggleTheme = (event: React.MouseEvent) => {
@@ -100,7 +100,9 @@ const MainLayout = ({ middlePanel }: Pops) => {
           <ActivityBar />
         }
         leftPanel={
-          <FoldersPanel />
+          <Suspense fallback={<FolderPanelSkeleton />}>
+            <FoldersPanel />
+          </Suspense>
         }
 
         middlePanel={middlePanel}

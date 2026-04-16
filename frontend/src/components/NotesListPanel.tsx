@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -65,9 +65,13 @@ const NotesListPanel = () => {
   const [activeTab, setActiveTab] = useState<"all" | "recent">("all");
   const [sortOrder, setSortOrder] = useState<"updatedAt" | "title">("updatedAt");
 
+  const isTrashRoute = location.pathname.startsWith("/trash");
+  const isArchiveRoute = location.pathname.startsWith("/archive");
+
   const { data: queryNotes = [], isLoading: isNotesLoading, isError: isNoteError, error: notesError } = useNotesQuery();
-  const { data: trashData, isLoading: isTrashLoading } = useTrashQuery();
-  
+  const { data: trashData, isLoading: isTrashLoading } = useTrashQuery(isTrashRoute);
+  const { data: archivedNotes = [], isLoading: isArchiveLoading } = useArchivedQuery(isArchiveRoute);
+
   const trash = useMemo(() => {
     return Array.isArray(trashData?.notes) ? trashData.notes : [];
   }, [trashData]);
@@ -75,8 +79,6 @@ const NotesListPanel = () => {
   const trashFolders = useMemo<TrashFolder[]>(() => {
     return Array.isArray(trashData?.folders) ? (trashData.folders as TrashFolder[]) : [];
   }, [trashData]);
-
-  const { data: archivedNotes = [], isLoading: isArchiveLoading } = useArchivedQuery();
 
   const closeNoteList = () => {
     const next = new URLSearchParams(location.search);
@@ -92,8 +94,6 @@ const NotesListPanel = () => {
     breadcrumbRoot,
     currentFolderName,
     isFavoritesRoute,
-    isArchiveRoute,
-    isTrashRoute,
   } = useNotesFilter(safeNotes, folders, searchQuery, trash, archivedNotes);
 
   const processedNotes = useMemo(() => {
@@ -129,20 +129,25 @@ const NotesListPanel = () => {
     : isArchiveRoute
       ? isArchiveLoading
       : isNotesLoading || !hasFetchedFolders;
+
   const currentSelectedNote = useMemo(
     () => [...safeNotes, ...archivedNotes, ...trash].find((item) => item._id === noteId) ?? null,
     [archivedNotes, noteId, safeNotes, trash]
   );
+
   const headerBreadcrumbRoot = currentFolderName ?? breadcrumbRoot;
+
   const headerPanelTitle = currentFolderName && currentSelectedNote?.title
     ? currentSelectedNote.title || "Untitled note"
     : panelTitle;
+
   const headerShowChevron = Boolean(
     currentFolderName ||
     isFavoritesRoute ||
     isArchiveRoute ||
     isTrashRoute
   );
+
   const filteredTrashFolders = useMemo(() => {
     if (!isTrashRoute) return [];
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -158,6 +163,7 @@ const NotesListPanel = () => {
       ...filteredTrashFolders.map((folder: TrashFolder) => ({ type: "folder" as const, updatedAt: folder.updatedAt, item: folder })),
     ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [filteredNotes, filteredTrashFolders, isTrashRoute]);
+
   const totalTrashCount = (trash?.length || 0) + (trashFolders?.length || 0);
   const currentNoteIndex = useMemo(
     () => processedNotes.findIndex((item) => item._id === noteId),
@@ -195,11 +201,68 @@ const NotesListPanel = () => {
     }
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!pendingDeleteNoteId) return;
     await performDeleteNote(pendingDeleteNoteId);
     setPendingDeleteNoteId(null);
-  };
+  }, [pendingDeleteNoteId, performDeleteNote]);
+
+  const [stableNow, setStableNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStableNow(Date.now());
+    }, 30000); // 30s is precise enough for "2h ago"
+    return () => clearInterval(interval);
+  }, []);
+
+  const [renderLimit, setRenderLimit] = useState(6);
+
+  useEffect(() => {
+    if (renderLimit < processedNotes.length) {
+      const timer = setTimeout(() => {
+        setRenderLimit((prev) => Math.min(prev + 8, processedNotes.length));
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [renderLimit, processedNotes.length]);
+
+  const handleNoteClick = useCallback((id: string) => {
+    stampAccess(id);
+    const targetNote = [...safeNotes, ...archivedNotes, ...trash].find(n => n._id === id);
+    if (!targetNote) return;
+
+    const basePath = folderId
+      ? `/folders/${folderId}/note/${id}`
+      : isArchiveRoute
+        ? `/archive/note/${id}`
+        : isFavoritesRoute
+          ? `/favorites/note/${id}`
+          : `/note/${id}`;
+    navigate(`${basePath}${location.search}`);
+  }, [safeNotes, archivedNotes, trash, folderId, isArchiveRoute, isFavoritesRoute, navigate, location.search]);
+
+  const handleTogglePinStable = useCallback((id: string) => {
+    const note = [...safeNotes, ...archivedNotes].find(n => n._id === id);
+    if (note) {
+      void togglePinning({ noteId: id, version: note.version });
+    }
+  }, [safeNotes, archivedNotes, togglePinning]);
+
+  const handleToggleArchiveStable = useCallback((id: string) => {
+    const note = [...safeNotes, ...archivedNotes].find(n => n._id === id);
+    if (note) {
+      void toggleArchive({ noteId: id, version: note.version });
+    }
+  }, [safeNotes, archivedNotes, toggleArchive]);
+
+  const handleRestoreStable = useCallback((id: string) => {
+    void restoreNote(id);
+  }, [restoreNote]);
+
+  const handlePermanentDeleteStable = useCallback((id: string) => {
+    void permanentDeleteNote(id);
+  }, [permanentDeleteNote]);
 
   useEffect(() => {
     const isTypingTarget = (target: EventTarget | null) => {
@@ -348,9 +411,9 @@ const NotesListPanel = () => {
             <NotesListSkeleton />
           ) : shouldShowNotesError ? (
             <motion.div
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="empty pane message"
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
             >
               {notesErrorMessage}
             </motion.div>
@@ -382,7 +445,7 @@ const NotesListPanel = () => {
               animate="show"
               className="flex flex-col gap-3"
             >
-              <AnimatePresence mode="popLayout">
+              <AnimatePresence initial={false}>
                 {isTrashRoute
                   ? combinedTrashItems.map((entry) =>
                     entry.type === "note" ? (
@@ -392,6 +455,7 @@ const NotesListPanel = () => {
                         isActive={false}
                         isTrashView
                         isArchiveView={false}
+                        stableNow={stableNow}
                         onClick={() => { }}
                         onRestore={(id: string) => restoreNote(id)}
                         onPermanentDelete={(id: string) => permanentDeleteNote(id)}
@@ -408,30 +472,21 @@ const NotesListPanel = () => {
                       />
                     )
                   )
-                  : processedNotes.map((note) => (
-                    <NoteCard
-                      key={note._id}
-                      note={note}
-                      isActive={noteId === note._id}
-                      isTrashView={false}
-                      isArchiveView={isArchiveRoute}
-                      onClick={() => {
-                        stampAccess(note._id);
-                        const basePath = folderId
-                          ? `/folders/${folderId}/note/${note._id}`
-                          : isArchiveRoute
-                            ? `/archive/note/${note._id}`
-                            : isFavoritesRoute
-                              ? `/favorites/note/${note._id}`
-                              : `/note/${note._id}`;
-                        navigate(`${basePath}${location.search}`);
-                      }}
-                      onDelete={handleDeleteNote}
-                      onRestore={(id: string) => restoreNote(id)}
-                      onPermanentDelete={(id: string) => permanentDeleteNote(id)}
-                      onTogglePin={(id: string) => void togglePinning({ noteId: id, version: note.version })}
-                      onToggleArchive={(id: string) => void toggleArchive({ noteId: id, version: note.version })}
-                    />
+                  : filteredNotes.slice(0, renderLimit).map((note) => (
+                      <NoteCard
+                        key={note._id}
+                        note={note}
+                        isActive={noteId === note._id}
+                        isTrashView={false}
+                        isArchiveView={isArchiveRoute}
+                        stableNow={stableNow}
+                        onClick={() => handleNoteClick(note._id)}
+                        onDelete={handleDeleteNote}
+                        onRestore={handleRestoreStable}
+                        onPermanentDelete={handlePermanentDeleteStable}
+                        onTogglePin={handleTogglePinStable}
+                        onToggleArchive={handleToggleArchiveStable}
+                      />
                   ))}
               </AnimatePresence>
             </motion.div>

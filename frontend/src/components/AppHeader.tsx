@@ -52,18 +52,35 @@ const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
       </div>
 
       <div className="desktop-header-actions">
-        <button type="button" onClick={(e) => onToggleTheme(e)} className="desktop-icon-button" aria-label="Toggle theme">
-          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+        <button 
+          type="button" 
+          onClick={(e) => onToggleTheme(e)} 
+          className="nav-action-btn" 
+          style={{ '--highlight-color': '#94a3b8' } as any}
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? <Sun size={18} className="nav-icon" /> : <Moon size={18} className="nav-icon" />}
         </button>
         <NotificationsMenu />
-        <Button type="button" onClick={handleCreateNote} className="desktop-primary-button hidden md:inline-flex">
-          <Plus size={15} />
-          <span className="hidden sm:inline">New Note</span>
-        </Button>
-        <Button type="button" variant="outline" onClick={handleOpenNewNotebook} className="desktop-secondary-button hidden sm:inline-flex">
-          <Plus size={15} />
-          <span className="hidden sm:inline">New Notebook</span>
-        </Button>
+        <div className="hidden lg:flex items-center gap-2">
+          <button 
+            type="button" 
+            onClick={handleCreateNote} 
+            className="ignite-button bg-[#2563eb] border-[#2563eb]/20"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">New Note</span>
+          </button>
+
+          <button 
+            type="button" 
+            onClick={handleOpenNewNotebook} 
+            className="ignite-button !bg-transparent border-white/10"
+          >
+            <Plus size={18} />
+            <span className="hidden sm:inline">New Notebook</span>
+          </button>
+        </div>
         <UserMenu />
       </div>
 

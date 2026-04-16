@@ -14,7 +14,6 @@ import {
   MessageSquarePlus,
   PanelLeftClose,
   PanelLeftOpen,
-  Sparkles,
   Square,
   X,
   Clock,
@@ -53,8 +52,8 @@ const timeAgo = (iso: string) => {
 /* ─── Empty state ─────────────────────────────── */
 const EmptyState = ({ onChipClick }: { onChipClick: (text: string) => void }) => (
   <div className="gc-empty">
-    <div className="gc-empty-orb">
-      <Sparkles size={32} className="text-indigo-400" />
+    <div className="gc-empty-orb ai-rail-button ai-rail-button-active !w-20 !h-20 !rounded-3xl mx-auto cursor-default font-medium">
+      <div className="iris-orb iris-orb-lg" />
     </div>
     <h2 className="gc-empty-title">Ask Iris anything</h2>
     <p className="gc-empty-sub">
@@ -86,14 +85,14 @@ const GlobalChatPage = () => {
   } = useGlobalChatStore();
 
   const [input, setInput] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isMobile = useMediaQuery("(max-width: 960px)");
 
-  // On desktop default sidebar open; on mobile default closed
+  const isMobile = useMediaQuery("(max-width: 960px)");
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  // Sync sidebar with mobile state changes
   useEffect(() => {
     setSidebarOpen(!isMobile);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isMobile]);
 
   // Shared typewriter hook — no skip IDs needed for global chat
   const { streamingMessageId, streamedMessageText, isStreaming } = useTypewriter(
@@ -226,8 +225,8 @@ const GlobalChatPage = () => {
             {sidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
           </button>
 
-          <div className="gc-header-avatar">
-            <Sparkles size={16} />
+          <div className="gc-header-avatar ai-rail-button ai-rail-button-active cursor-default">
+            <div className="iris-orb" />
           </div>
           <div>
             <p className="gc-header-name">Iris</p>
@@ -277,7 +276,7 @@ const GlobalChatPage = () => {
           {isSending && (
             <div className="gc-msg gc-msg-assistant">
               <div className="gc-msg-avatar">
-                <Sparkles size={12} />
+                <div className="iris-orb" style={{ width: '14px', height: '14px' }} />
               </div>
               <div className="gc-msg-bubble gc-msg-bubble-ai">
                 <div className="gc-thinking">

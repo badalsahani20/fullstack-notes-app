@@ -54,12 +54,13 @@ export default function NotificationsMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative inline-flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800/50 p-2 outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 dark:focus-visible:ring-zinc-500 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+          className="nav-action-btn"
+          style={{ "--highlight-color": "#6366f1" } as any}
           aria-label="Notifications"
         >
-          <Bell size={18} />
+          <Bell size={18} className="nav-icon" />
           {unreadCount > 0 && (
-            <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-[var(--panel-bg)] shadow-[0_0_10px_rgba(244,63,94,0.5)]">
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-[var(--panel-bg)] shadow-[0_0_10px_rgba(244,63,94,0.5)] z-20">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}

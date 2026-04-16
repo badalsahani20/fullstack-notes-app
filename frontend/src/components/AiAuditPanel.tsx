@@ -10,11 +10,6 @@ type AiAuditPanelProps = {
   mobileMode?: boolean;
 };
 
-/**
- * AI Assistant panel — the glue layer.
- *
- * Now receives state from parent so it can be shared with the inline editor menu.
- */
 const AiAuditPanel = ({ aiChat, onClose, mobileMode = false }: AiAuditPanelProps) => {
   const {
     hasHistory,

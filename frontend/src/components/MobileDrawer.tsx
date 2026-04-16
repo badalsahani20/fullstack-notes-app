@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect } from "react";
-import { Bot, FileText, Plus, Sparkles, Star, X } from "lucide-react";
+import { Suspense, lazy, useEffect } from "react";
+import { Archive, Bot, FileText, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import FoldersPanel from "./folderPanel";
+import { FolderPanelSkeleton } from "./ui/folderPanelSkeleton";
+
+const FoldersPanel = lazy(() => import("./folderPanel"));
 
 type Props = {
   open: boolean;
@@ -123,7 +125,7 @@ const MobileDrawer = ({ open, onClose }: Props) => {
                   className={`mobile-drawer-ai-btn ${isAiChat ? "mobile-drawer-ai-btn-active" : ""}`}
                 >
                   <div className="mobile-drawer-ai-orb">
-                    <Sparkles size={14} />
+                    <div className="iris-orb iris-orb-md" />
                   </div>
                   <div>
                     <p className="mobile-drawer-ai-label">Iris AI</p>
@@ -136,8 +138,26 @@ const MobileDrawer = ({ open, onClose }: Props) => {
               <div className="mobile-drawer-divider" />
 
               {/* ── Notebooks / Archive / Trash (from FoldersPanel) ── */}
-              <div className="mobile-drawer-content .desktop-pane">
-                <FoldersPanel />
+              <div className="mobile-drawer-content py-2">
+                <Suspense fallback={<FolderPanelSkeleton />}>
+                  <FoldersPanel />
+                </Suspense>
+              </div>
+
+              {/* ── Bottom nav links ── */}
+              <div className="mobile-drawer-nav-section mt-4 pb-4">
+                <NavRow
+                  icon={Archive}
+                  label="Archive"
+                  active={p.startsWith("/archive")}
+                  onClick={() => go("/archive")}
+                />
+                <NavRow
+                  icon={Trash2}
+                  label="Trash"
+                  active={p.startsWith("/trash")}
+                  onClick={() => go("/trash")}
+                />
               </div>
             </div>
 

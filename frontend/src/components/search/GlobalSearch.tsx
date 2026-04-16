@@ -33,7 +33,7 @@ const GlobalSearch = ({ open, onOpenChange }: { open: boolean; onOpenChange: (op
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: notes = [] } = useNotesQuery();
-  const { data: archived = [] } = useArchivedQuery();
+  const { data: archived = [] } = useArchivedQuery(open);
   const { folders } = useFolderStore();
 
   const results = useMemo(() => {

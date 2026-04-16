@@ -13,8 +13,8 @@ import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/useNotes
 export const useFolderTree = () => {
   const { folders } = useFolderStore();
   const { data: notes = [], isLoading: isNotesLoading } = useNotesQuery();
-  const { data: archivedNotes = [] } = useArchivedQuery();
-  const { data: trashData } = useTrashQuery();
+  const { data: archivedNotes = [] } = useArchivedQuery(false);
+  const { data: trashData } = useTrashQuery(false);
   const trash = trashData?.notes || [];
   const trashFolders = trashData?.folders || [];
   const { folderId } = useParams();

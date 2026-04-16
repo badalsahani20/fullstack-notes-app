@@ -1,4 +1,4 @@
-import { FilePenLine, Search, Sparkles, SquarePen } from "lucide-react";
+import { FilePenLine, Search, SquarePen } from "lucide-react";
 
 const EmptyEditorState = () => {
   return (
@@ -10,7 +10,7 @@ const EmptyEditorState = () => {
 
         <div className="editor-title-meta pb-4">
           <span className="editor-folder-label flex items-center gap-1.5 leading-none">
-            <Sparkles size={12} className="text-[var(--accent-strong)]" />
+            <div className="iris-orb" style={{ width: '10px', height: '10px', boxShadow: 'none' }} />
             AI Notes
           </span>
         </div>
@@ -19,7 +19,7 @@ const EmptyEditorState = () => {
       <div className="flex flex-1 items-start justify-center p-5 md:items-center md:p-8">
         <div className="empty-state-card">
           <div className="empty-state-badge">
-            <Sparkles size={14} />
+            <div className="iris-orb" style={{ width: '12px', height: '12px', boxShadow: 'none' }} />
             Ready for your next idea
           </div>
 

@@ -1,3 +1,4 @@
+import React from "react";
 import type { Editor } from "@tiptap/react";
 import { Archive, Star, Sparkles, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
@@ -108,13 +109,9 @@ const EditorHeader = ({
           <button
             type="button"
             onClick={onAskAi}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${isAiOpen
-                ? "bg-[var(--accent-strong)] text-white shadow-md shadow-[var(--accent-strong)]/20"
-                : "bg-[var(--accent-subtle)] text-[var(--accent-strong)] hover:bg-[var(--accent-soft)]"
-              }`}
+            className={`ignite-button h-8 !px-3 ${isAiOpen ? "nav-action-btn-active" : ""}`}
             aria-label="Toggle AI Assistant"
           >
-            <Sparkles size={15} className={isAiOpen ? "animate-pulse" : ""} />
             <span className="hidden md:inline">Ask AI</span>
           </button>
         </div>
@@ -136,4 +133,5 @@ const EditorHeader = ({
 
   );
 };
-export default EditorHeader;
+export default React.memo(EditorHeader);
+

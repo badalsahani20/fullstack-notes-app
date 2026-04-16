@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import {
-  Archive,
   ChevronDown,
   ChevronRight,
   FileText,
   MoreHorizontal,
   Pencil,
   Plus,
-  Star,
   Trash2,
 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -313,6 +311,7 @@ const FoldersPanel = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { addFolder, updateFolder, deleteFolder, loading: foldersLoading } = useFolderStore();
+
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<FolderType | null>(null);
@@ -411,13 +410,6 @@ const FoldersPanel = () => {
                 onClick={() => navigate(noteId ? `/note/${noteId}` : "/")}
                 onDrop={(id, ver) => moveNote({ noteId: id, folderId: null, version: ver })}
               />
-              <TopLink
-                label="Favorites"
-                count={favoritesCount}
-                active={isFavoritesRoute}
-                icon={Star}
-                onClick={() => navigate(noteId ? `/favorites/note/${noteId}` : "/favorites")}
-              />
             </div>
 
             <div className="sidebar-divider" />
@@ -486,14 +478,7 @@ const FoldersPanel = () => {
               </div>
             ) : null}
           </div>
-
-          <div className="sidebar-divider" />
-
-        <div className="sidebar-bottom-links">
-          <TopLink label="Archive" count={archiveCount} active={isArchiveRoute} icon={Archive} onClick={() => navigate(noteId ? `/archive/note/${noteId}` : "/archive")} />
-          <TopLink label="Trash" count={trashCount} active={isTrashRoute} icon={Trash2} onClick={() => navigate(noteId ? `/trash/note/${noteId}` : "/trash")} />
         </div>
-      </div>
       </aside>
 
       <FolderFormDialog

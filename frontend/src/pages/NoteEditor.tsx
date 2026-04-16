@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -7,7 +7,7 @@ import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/TipTap";
-import AiAuditPanel from "@/components/AiAuditPanel";
+const AiAuditPanel = lazy(() => import("@/components/AiAuditPanel"));
 import EmptyEditorState from "@/components/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -15,6 +15,8 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useAiChat } from "@/hooks/useAiChat";
 import EditorToolbar from "@/tools/EditorToolbar";
 import AiResultDialog from "@/components/ai/AiResultDialog";
+import { NoteEditorSkeleton } from "@/components/ui/noteEditorSkeleton";
+
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
@@ -96,7 +98,7 @@ const NoteEditor = () => {
     }
   }, [isNew, note?._id, note?.title]);
 
-  const handleCreateOnEdit = async (initialTitle: string, initialContent: string) => {
+  const handleCreateOnEdit = useCallback(async (initialTitle: string, initialContent: string) => {
     if (isCreating) return null;
     setIsCreating(true);
     try {
@@ -116,17 +118,17 @@ const NoteEditor = () => {
       setIsCreating(false);
     }
     return null;
-  };
+  }, [createNoteAsync, folderId, isCreating, location.search, navigate]);
 
-  const handleContentChange = (html: string) => {
+  const handleContentChange = useCallback((html: string) => {
     if (isNew) {
       handleCreateOnEdit(draftTitle, html);
     } else if (note) {
       debouncedUpdate(note._id, html);
     }
-  };
+  }, [isNew, note, draftTitle, handleCreateOnEdit, debouncedUpdate]);
 
-  const commitTitle = () => {
+  const commitTitle = useCallback(() => {
     if (!note) return;
     if (isNew) {
       if (draftTitle.trim()) {
@@ -143,9 +145,9 @@ const NoteEditor = () => {
         version: currentNote.version
       }).catch(() => { });
     }
-  };
+  }, [note, isNew, draftTitle, editorInstance, handleCreateOnEdit, updateNoteAsync]);
 
-  const handleToggleArchive = async (id: string) => {
+  const handleToggleArchive = useCallback(async (id: string) => {
     if (!note || isNew) return;
     const updatedNote = await toggleArchiveMut({ noteId: id, version: note.version });
     if (!updatedNote) return;
@@ -161,10 +163,15 @@ const NoteEditor = () => {
     }
 
     navigate(`/note/${id}${location.search}`, { replace: true });
-  };
+  }, [note, isNew, toggleArchiveMut, navigate, location.search]);
+
+  const handleTogglePin = useCallback((id: string) => {
+    if (isNew || !note) return;
+    void togglePinning({ noteId: id, version: note.version });
+  }, [isNew, note, togglePinning]);
 
   if (isNoteLoading || (!note && !hasFetchedFolders && !isNew)) {
-    return <div className="flex h-full items-center justify-center text-sm text-[var(--muted-text)]">Loading note...</div>;
+    return <NoteEditorSkeleton />;
   }
 
   if (!note && !isNew) {
@@ -189,10 +196,7 @@ const NoteEditor = () => {
           draftTitle={draftTitle}
           onDraftTitleChange={setDraftTitle}
           onCommitTitle={commitTitle}
-          onTogglePin={(id) => {
-            if (isNew) return;
-            void togglePinning({ noteId: id, version: note.version })
-          }}
+          onTogglePin={handleTogglePin}
           onToggleArchive={handleToggleArchive}
           onAskAi={() => setAiOpen(true)}
           isAiOpen={aiOpen}
@@ -260,7 +264,5 @@ const NoteEditor = () => {
     </div>
   );
 };
-
-
 
 export default NoteEditor;

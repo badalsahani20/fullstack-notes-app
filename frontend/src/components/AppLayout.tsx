@@ -3,6 +3,8 @@ import { useEffect, useRef } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
+import MobileCreateButton from "./MobileCreateButton";
+
 const panelEase = [0.22, 1, 0.36, 1] as const;
 
 type Props = {
@@ -66,22 +68,34 @@ const AppLayout = ({
   return (
     <div className="app-shell">
       <div className={`app-window ${isMobile ? "mobile-app-window" : ""}`}>
-        <AnimatePresence initial={false} mode="wait">
-          {showGlobalHeader ? (
-            <motion.div
-              key="global-header"
-              initial={{ opacity: 0, y: -14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.24, ease: panelEase }}
-            >
-              {header}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+        {showGlobalHeader && (
+          <div className="app-header-container">
+            {header}
+          </div>
+        )}
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {!isMobile ? activityBar : null}
+
+          {/* ── DESKTOP: Floating Folders Drawer ── */}
+          {!isMobile && (
+            <AnimatePresence>
+              {showFoldersPanel && (
+                <motion.div
+                  key="folders-drawer"
+                  initial={{ x: -260, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -260, opacity: 0 }}
+                  transition={{ duration: 0.38, ease: panelEase }}
+                  className="folders-drawer-desktop"
+                >
+                  <div className="desktop-folder-column w-full h-full overflow-hidden">
+                    {leftPanel}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
           {isMobile ? (
             /* ── MOBILE ── */
@@ -140,27 +154,10 @@ const AppLayout = ({
               orientation="horizontal"
               className="flex-1 overflow-hidden"
             >
-              {/* Folder panel: hidden by default, toggled from activity bar */}
-              <ResizablePanel
-                id="folders"
-                defaultSize="20%"
-                maxSize="30%"
-                minSize="15%"
-                collapsible={true}
-                collapsedSize="0%"
-                panelRef={foldersPanelRef}
-              >
-                <div className="desktop-folder-column w-full h-full overflow-hidden">
-                  {leftPanel}
-                </div>
-              </ResizablePanel>
-
-              <ResizableHandle withHandle />
-
-              {/* Notes panel: always visible by default */}
+              {/* Notes panel: dynamic default size to prevent layout shift on mount */}
               <ResizablePanel
                 id="notes"
-                defaultSize="25%"
+                defaultSize={showNotesPanel ? "25%" : "0%"}
                 maxSize="30%"
                 minSize="25%"
                 collapsible={true}
@@ -174,15 +171,24 @@ const AppLayout = ({
 
               <ResizableHandle withHandle />
 
-              {/* Editor: fills remaining space */}
+              {/* Editor: fills remaining space. initial={false} prevents 8px shift on mount */}
               <ResizablePanel id="main" minSize="20%">
                 <main className="desktop-main-panel w-full h-full relative flex flex-col min-w-0">
-                  {main}
+                  <motion.div
+                    key={animationKey}
+                    initial={false}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.22, ease: panelEase }}
+                    className="flex-1 h-full min-h-0 flex flex-col"
+                  >
+                    {main}
+                  </motion.div>
                 </main>
               </ResizablePanel>
             </ResizablePanelGroup>
           )}
         </div>
+        <MobileCreateButton />
       </div>
     </div>
   );

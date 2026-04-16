@@ -45,7 +45,7 @@ export const useNoteQuery = (noteId: string) => {
 
 
 
-export const useTrashQuery = () => {
+export const useTrashQuery = (enabled = true) => {
     return useQuery({
         queryKey: ["notes", "trash"],
         queryFn: async () => {
@@ -53,19 +53,21 @@ export const useTrashQuery = () => {
             // res.data contains { notes, folders }
             return res.data;
         },
+        enabled,
         staleTime: 1000 * 60 * 5, // 5 minutes
         retry: 1
     });
 }
 
 
-export const useArchivedQuery = () => {
+export const useArchivedQuery = (enabled = true) => {
     return useQuery({
         queryKey: ["notes", "archive"],
         queryFn: async () => {
             const res = await api.get("/notes/archive");
             return res.data.notes || res.data;
         },
+        enabled,
         staleTime: 1000 * 60 * 5, // 5 minutes
         retry: 1
     });

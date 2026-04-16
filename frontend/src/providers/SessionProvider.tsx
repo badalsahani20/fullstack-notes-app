@@ -8,22 +8,18 @@ export const SessionProvider = ({ children }: { children: React.ReactNode }) => 
   const { clearAuth } = useAuthStore();
 
   useEffect(() => {
+    // Start auth refresh immediately
     const initAuth = async () => {
       try {
         await requestSessionRefresh();
-      } catch (error: unknown) {
-        const status = typeof error === "object" && error && "response" in error
-          ? (error as { response?: { status?: number } }).response?.status
-          : undefined;
-
-        if (status === 400 || status === 401 || status === 403) {
+      } catch (error: any) {
+        if ([401, 403].includes(error.response?.status)) {
           clearAuth();
         }
       } finally {
         setLoading(false);
       }
     };
-
     initAuth();
   }, [clearAuth]);
 
