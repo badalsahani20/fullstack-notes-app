@@ -1,6 +1,5 @@
 import { Moon, Plus, Sun } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
 import NotificationsMenu from "@/components/header/NotificationsMenu";

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,15 @@ const SearchPage = () => {
   const [query, setQuery] = useState("");
   const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<string | null>(null);
   const { mutateAsync: deleteNoteAsync, isPending: isDeleteNotePending } = useDeleteNoteMutation();
+
+  const [stableNow, setStableNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStableNow(Date.now());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleConfirmDelete = async () => {
     if (!pendingDeleteNoteId) return;
@@ -74,6 +83,7 @@ const SearchPage = () => {
             key={note._id}
             note={note}
             isActive={false}
+            stableNow={stableNow}
             onClick={() => navigate(`/note/${note._id}`)}
             onDelete={() => setPendingDeleteNoteId(note._id)}
             onTogglePin={(id) => void togglePinning({ noteId: id, version: note.version })}

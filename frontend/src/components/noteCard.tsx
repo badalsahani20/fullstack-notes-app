@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { Archive, RotateCcw, Star, Trash2, X, MoreVertical } from "lucide-react";
 import { stripHtml } from "@/utils/stripHtml";
-import { motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/store/useNoteStore";

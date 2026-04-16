@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Suspense, lazy, useEffect } from "react";
-import { Archive, Bot, FileText, Plus, Sparkles, Star, Trash2, X } from "lucide-react";
+import { Archive, Bot, FileText, Plus, Star, Trash2, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FolderPanelSkeleton } from "./ui/folderPanelSkeleton";
 
