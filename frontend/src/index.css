@@ -257,6 +257,11 @@
 
 }
 
+.app-header-container {
+  min-height: 3.8rem;
+  flex-shrink: 0;
+}
+
 .desktop-header {
   display: grid;
   grid-template-columns: 18rem minmax(280px, 1fr) auto;
@@ -441,7 +446,8 @@
 
 /* Smooth resize animation for resizable panel flex items */
 [data-panel] {
-  transition: flex 0.38s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  /* Transition on flex removed to eliminate CLS during initial calculate/mount. 
+     The library handles active resizing. */
 }
 
 

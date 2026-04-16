@@ -38,7 +38,15 @@ const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
       >
         <div className="relative">
           <div className="absolute inset-0 rounded-lg bg-white/5 blur-md" />
-          <img src="/notesify-favicon.png" alt="Notesify" width={32} height={32} className="relative shadow-[0_0_15px_rgba(255,255,255,0.05)]" />
+          <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-black shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+            <img 
+              src="/notesify-favicon.png" 
+              alt="Notesify" 
+              width={32} 
+              height={32} 
+              className="w-full h-full object-cover scale-[1.15]" 
+            />
+          </div>
         </div>
         <div>
           {/* <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-text)]">Workspace</p> */}

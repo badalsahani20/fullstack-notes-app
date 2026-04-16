@@ -109,10 +109,11 @@ const EditorHeader = ({
           <button
             type="button"
             onClick={onAskAi}
-            className={`ignite-button h-8 !px-3 ${isAiOpen ? "nav-action-btn-active" : ""}`}
+            className={`ignite-button h-8 !px-4 ${isAiOpen ? "nav-action-btn-active" : ""}`}
             aria-label="Toggle AI Assistant"
           >
-            <span className="hidden md:inline">Ask AI</span>
+            <Sparkles size={15} />
+            <span className="hidden sm:inline">Ask AI</span>
           </button>
         </div>
       </div>

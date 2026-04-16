@@ -37,7 +37,7 @@ const AiAuditPanel = ({ aiChat, onClose, mobileMode = false }: AiAuditPanelProps
   } = aiChat;
 
   return (
-    <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "hidden xl:flex"}`}>
+    <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}>
       <AiGuideDialog />
 
       {mobileMode ? <div className="assistant-mobile-handle" aria-hidden="true" /> : null}

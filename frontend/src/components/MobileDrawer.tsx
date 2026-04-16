@@ -3,6 +3,9 @@ import { Suspense, lazy, useEffect } from "react";
 import { Archive, Bot, FileText, Plus, Star, Trash2, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { FolderPanelSkeleton } from "./ui/folderPanelSkeleton";
+import { useFolderStore } from "@/store/useFolderStore";
+import { FolderFormDialog } from "./folders/FolderFormDialog";
+import { useState } from "react";
 
 const FoldersPanel = lazy(() => import("./folderPanel"));
 
@@ -34,8 +37,12 @@ const NavRow = ({ icon: Icon, label, active, onClick }: NavRowProps) => (
 const MobileDrawer = ({ open, onClose }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { folderId, noteId } = useParams();
+  const { noteId } = useParams();
   const p = location.pathname;
+  const { addFolder } = useFolderStore();
+
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isSavingFolder, setIsSavingFolder] = useState(false);
 
   // Auto-close when user navigates by tapping a link inside the drawer
   useEffect(() => {
@@ -43,14 +50,25 @@ const MobileDrawer = ({ open, onClose }: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  const handleCreateFolder = async (name: string) => {
+    setIsSavingFolder(true);
+    try {
+      const folder = await addFolder(name);
+      if (folder?._id) {
+        setIsCreateDialogOpen(false);
+        navigate(`/folders/${folder._id}`);
+      }
+    } finally {
+      setIsSavingFolder(false);
+    }
+  };
+
   const go = (path: string) => navigate(path);
 
   const isAllNotes  = !p.startsWith("/favorites") && !p.startsWith("/archive") && !p.startsWith("/trash") && !p.startsWith("/chat") && !p.startsWith("/search") && !p.startsWith("/profile") && !p.startsWith("/folders");
   const isFavorites = p.startsWith("/favorites");
   const isAiChat    = p.startsWith("/chat");
 
-  const handleCreateNote = () =>
-    navigate(folderId ? `/folders/${folderId}/note/new` : `/note/new`);
 
   return (
     <AnimatePresence>
@@ -81,13 +99,15 @@ const MobileDrawer = ({ open, onClose }: Props) => {
               <div className="mobile-drawer-brand">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-lg bg-white/5 blur-md" />
-                  <img
-                    src="/notesify-favicon.png"
-                    alt="Notesify"
-                    width={28}
-                    height={28}
-                    className="relative"
-                  />
+                  <div className="relative w-7 h-7 rounded-lg overflow-hidden bg-black">
+                    <img
+                      src="/notesify-favicon.png"
+                      alt="Notesify"
+                      width={28}
+                      height={28}
+                      className="w-full h-full object-cover scale-[1.15]"
+                    />
+                  </div>
                 </div>
                 <span className="mobile-drawer-brand-name">Notesify</span>
               </div>
@@ -161,15 +181,24 @@ const MobileDrawer = ({ open, onClose }: Props) => {
               </div>
             </div>
 
+            {/* Notebook creation dialog */}
+            <FolderFormDialog
+              open={isCreateDialogOpen}
+              mode="create"
+              isSaving={isSavingFolder}
+              onClose={() => setIsCreateDialogOpen(false)}
+              onSubmit={handleCreateFolder}
+            />
+
             {/* Footer */}
             <div className="mobile-drawer-footer">
               <button
                 type="button"
                 className="mobile-drawer-create-btn"
-                onClick={handleCreateNote}
+                onClick={() => setIsCreateDialogOpen(true)}
               >
                 <Plus size={17} />
-                <span>New Note</span>
+                <span>Create Notebook</span>
               </button>
             </div>
           </motion.div>

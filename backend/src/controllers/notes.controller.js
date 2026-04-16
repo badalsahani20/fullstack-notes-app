@@ -67,9 +67,9 @@ export const getAllNotes = catchAsync(async (req, res) => {
     if(lock) {
       // 2. If not in cache, fetch from database
       const notes = await NoteService.findUserNotes(userId);
-      if(!notes || notes.length === 0) {
+      if (!notes || notes.length === 0) {
         await redis.del(lockKey);
-        return res.status(404).json({message: "No notes found."});
+        return res.status(200).json([]);
       }
       
       await redis.set(cacheKey, notes, { ex: 3600 });
@@ -105,9 +105,9 @@ export const getArchivedNotes = catchAsync(async (req, res) => {
 
     if (lock) {
       const notes = await NoteService.findArchivedNotes(userId);
-      await redis.set(cacheKey, notes, { ex: 3600 });
+      await redis.set(cacheKey, notes || [], { ex: 3600 });
       await redis.del(lockKey);
-      return res.status(200).json(notes);
+      return res.status(200).json(notes || []);
     }
 
     await new Promise((resolve) => setTimeout(resolve, 100));

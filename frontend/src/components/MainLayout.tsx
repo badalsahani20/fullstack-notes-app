@@ -9,6 +9,7 @@ import AppLayout from "./AppLayout";
 import { useNotesLayout } from "@/hooks/useNotesLayout";
 import ActivityBar from "./SideBar";
 import { useFolderStore } from "@/store/useFolderStore";
+import { usePanelStore } from "@/store/usePanelStore";
 
 type Pops = {
   middlePanel: React.ReactNode;
@@ -24,8 +25,8 @@ const MainLayout = ({ middlePanel }: Pops) => {
     animationKey
   } = useNotesLayout();
   const { fetchFolders } = useFolderStore();
+  const { isMobileDrawerOpen, setMobileDrawerOpen } = usePanelStore();
   const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
@@ -93,7 +94,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
           <AppHeader
             theme={theme}
             onToggleTheme={onToggleTheme}
-            onMenuOpen={isMobile ? () => setDrawerOpen(true) : undefined}
+            onMenuOpen={isMobile ? () => setMobileDrawerOpen(true) : undefined}
           />
         }
         activityBar={
@@ -111,7 +112,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
         }
       />
       {isMobile && (
-        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        <MobileDrawer open={isMobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)} />
       )}
     </>
   );

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import type { PanelImperativeHandle } from "react-resizable-panels";
+import { useDefaultLayout } from "react-resizable-panels";
 
 import MobileCreateButton from "./MobileCreateButton";
 
@@ -30,6 +31,8 @@ const AppLayout = ({
 }: Props) => {
   const foldersPanelRef = useRef<PanelImperativeHandle | null>(null);
   const notesPanelRef = useRef<PanelImperativeHandle | null>(null);
+
+  const { defaultLayout, onLayoutChanged } = useDefaultLayout({ id: "notesify-layout-v1" });
 
   // Folders panel: toggle open/close based on store state
   useEffect(() => {
@@ -151,6 +154,8 @@ const AppLayout = ({
           ) : (
             /* ── DESKTOP — resizable panels ── */
             <ResizablePanelGroup
+              defaultLayout={defaultLayout}
+              onLayoutChanged={onLayoutChanged}
               orientation="horizontal"
               className="flex-1 overflow-hidden"
             >

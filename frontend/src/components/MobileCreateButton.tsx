@@ -1,17 +1,19 @@
 import { Plus } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { usePanelStore } from "@/store/usePanelStore";
 
 const MobileCreateButton = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { folderId } = useParams();
+  const { isMobileDrawerOpen, isAiPanelOpen } = usePanelStore();
 
   const hideOnRoute =
     location.pathname.startsWith("/profile") ||
     location.pathname.startsWith("/trash") ||
-    location.pathname.includes("/note/");
+    location.pathname.startsWith("/chat");
 
-  if (hideOnRoute) return null;
+  if (hideOnRoute || isMobileDrawerOpen || isAiPanelOpen) return null;
 
   const handleCreateNote = () => {
     const targetFolderId = folderId || null;

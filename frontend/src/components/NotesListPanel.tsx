@@ -216,7 +216,7 @@ const NotesListPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const [renderLimit, setRenderLimit] = useState(6);
+  const [renderLimit, setRenderLimit] = useState(15);
 
   useEffect(() => {
     if (renderLimit < processedNotes.length) {

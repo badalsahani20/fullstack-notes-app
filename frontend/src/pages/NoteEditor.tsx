@@ -5,6 +5,7 @@ import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
+import { usePanelStore } from "@/store/usePanelStore";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/TipTap";
 const AiAuditPanel = lazy(() => import("@/components/AiAuditPanel"));
@@ -41,7 +42,7 @@ const NoteEditor = () => {
 
   const folder = folders.find((item) => item._id === (note?.folder || folderId));
   const folderLabel = folder?.name ?? (note?.folder && note?._id !== "new" ? "Loading folder..." : "All Notes");
-  const [aiOpen, setAiOpen] = useState(false);
+  const { isAiPanelOpen, setAiPanelOpen } = usePanelStore();
   const isMobile = useMediaQuery("(max-width: 960px)");
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
@@ -198,8 +199,8 @@ const NoteEditor = () => {
           onCommitTitle={commitTitle}
           onTogglePin={handleTogglePin}
           onToggleArchive={handleToggleArchive}
-          onAskAi={() => setAiOpen(true)}
-          isAiOpen={aiOpen}
+          onAskAi={() => setAiPanelOpen(!isAiPanelOpen)}
+          isAiOpen={isAiPanelOpen}
           isMobile={isMobile}
         />
 
@@ -213,7 +214,7 @@ const NoteEditor = () => {
           />
         </div>
 
-        {isMobile && editorInstance && !aiOpen && (
+        {isMobile && editorInstance && !isAiPanelOpen && (
           <EditorToolbar
             editor={editorInstance}
             isMobile={true}
@@ -226,18 +227,18 @@ const NoteEditor = () => {
 
   return (
     <div className="flex h-full min-h-0">
-      {aiOpen && isMobile ? (
+      {isAiPanelOpen && isMobile ? (
         <>
           {editorPane}
           <div className="assistant-mobile-overlay">
             <AiAuditPanel
               aiChat={aiChat}
-              onClose={() => setAiOpen(false)}
+              onClose={() => setAiPanelOpen(false)}
               mobileMode
             />
           </div>
         </>
-      ) : aiOpen ? (
+      ) : isAiPanelOpen ? (
         <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
           <ResizablePanel minSize="0" className="min-w-0 h-full">
             {editorPane}
@@ -249,7 +250,7 @@ const NoteEditor = () => {
             maxSize="50rem"
             className="assistant-panel-shell h-full"
           >
-            <AiAuditPanel aiChat={aiChat} onClose={() => setAiOpen(false)} />
+            <AiAuditPanel aiChat={aiChat} onClose={() => setAiPanelOpen(false)} />
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
