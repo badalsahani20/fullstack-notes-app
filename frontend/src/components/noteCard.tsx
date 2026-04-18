@@ -45,7 +45,7 @@ const NoteCard = ({
   const preview = useMemo(() => stripHtml(note.content || ""), [note.content]);
   const queryClient = useQueryClient();
 
-  let hoverTimeout: NodeJS.Timeout;
+  let hoverTimeout: ReturnType<typeof setTimeout>;
 
   const handleHoverStart = (noteId: string) => {
     clearTimeout(hoverTimeout);
