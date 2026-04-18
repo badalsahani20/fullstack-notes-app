@@ -91,10 +91,22 @@ export default function ForgotPasswordPage() {
                 <div className="group auth-card-group">
                     <div className="auth-card-border" />
                     <div className="auth-card">
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form 
+                            id="forgot-password-form"
+                            name="forgot-password"
+                            onSubmit={handleSubmit} 
+                            className="space-y-6"
+                        >
                             <div className="space-y-2">
-                                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1">Email Address</label>
+                                <label 
+                                    htmlFor="forgot-email"
+                                    className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1"
+                                >
+                                    Email Address
+                                </label>
                                 <Input
+                                    id="forgot-email"
+                                    name="email"
                                     placeholder="name@example.com"
                                     type="email"
                                     required

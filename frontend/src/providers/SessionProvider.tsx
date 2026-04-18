@@ -1,34 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Loader } from "lucide-react";
 import { requestSessionRefresh } from "@/lib/api";
 
 export const SessionProvider = ({ children }: { children: React.ReactNode }) => {
-  const [loading, setLoading] = useState(true);
-  const { clearAuth } = useAuthStore();
+  const { clearAuth, markAuthChecked } = useAuthStore();
 
   useEffect(() => {
-    // Start auth refresh immediately
     const initAuth = async () => {
       try {
         await requestSessionRefresh();
-      } catch (error: any) {
-        if ([401, 403].includes(error.response?.status)) {
+      } catch (error: unknown) {
+        const authError = error as { response?: { status?: number } };
+        if ([401, 403].includes(authError.response?.status ?? 0)) {
           clearAuth();
         }
       } finally {
-        setLoading(false);
+        markAuthChecked();
       }
     };
-    initAuth();
-  }, [clearAuth]);
-
-  if (loading)
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-[#121212]">
-        <Loader className="size-8 text-emerald-500 animate-spin" />
-      </div>
-    );
+    void initAuth();
+  }, [clearAuth, markAuthChecked]);
 
   return <>{children}</>;
 };

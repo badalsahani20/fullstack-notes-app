@@ -79,7 +79,6 @@ export const aiAssistController = catchAsync(async (req, res) => {
     action,
     sourceType,
     inputHash,
-    noteUpdatedAt: note.updatedAt,
   }).lean();
 
   if (cached?.response) {
@@ -199,7 +198,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       await session.save(); // pre-save hook trims to cap
 
       if (isFirstMessage) {
-        generateTitle(message)
+        await generateTitle(message)
           .then((title) => GlobalChatSession.findByIdAndUpdate(session._id, { title }).exec())
           .catch(() => {});
       }
@@ -211,7 +210,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       });
       activeSessionId = newSession._id; // return new sessionId to frontend
 
-      generateTitle(message)
+      await generateTitle(message)
         .then((title) => GlobalChatSession.findByIdAndUpdate(newSession._id, { title }).exec())
         .catch(() => {});
     }

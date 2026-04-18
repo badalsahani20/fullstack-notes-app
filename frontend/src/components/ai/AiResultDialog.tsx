@@ -1,5 +1,5 @@
 import { Check, Clipboard, CornerDownLeft, X, Sparkles, FileText, RotateCw, Lightbulb } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { AssistResult } from "@/components/ai/types";
 import { useState } from "react";
@@ -69,9 +69,9 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
                 <DialogTitle className="text-base font-bold text-[var(--text-strong)] tracking-tight antialiased">
                   {getActionTitle()}
                 </DialogTitle>
-                <span className="text-xs text-[var(--muted-text)] font-medium mt-0.5">
-                    {getActionDescription()}
-                </span>
+                <DialogDescription className="text-xs text-[var(--muted-text)] font-medium mt-0.5">
+                  {getActionDescription()}
+                </DialogDescription>
               </div>
             </div>
             <button 

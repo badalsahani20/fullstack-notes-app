@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { useGlobalChatStore } from "@/store/useGlobalChatStore";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -87,12 +87,7 @@ const GlobalChatPage = () => {
   const [input, setInput] = useState("");
 
   const isMobile = useMediaQuery("(max-width: 960px)");
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-
-  // Sync sidebar with mobile state changes
-  useEffect(() => {
-    setSidebarOpen(!isMobile);
-  }, [isMobile]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Shared typewriter hook — no skip IDs needed for global chat
   const { streamingMessageId, streamedMessageText, isStreaming } = useTypewriter(
@@ -142,75 +137,62 @@ const GlobalChatPage = () => {
 
   return (
     <div className="gc-shell">
-      {/* ── Sidebar — desktop inline / mobile overlay ── */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <>
-            {/* Mobile backdrop */}
-            {isMobile && (
-              <motion.div
-                key="gc-sidebar-backdrop"
-                className="gc-sidebar-backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.22 }}
-                onClick={() => setSidebarOpen(false)}
-              />
-            )}
+      {/* Sidebar — desktop inline / mobile overlay */}
+      {(isMobile && sidebarOpen) && (
+        <div 
+          className="gc-sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-            <motion.aside
-              key="gc-sidebar"
-              className={`gc-sidebar ${isMobile ? "gc-sidebar-mobile" : ""}`}
-              initial={isMobile ? { x: "-100%" } : { width: 0, opacity: 0 }}
-              animate={isMobile ? { x: 0 } : { width: 240, opacity: 1 }}
-              exit={isMobile ? { x: "-100%" } : { width: 0, opacity: 0 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      <aside className={cn(
+        "gc-sidebar",
+        isMobile && "gc-sidebar-mobile",
+        sidebarOpen ? "gc-sidebar-expanded" : "gc-sidebar-collapsed"
+      )}>
+        <div className="gc-sidebar-inner">
+          <div className="gc-sidebar-header">
+            <div className="gc-sidebar-brand">
+              <Bot size={16} />
+              <span>Conversations</span>
+            </div>
+            <button
+              className="gc-new-chat-btn"
+              onClick={startNewChat}
+              title="New chat"
             >
-              <div className="gc-sidebar-header">
-                <div className="gc-sidebar-brand">
-                  <Bot size={16} />
-                  <span>Conversations</span>
-                </div>
-                <button
-                  className="gc-new-chat-btn"
-                  onClick={startNewChat}
-                  title="New chat"
-                >
-                  <MessageSquarePlus size={15} />
-                  <span>New Chat</span>
-                </button>
-              </div>
+              <MessageSquarePlus size={15} />
+              <span>New Chat</span>
+            </button>
+          </div>
 
-              <div className="gc-session-list custom-scrollbar">
-                {sessionsLoading ? (
-                  <div className="gc-session-skeleton-wrap">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="gc-session-skeleton" />
-                    ))}
-                  </div>
-                ) : sessions.length === 0 ? (
-                  <p className="gc-session-empty">No conversations yet</p>
-                ) : (
-                  sessions.map((session) => (
-                    <button
-                      key={session._id}
-                      className={`gc-session-item ${activeSessionId === session._id ? "gc-session-item-active" : ""}`}
-                      onClick={() => { loadSession(session._id); if (isMobile) setSidebarOpen(false); }}
-                    >
-                      <span className="gc-session-title">{session.title}</span>
-                      <span className="gc-session-time">
-                        <Clock size={10} />
-                        {timeAgo(session.updatedAt)}
-                      </span>
-                    </button>
-                  ))
-                )}
+          <div className="gc-session-list custom-scrollbar">
+            {sessionsLoading ? (
+              <div className="gc-session-skeleton-wrap">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="gc-session-skeleton" />
+                ))}
               </div>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+            ) : sessions.length === 0 ? (
+              <p className="gc-session-empty">No conversations yet</p>
+            ) : (
+              sessions.map((session) => (
+                <button
+                  key={session._id}
+                  className={`gc-session-item ${activeSessionId === session._id ? "gc-session-item-active" : ""}`}
+                  onClick={() => { loadSession(session._id); if (isMobile) setSidebarOpen(false); }}
+                >
+                  <span className="gc-session-title">{session.title}</span>
+                  <span className="gc-session-time">
+                    <Clock size={10} />
+                    {timeAgo(session.updatedAt)}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      </aside>
 
       {/* ── Main chat area ── */}
       <div className="gc-main">

@@ -22,12 +22,13 @@ type Props = {
   main: React.ReactNode;
 
   animationKey: string;
+  isNoteEditor: boolean;
 }
 
 const AppLayout = ({
   showGlobalHeader, activityBar, showFoldersPanel, showNotesPanel,
   showMainPanel, isMobile, header, leftPanel, middlePanel, main,
-  animationKey
+  animationKey, isNoteEditor
 }: Props) => {
   const foldersPanelRef = useRef<PanelImperativeHandle | null>(null);
   const notesPanelRef = useRef<PanelImperativeHandle | null>(null);
@@ -71,11 +72,9 @@ const AppLayout = ({
   return (
     <div className="app-shell">
       <div className={`app-window ${isMobile ? "mobile-app-window" : ""}`}>
-        {showGlobalHeader && (
-          <div className="app-header-container">
-            {header}
-          </div>
-        )}
+        <div className={`app-header-container ${!showGlobalHeader ? "header-collapsed" : ""}`}>
+          {header}
+        </div>
 
         <div className="flex min-h-0 flex-1 overflow-hidden">
           {!isMobile ? activityBar : null}
@@ -139,15 +138,12 @@ const AppLayout = ({
 
               {showMainPanel ? (
                 <main className="desktop-main-panel flex-1 relative flex flex-col min-w-0">
-                  <motion.div
+                  <div
                     key={animationKey}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22, ease: panelEase }}
-                    className="flex-1 h-full min-h-0 flex flex-col"
+                    className="flex-1 h-full min-h-0 flex flex-col page-transition"
                   >
                     {main}
-                  </motion.div>
+                  </div>
                 </main>
               ) : null}
             </>
@@ -179,21 +175,18 @@ const AppLayout = ({
               {/* Editor: fills remaining space. initial={false} prevents 8px shift on mount */}
               <ResizablePanel id="main" minSize="20%">
                 <main className="desktop-main-panel w-full h-full relative flex flex-col min-w-0">
-                  <motion.div
+                  <div
                     key={animationKey}
-                    initial={false}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22, ease: panelEase }}
-                    className="flex-1 h-full min-h-0 flex flex-col"
+                    className="flex-1 h-full min-h-0 flex flex-col page-transition"
                   >
                     {main}
-                  </motion.div>
+                  </div>
                 </main>
               </ResizablePanel>
             </ResizablePanelGroup>
           )}
         </div>
-        <MobileCreateButton />
+        {!isNoteEditor && <MobileCreateButton />}
       </div>
     </div>
   );

@@ -20,44 +20,85 @@ export const registerUser = async (userData) => {
     //he Model's .pre('save') hook handles the hashing automatically
     const user = await User.create(userData);
     
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const hashedToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+
+    user.verificationToken = hashedToken;
+    user.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
+    await user.save();
+
     //Add welcome note
-    await createWelcomeNote(user._id);
+    // await createWelcomeNote(user._id);
+
+    //Send welcome email
+    // sendWelcomeEmail(user.email, user.name).catch(err => console.error("Welcome email failed:", err));
+
+    return { user, verificationToken };
+}
+
+export const verifyUserEmail = async (token) => {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+        verificationToken: hashedToken,
+        verificationTokenExpires: { $gt: Date.now() },
+    });
+
+    if(!user) {
+        const error = new Error("Link is invalid or has expired");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    //Mark as verified
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpires = undefined;
 
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     const hashedRefreshToken = hashRefreshToken(refreshToken);
 
-    await User.updateOne(
-        { _id: user._id },
-        {
-            $push: {
-                refreshToken: {
-                    $each: [{ token: hashedRefreshToken }],
-                    $slice: -5,
-                },
-            },
-        }
-    );
+    // Add new token and keep only last 5
+    user.refreshToken.push({ token: hashedRefreshToken });
+    if (user.refreshToken.length > 5) {
+        user.refreshToken = user.refreshToken.slice(-5);
+    }
 
-    //Send welcome email
+    await user.save();
+
+    await createWelcomeNote(user._id);
+
     sendWelcomeEmail(user.email, user.name).catch(err => console.error("Welcome email failed:", err));
 
     return { user, accessToken, refreshToken };
 }
 
 export const loginUser = async (email, password) => {
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select("+password +verificationToken");
 
     if(!user) {
         const error = new Error("Invalid credentials");
         error.statusCode = 400;
         throw error;
     }
-
     if (!user.password && user.provider === "google") {
         const error = new Error("This account was created using Google. Please log in with Google.");
         error.statusCode = 400;
         throw error;
+    }
+
+    if(!user.isVerified) {
+        // Grandfathering Logic: If an old account exists but has no verification token 
+        // (legacy user), mark them as verified on the first successful login.
+        if (!user.verificationToken) {
+            user.isVerified = true;
+            await user.save();
+        } else {
+            const error = new Error("Please verify your email address before logging in");
+            error.statusCode = 400;
+            throw error;
+        }
     }
 
     const isMatch = await user.comparePassword(password);
@@ -73,18 +114,13 @@ export const loginUser = async (email, password) => {
     //Hash the refresh token before storing
     const hashedRefreshToken = hashRefreshToken(refreshToken);
 
-    //Store the hashed refresh token in the database without saving the whole document
-    await User.updateOne(
-        { _id: user._id },
-        {
-            $push: {
-                refreshToken: {
-                    $each: [{ token: hashedRefreshToken }],
-                    $slice: -5,
-                },
-            },
-        }
-    );
+    // Add new token and keep only last 5
+    user.refreshToken.push({ token: hashedRefreshToken });
+    if (user.refreshToken.length > 5) {
+        user.refreshToken = user.refreshToken.slice(-5);
+    }
+
+    await user.save();
     
     return { user, accessToken, refreshToken };
 }
@@ -198,7 +234,8 @@ export const findOrCreateGoogleUser = async (profile) => {
             email,
             name: profile.displayName || email.split("@")[0],
             avatar: profile.photos?.[0]?.value || "",
-            provider: "google"
+            provider: "google",
+            isVerified: true,
         });
 
         //Add welcome note
@@ -214,6 +251,7 @@ export const findOrCreateGoogleUser = async (profile) => {
         if (!user.name) {
             user.name = profile.displayName || email.split("@")[0];
         }
+        user.isVerified = true;
         await user.save();
     }
 
@@ -226,6 +264,12 @@ export const findOrCreateGoogleUser = async (profile) => {
     // retroactively pull the google avatar if they never had one before
     if (user && !user.avatar && profile.photos?.[0]?.value) {
         user.avatar = profile.photos[0].value;
+        await user.save();
+    }
+
+    // Ensure any successful Google login marks the user as verified
+    if (user && !user.isVerified) {
+        user.isVerified = true;
         await user.save();
     }
 

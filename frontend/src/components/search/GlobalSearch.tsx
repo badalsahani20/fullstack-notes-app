@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Search, FileText, CornerDownLeft, X, Folder, Archive } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from "@/components/ui/dialog";
 import { useNotesQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNavigate } from "react-router-dom";
@@ -120,6 +120,9 @@ const GlobalSearch = ({ open, onOpenChange }: { open: boolean; onOpenChange: (op
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden border-none bg-transparent shadow-2xl">
         <DialogHeader className="sr-only">
           <DialogTitle>Global Search</DialogTitle>
+          <DialogDescription>
+            Search across notes, archived notes, and folders.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex flex-col bg-[var(--panel-bg)] border border-[var(--divider)] rounded-2xl overflow-hidden shadow-2xl">

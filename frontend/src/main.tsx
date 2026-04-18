@@ -9,7 +9,7 @@ import { SessionProvider } from "./providers/SessionProvider.tsx";
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  // <StrictMode>
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
         <BrowserRouter>
@@ -17,5 +17,5 @@ createRoot(document.getElementById("root")!).render(
         </BrowserRouter>
       </SessionProvider>
     </QueryClientProvider>
-  </StrictMode>
+  // </StrictMode>
 );

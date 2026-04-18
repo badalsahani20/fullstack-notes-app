@@ -28,6 +28,7 @@ const Login = () => {
             name: res.data.user.name,
             email: res.data.user.email,
             avatar: res.data.user.avatar,
+            isVerified: res.data.user.isVerified,
           },
           res.data.accessToken
         );
@@ -70,11 +71,23 @@ const Login = () => {
           <div className="absolute -inset-[1px] rounded-[21px] bg-gradient-to-b from-white/15 via-transparent to-white/5 opacity-50 transition-opacity duration-500 group-hover:opacity-100" />
           
           <div className="relative rounded-2xl bg-white/[0.02] p-8 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_32px_100px_rgba(0,0,0,0.8)] backdrop-blur-[40px] border border-white/[0.08]">
-            <form onSubmit={handleLogin} className="space-y-6">
+            <form 
+              id="login-form"
+              name="login"
+              onSubmit={handleLogin} 
+              className="space-y-6"
+            >
               {/* Email */}
               <div className="space-y-2">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1">Email Address</label>
+                <label 
+                  htmlFor="login-email"
+                  className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1"
+                >
+                  Email Address
+                </label>
                 <Input
+                  id="login-email"
+                  name="email"
                   type="email"
                   placeholder="name@example.com"
                   className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-400 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
@@ -88,10 +101,17 @@ const Login = () => {
               {/* Password */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300">Password</label>
+                  <label 
+                    htmlFor="login-password"
+                    className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300"
+                  >
+                    Password
+                  </label>
                 </div>
                 <div className="relative">
                   <Input
+                    id="login-password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="min. 6 characters"
                     className="h-12 border-white/10 bg-white/[0.03] pr-12 text-white placeholder:text-zinc-400 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300"
@@ -160,7 +180,7 @@ const Login = () => {
             <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <p className="text-sm text-zinc-400">
                 New to Notesify?{" "}
-                <Link to="/register" className="font-semibold text-white transition-all hover:underline decoration-white/30 underline-offset-4">
+                <Link to="/signup" className="font-semibold text-white transition-all hover:underline decoration-white/30 underline-offset-4">
                   Create an account
                 </Link>
               </p>

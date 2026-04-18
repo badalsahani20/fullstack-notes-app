@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CheckSquare } from "lucide-react";
 
 const AI_PANEL_GUIDE_KEY = "ai-panel-guide-seen";
@@ -34,6 +34,9 @@ const AiGuideDialog = () => {
       <DialogContent className="desktop-dialog assistant-guide-dialog max-w-sm">
         <DialogHeader>
           <DialogTitle>How to use AI Assistant</DialogTitle>
+          <DialogDescription className="sr-only">
+            Quick tips for chatting with the current note and using AI selection actions.
+          </DialogDescription>
         </DialogHeader>
         <div className="assistant-guide-content space-y-4">
           <div className="assistant-guide-list space-y-3">

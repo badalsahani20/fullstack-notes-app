@@ -40,5 +40,6 @@ export const useNotesLayout = () => {
     showMainPanel,
     isMobile,
     animationKey,
+    isNoteEditor: Boolean(noteId),
   };
 };

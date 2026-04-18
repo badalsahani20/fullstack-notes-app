@@ -6,8 +6,10 @@ import { ReactNodeViewRenderer } from "@tiptap/react";
 import ImageNodeView from "./ImageNodeView";
 
 export const ImageUploadExtension = Image.extend({
+     name: 'image', // Explicitly ensure the node name is 'image' in the schema
+     
      addNodeView() {
-         return ReactNodeViewRenderer(ImageNodeView);
+          return ReactNodeViewRenderer(ImageNodeView);
      },
      addProseMirrorPlugins() {
         return [

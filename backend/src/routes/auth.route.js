@@ -1,6 +1,7 @@
-    import express from "express";
-    import { registerUser, loginUser, getAllUsers, refreshToken, logoutUser, getMe, googleCallback, forgotPassword, resetPassword, getShowcaseUsers } from "../controllers/auth.controller.js";
+import express from "express";
+    import { registerUser, verifyEmail, loginUser, getAllUsers, refreshToken, logoutUser, getMe, googleCallback, forgotPassword, resetPassword, getShowcaseUsers } from "../controllers/auth.controller.js";
     import authMiddleware from "../middleware/auth.middleware.js";
+    import verifiedMiddleware from "../middleware/verified.middleware.js";
     import passport from "passport";
 
 
@@ -8,6 +9,7 @@
     //public routes
     router.post("/register", registerUser);
     router.post("/login", loginUser);
+    router.get("/verify-email/:token", verifyEmail);
     router.post("/refresh", refreshToken);
     router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
     router.get("/google/callback", passport.authenticate("google", { session: false }), googleCallback);
@@ -20,6 +22,6 @@
     router.post("/reset-password/:token", resetPassword);
 
     //For testing purpose
-    router.get("/", authMiddleware, getAllUsers);
+    router.get("/", authMiddleware, verifiedMiddleware, getAllUsers);
 
     export default router;

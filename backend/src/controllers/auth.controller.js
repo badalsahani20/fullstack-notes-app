@@ -25,19 +25,35 @@ export const registerUser = catchAsync(async (req, res) => {
       .json({ message: "Please provide name, email and password" });
   }
 
-  const { user, accessToken, refreshToken } = await AuthService.registerUser({
+  const { user, verificationToken } = await AuthService.registerUser({
     name,
     email,
     password,
   });
 
-  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+  await MailService.sendVerificationEmail(email, name, verificationUrl);
 
   res.status(201).json({
     success: true,
-    message: "User registered successfully",
+    message: "Registration successful! Please check your email to verify your account.",
+    user: { id: user._id, name: user?.name, email: user.email, avatar: user.avatar, isVerified: user.isVerified },
+  });
+});
+
+export const verifyEmail = catchAsync(async (req, res) => {
+  const { token } = req.params;
+  console.log("BACKEND: Verification started for token:", token);
+  
+  const { user, accessToken, refreshToken } = await AuthService.verifyUserEmail(token);
+  console.log("BACKEND: Verification successful for user:", user.email);
+
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+  res.status(200).json({
+    success: true,
+    message: "Email verified successfully.",
     accessToken,
-    user: { id: user._id, name: user?.name, email: user.email, avatar: user.avatar },
+    user: { id: user._id, name: user?.name, email: user.email, avatar: user.avatar, isVerified: user.isVerified },
   });
 });
 
@@ -61,6 +77,7 @@ export const loginUser = catchAsync(async (req, res, next) => {
       name: user.name,
       email: user.email,
       avatar: user.avatar,
+      isVerified: user.isVerified,
     },
   });
   // const user = await User.findOne({email});
@@ -119,6 +136,7 @@ export const refreshToken = catchAsync(async (req, res, next) => {
       name: user.name,
       email: user.email,
       avatar: user.avatar,
+      isVerified: user.isVerified,
     }
   })
 })
@@ -142,6 +160,7 @@ export const getMe = catchAsync(async (req, res, next) => {
       name: user.name,
       email: user.email,
       avatar: user.avatar,
+      isVerified: user.isVerified,
     },
   });
 });

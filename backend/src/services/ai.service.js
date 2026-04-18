@@ -6,7 +6,7 @@ import { summarizeHistory } from "../utils/summarizeHistory.js";
 import { OpenRouter } from '@openrouter/sdk';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
 const NOTE_CONTEXT_PREFIX = "__NOTE_CONTEXT__:";
 
 const ensureAiApiKey = () => {
@@ -29,6 +29,7 @@ const generateContentWithFallback = async (prompt) => {
   if (process.env.GEMINI_API_KEY) {
     try {
       const result = await model.generateContent(prompt);
+      console.log("💎 Action answered by Gemini 3.1 Flash Lite");
       return result.response.text().trim();
     } catch (error) {
       console.warn("Gemini Error, falling back to OpenRouter:", error.message);
@@ -36,23 +37,28 @@ const generateContentWithFallback = async (prompt) => {
     }
   }
 
-  // Fallback to OpenRouter using their official SDK
+  // Fallback to OpenRouter using direct fetch (reliable fallback)
   if (process.env.OPEN_ROUTER) {
     const openRouter = new OpenRouter({
       apiKey: process.env.OPEN_ROUTER,
-      defaultHeaders: {
-        'HTTP-Referer': process.env.BACKEND_URL || 'http://localhost:5000',
-        'X-OpenRouter-Title': 'Notesify', 
+    });
+
+    const completion = await openRouter.chat.send({
+      httpReferer: process.env.BACKEND_URL || 'http://localhost:5000',
+      appTitle: 'Notesify',
+      chatRequest: {
+        model: "meta-llama/llama-3.1-8b-instruct", // Using free, high-speed LLaMA 3 for free fallback
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
       },
     });
 
-    const completion = await openRouter.chat.completions.create({
-      model: "meta-llama/llama-3.1-8b-instruct:free", // Using free, high-speed LLaMA 3 for free fallback
-      messages: [{ role: 'user', content: prompt }],
-      stream: false,
-    });
+    const content = completion?.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || !content.trim()) {
+      throw new Error("OpenRouter returned an empty response");
+    }
 
-    return completion.choices[0].message.content.trim();
+    return content.trim();
   }
 
   throw new Error("No AI feature keys configured");
@@ -165,7 +171,7 @@ export const chatWithAi = async ({
   history = [],
   summary = "",
   noteContext = "",
-  imageBase64 = null // Ready for the UI!
+  imageBase64 = null
 }) => {
   ensureGroqApiKey();
 
@@ -230,7 +236,7 @@ export const chatWithAi = async ({
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemma-3n-e4b-it",
+        model: "google/gemma-2-9b-it",
         messages: [...baseMessages, { role: "user", content: nvidiaUserContent }],
         stream: false,
         max_tokens: 1024,
@@ -245,6 +251,9 @@ export const chatWithAi = async ({
   };
 
   const executeGroq = async () => {
+    if (!client?.chat?.completions) {
+      throw new Error("Groq client not properly initialized. Check GROQ_API_KEY.");
+    }
     const response = await client.chat.completions.create({
       model: "llama-3.3-70b-versatile", 
       messages: groqMessages,

@@ -287,3 +287,82 @@ export const sendWelcomeEmail = async (email, name) => {
         throw new Error("Failed to send welcome email");
     }
 };
+
+export const sendVerificationEmail = async (email, name, verificationUrl) => {
+    const year = new Date().getFullYear();
+    const firstName = name ? name.split(" ")[0] : "friend";
+
+    const mailOptions = {
+        from: `"Notesify" <${process.env.MAIL_USER}>`,
+        to: email,
+        subject: "Verify your Notesify account 📧",
+        html: `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%); padding: 48px 40px; text-align: center;">
+              <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Notesify</h1>
+              <p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.6); letter-spacing: 2px; text-transform: uppercase;">Account Verification</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px 40px 24px 40px;">
+              <h2 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; color: #0a0a0a;">Confirm your email, ${firstName}!</h2>
+              <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 1.7; color: #4a4a4a;">
+                Thanks for joining Notesify! Before you can start supercharging your notes with AI, we just need to verify that <strong style="color: #0a0a0a;">${email}</strong> belongs to you.
+              </p>
+              <p style="margin: 0; font-size: 16px; line-height: 1.7; color: #4a4a4a;">
+                Click the button below to verify your account. This link will expire in <strong style="color: #0a0a0a;">24 hours</strong>.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 8px 40px 32px 40px; text-align: center;">
+              <a href="${verificationUrl}" style="display: inline-block; padding: 16px 48px; background-color: #0a0a0a; color: #ffffff; text-decoration: none; border-radius: 10px; font-size: 16px; font-weight: 700; letter-spacing: 0.3px;">Verify Account →</a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 40px 32px 40px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #9ca3af;">
+                If you didn't create a Notesify account, you can safely ignore this email.
+              </p>
+              <p style="margin: 0; font-size: 12px; color: #d1d5db;">
+                © ${year} Notesify. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+        `
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log(`Verification email sent to: ${email}`);
+    } catch (error) {
+        console.error("Error sending verification email:", error);
+        throw new Error("Failed to send verification email");
+    }
+};

@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -49,6 +50,9 @@ const SideBarHeader = () => {
         <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
           <DialogHeader>
             <DialogTitle>Profile & Settings</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Manage your account actions and preferences.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 mt-4">
             <button className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-zinc-800 transition-colors">

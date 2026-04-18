@@ -4,6 +4,7 @@ declare module "@tiptap/core" {
   interface Commands<ReturnType> {
     markerHighlight: {
       toggleMarkerHighlight: (color?: string) => ReturnType;
+      setMarkerHighlight: (color?: string) => ReturnType;
     };
   }
 }
@@ -25,6 +26,7 @@ export const MarkerHighlightExtension = Mark.create({
         parseHTML: (element) => element.getAttribute("data-color") || this.options.defaultColor,
         renderHTML: (attributes) => ({
           "data-color": attributes.color,
+          style: `--marker-color: ${attributes.color};`,
         }),
       },
     };
@@ -44,6 +46,12 @@ export const MarkerHighlightExtension = Mark.create({
         (color) =>
         ({ commands }) =>
           commands.toggleMark(this.name, {
+            color: color || this.options.defaultColor,
+          }),
+      setMarkerHighlight:
+        (color) =>
+        ({ commands }) =>
+          commands.setMark(this.name, {
             color: color || this.options.defaultColor,
           }),
     };

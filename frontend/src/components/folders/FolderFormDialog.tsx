@@ -37,7 +37,8 @@ export const FolderFormDialog = ({
 
   const trimmedName = name.trim();
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!trimmedName) return;
     await onSubmit(trimmedName);
   };
@@ -54,33 +55,40 @@ export const FolderFormDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
-          <label htmlFor="folder-name" className="text-sm font-medium text-[var(--text-strong)]">
-            Notebook name
-          </label>
-          <Input
-            id="folder-name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Design ideas"
-            autoFocus
+        <form 
+          id="folder-form"
+          name="folder"
+          onSubmit={handleSubmit}
+        >
+          <div className="space-y-2">
+            <label htmlFor="folder-name" className="text-sm font-medium text-[var(--text-strong)]">
+              Notebook name
+            </label>
+            <Input
+              id="folder-name"
+              name="name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Design ideas"
+              autoFocus
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
                 void handleSubmit();
               }
             }}
-          />
-        </div>
+            />
+          </div>
 
-        <DialogFooter className="mt-4 gap-2 sm:justify-end">
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={() => void handleSubmit()} disabled={!trimmedName || isSaving}>
-            {isSaving ? (mode === "create" ? "Creating..." : "Saving...") : mode === "create" ? "Create" : "Save"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-4 gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!trimmedName || isSaving}>
+              {isSaving ? (mode === "create" ? "Creating..." : "Saving...") : mode === "create" ? "Create" : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -18,6 +18,27 @@ import EditorToolbar from "@/tools/EditorToolbar";
 import AiResultDialog from "@/components/ai/AiResultDialog";
 import { NoteEditorSkeleton } from "@/components/ui/noteEditorSkeleton";
 
+const preloadAiAuditPanel = () => import("@/components/AiAuditPanel");
+
+const AiPanelSkeleton = ({ mobileMode = false }: { mobileMode?: boolean }) => (
+  <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}>
+    <div className="assistant-rail-header assistant-rail-header-row">
+      <div className="assistant-panel-heading">
+        <h3 className="assistant-panel-title">AI Assistant</h3>
+      </div>
+    </div>
+
+    <div className="flex-1 space-y-4 p-4">
+      <div className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
+      <div className="h-24 rounded-2xl bg-white/[0.04] animate-pulse" />
+      <div className="h-24 rounded-2xl bg-white/[0.04] animate-pulse" />
+    </div>
+
+    <div className="p-4">
+      <div className="h-28 rounded-2xl bg-white/[0.04] animate-pulse" />
+    </div>
+  </aside>
+);
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
@@ -30,7 +51,7 @@ const NoteEditor = () => {
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
 
   const { data: fetchedNote, isLoading: isNoteLoading } = useNoteQuery(isNew ? "" : (noteId || ""));
-  const { mutateAsync: updateNoteAsync } = useUpdateNoteMutation();
+  const { mutateAsync: updateNoteAsync, isPending: isSavingNote } = useUpdateNoteMutation();
 
   const [isCreating, setIsCreating] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
@@ -64,6 +85,12 @@ const NoteEditor = () => {
       window.visualViewport?.removeEventListener("scroll", handler);
     };
   }, [isMobile]);
+
+  useEffect(() => {
+    if (isAiPanelOpen) {
+      void preloadAiAuditPanel();
+    }
+  }, [isAiPanelOpen]);
 
   const aiChat = useAiChat(noteId || "", note?.content || "", editorInstance);
 
@@ -200,8 +227,10 @@ const NoteEditor = () => {
           onTogglePin={handleTogglePin}
           onToggleArchive={handleToggleArchive}
           onAskAi={() => setAiPanelOpen(!isAiPanelOpen)}
+          onAskAiHover={() => void preloadAiAuditPanel()}
           isAiOpen={isAiPanelOpen}
           isMobile={isMobile}
+          isSaving={isSavingNote}
         />
 
         <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
@@ -214,11 +243,11 @@ const NoteEditor = () => {
           />
         </div>
 
-        {isMobile && editorInstance && !isAiPanelOpen && (
+        {editorInstance && !isAiPanelOpen && (
           <EditorToolbar
             editor={editorInstance}
-            isMobile={true}
-            yOffset={keyboardOffset}
+            isMobile={isMobile}
+            yOffset={isMobile ? keyboardOffset : 0}
           />
         )}
       </motion.section>
@@ -231,11 +260,13 @@ const NoteEditor = () => {
         <>
           {editorPane}
           <div className="assistant-mobile-overlay">
-            <AiAuditPanel
-              aiChat={aiChat}
-              onClose={() => setAiPanelOpen(false)}
-              mobileMode
-            />
+            <Suspense fallback={<AiPanelSkeleton mobileMode />}>
+              <AiAuditPanel
+                aiChat={aiChat}
+                onClose={() => setAiPanelOpen(false)}
+                mobileMode
+              />
+            </Suspense>
           </div>
         </>
       ) : isAiPanelOpen ? (
@@ -250,7 +281,9 @@ const NoteEditor = () => {
             maxSize="50rem"
             className="assistant-panel-shell h-full"
           >
-            <AiAuditPanel aiChat={aiChat} onClose={() => setAiPanelOpen(false)} />
+            <Suspense fallback={<AiPanelSkeleton />}>
+              <AiAuditPanel aiChat={aiChat} onClose={() => setAiPanelOpen(false)} />
+            </Suspense>
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (

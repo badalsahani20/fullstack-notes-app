@@ -64,6 +64,23 @@
   --sidebar-badge-bg: #E9ECEF;
 }
 
+/* Page Transitions */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: pageEnter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .dark {
   --background: oklch(0.16 0.015 255);
   --foreground: oklch(0.96 0.01 240);
@@ -258,8 +275,20 @@
 }
 
 .app-header-container {
-  min-height: 3.8rem;
+  height: 3.8rem;
   flex-shrink: 0;
+  overflow: hidden;
+  opacity: 1;
+  transition:
+    height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s ease,
+    margin-bottom 0.3s ease;
+}
+
+.app-header-container.header-collapsed {
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .desktop-header {
@@ -438,6 +467,7 @@
 }
 
 @media screen and (min-width: 601px) {
+
   .desktop-main-panel,
   .desktop-pane {
     height: 100%;
@@ -483,7 +513,7 @@
 
 .folders-drawer-desktop {
   position: absolute;
-  top: 0;
+  top: calc(3.8rem + 5px);
   bottom: 0;
   left: 3.5rem;
   /* Right after the vertical rail */
@@ -1855,7 +1885,10 @@
 }
 
 /* â€”â€”â€” Iris AI card in drawer â€”â€”â€” */
-.iris-orb-md { width: 24px; height: 24px; }
+.iris-orb-md {
+  width: 24px;
+  height: 24px;
+}
 
 .mobile-drawer-ai-btn {
   display: flex;
@@ -2138,8 +2171,11 @@
 
 .desktop-dialog {
   border-color: var(--divider);
-
   color: var(--text-strong);
+  top: calc(3.8rem + 1rem);
+  transform: translateX(-50%);
+  max-height: calc(100vh - 3.8rem - 2rem);
+  overflow-y: auto;
 }
 
 .custom-scrollbar {
@@ -2255,18 +2291,14 @@
 
 .ProseMirror mark[data-color] {
   border-radius: 0.35rem;
-  background: color-mix(in srgb, var(--marker-color, #ffffbb) 82%, white);
+  background: color-mix(in srgb, var(--marker-color, #fef08a) 82%, white);
   color: #3f3200;
   padding: 0.04em 0.18em;
   box-shadow:
-    inset 0 -0.45em 0 color-mix(in srgb, var(--marker-color, #ffffbb) 96%, #eab308),
+    inset 0 -0.45em 0 color-mix(in srgb, var(--marker-color, #fef08a) 85%, rgba(0, 0, 0, 0.4)),
     0 1px 0 rgba(255, 255, 255, 0.22);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
-}
-
-.ProseMirror mark[data-color="#ffffbb"] {
-  --marker-color: #ffffbb;
 }
 
 .ProseMirror pre code .hljs-keyword,
@@ -2961,13 +2993,31 @@ span[data-ai-ghost] {
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Sidebar Ã¢â€â‚¬Ã¢â€â‚¬ */
 .gc-sidebar {
   width: 240px;
-  min-width: 240px;
-  max-width: 240px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--divider);
   background: color-mix(in srgb, var(--panel-bg) 80%, #09090f);
   overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+}
+
+.gc-sidebar-collapsed {
+  width: 0;
+  opacity: 0;
+  border-right-width: 0;
+  pointer-events: none;
+}
+
+.gc-sidebar-expanded {
+  width: 240px;
+  opacity: 1;
+}
+
+.gc-sidebar-inner {
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .gc-sidebar-header {
@@ -3803,6 +3853,20 @@ span[data-ai-ghost] {
     min-width: unset;
     max-width: unset;
     box-shadow: 12px 0 48px rgba(0, 0, 0, 0.5);
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Override desktop width logic for mobile transforms */
+  .gc-sidebar-mobile.gc-sidebar-collapsed {
+    width: min(80vw, 300px) !important;
+    transform: translateX(-100%);
+    opacity: 1;
+    /* keep opacity to avoid flicker mid-slide */
+  }
+
+  .gc-sidebar-mobile.gc-sidebar-expanded {
+    width: min(80vw, 300px) !important;
+    transform: translateX(0);
   }
 
   .gc-sidebar-backdrop {
@@ -3811,6 +3875,17 @@ span[data-ai-ghost] {
     z-index: 299;
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(2px);
+    animation: fadeIn 0.25s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 
@@ -3872,6 +3947,7 @@ span[data-ai-ghost] {
 .ignite-button:hover svg {
   transform: rotate(90deg);
 }
+
 /* --- Mobile Floating Create Button --- */
 @media (max-width: 600px) {
   .mobile-create-button {
@@ -3900,4 +3976,629 @@ span[data-ai-ghost] {
   .mobile-create-button:active {
     transform: scale(0.92);
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BUBBLE COMMAND BAR — single-row floating toolbar
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Shell — pill-like floating surface */
+.bubble-command-bar {
+  display: block;
+  animation: bubbleRise 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bubbleRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* The single horizontal row */
+.bubble-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 5px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(10, 12, 20, 0.92);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.48),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Left formatting cluster */
+.bubble-cluster {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+/* Icon-only formatting button */
+.bubble-fmt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: rgba(148, 163, 184, 0.85);
+  transition: background 0.12s ease, color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.bubble-fmt-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+.bubble-fmt-btn-active {
+  background: rgba(96, 165, 250, 0.14);
+  color: var(--accent-strong);
+}
+
+/* Slim vertical divider */
+.bubble-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.09);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── Primary AI CTA pill ── */
+.bubble-ai-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px 0 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #fff;
+  background: linear-gradient(135deg, #2f80ed 0%, #6366f1 100%);
+  box-shadow: 0 2px 12px rgba(47, 128, 237, 0.35);
+  transition:
+    filter 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.12s ease;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.bubble-ai-primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 16px rgba(47, 128, 237, 0.5);
+}
+
+.bubble-ai-primary:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.bubble-ai-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* AI ▾ chevron trigger — grouped with primary CTA */
+.bubble-ai-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 26px;
+  border-radius: 7px;
+  color: rgba(148, 163, 184, 0.7);
+  margin-left: 1px;
+  transition: background 0.12s ease, color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.bubble-ai-chevron:hover,
+.bubble-ai-chevron-open {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+/* More ⋯ button */
+.bubble-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  margin-left: 2px;
+  color: rgba(148, 163, 184, 0.6);
+  transition: background 0.12s ease, color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.bubble-more:hover,
+.bubble-more-open {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+/* ── Shared popup dropdown ── */
+.bubble-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  min-width: 152px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(15, 18, 30, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  z-index: 100;
+  animation: dropdownReveal 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.bubble-dropdown-left {
+  left: 0;
+}
+
+.bubble-dropdown-right {
+  right: 0;
+}
+
+@keyframes dropdownReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.bubble-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #cbd5e1;
+  text-align: left;
+  transition: background 0.1s ease, color 0.1s ease;
+  cursor: pointer;
+}
+
+.bubble-dropdown-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #f1f5f9;
+}
+
+.bubble-dropdown-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bubble-dropdown-item-active {
+  background: rgba(96, 165, 250, 0.12);
+  color: var(--accent-strong);
+}
+
+.bubble-dropdown-item-loading {
+  color: var(--accent-strong);
+}
+
+.bubble-dropdown-item-danger {
+  color: #f87171;
+}
+
+.bubble-dropdown-item-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.1);
+  color: #fca5a5;
+}
+
+.bubble-dropdown-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  color: rgba(148, 163, 184, 0.7);
+  flex-shrink: 0;
+}
+
+.bubble-dropdown-item-active .bubble-dropdown-item-icon {
+  color: var(--accent-strong);
+}
+
+.bubble-dropdown-item-danger .bubble-dropdown-item-icon,
+.bubble-dropdown-item-danger:hover .bubble-dropdown-item-icon {
+  color: inherit;
+}
+
+.bubble-menu-separator {
+  height: 1px;
+  margin: 3px 0;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MARKER / HIGHLIGHT — button + color flyout
+   ═══════════════════════════════════════════════════════════════ */
+
+/* The marker toolbar button: slightly wider to fit the dot indicator */
+.bubble-marker-btn {
+  position: relative;
+  width: 30px;
+  flex-direction: column;
+  gap: 1px;
+  padding-bottom: 2px;
+}
+
+/* Active colour stripe shown below the icon */
+.bubble-marker-dot {
+  display: block;
+  width: 12px;
+  height: 2.5px;
+  border-radius: 999px;
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: background 0.15s ease;
+}
+
+/* ── Flyout panel ── */
+.bubble-marker-flyout {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 172px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(12, 15, 26, 0.97);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow:
+    0 20px 54px rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  z-index: 110;
+  animation: dropdownReveal 0.14s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Header row inside flyout */
+.bubble-marker-flyout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.bubble-marker-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  color: rgba(148, 163, 184, 0.5);
+  transition: background 0.1s, color 0.1s;
+}
+
+.bubble-marker-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+/* Swatch grid — 4 columns */
+.bubble-marker-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.bubble-marker-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 1.5px solid transparent;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+  cursor: pointer;
+}
+
+.bubble-marker-swatch:hover {
+  transform: scale(1.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+}
+
+.bubble-marker-swatch-active {
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+  transform: scale(1.08);
+}
+
+/* Remove highlight row */
+.bubble-marker-remove {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 4px 6px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #f87171;
+  transition: background 0.1s ease;
+  cursor: pointer;
+}
+
+.bubble-marker-remove:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* Custom colour row */
+.bubble-marker-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 2px;
+}
+
+.bubble-marker-custom-label {
+  font-size: 11px;
+  color: rgba(148, 163, 184, 0.55);
+  flex: 1;
+}
+
+.bubble-marker-custom-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  flex-shrink: 0;
+}
+
+.bubble-marker-custom-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Native color picker — hidden, triggered programmatically */
+.bubble-marker-color-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM EDITOR DOCK (Industrial / Minimal Glass Palette)
+   ═══════════════════════════════════════════════════════════════ */
+
+.dock-toolbar-wrapper {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  /* Let clicks pass through empty wrapper space */
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), bottom 0.2s;
+}
+
+@media (min-width: 601px) {
+  .dock-toolbar-wrapper {
+    bottom: 3vh;
+  }
+}
+
+@media (max-width: 600px) {
+  .dock-toolbar-mobile {
+    bottom: calc(env(safe-area-inset-bottom) + 8px);
+  }
+}
+
+/* The standalone sleek pill itself */
+.dock-toolbar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  padding: 6px;
+  border-radius: 999px;
+  /* Perfect pill shape */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 18, 22, 0.85);
+  /* Smooth dark slate base */
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  box-shadow:
+    0 20px 40px -8px rgba(0, 0, 0, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+
+  animation: dockRise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  max-width: calc(100vw - 24px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dock-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes dockRise {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dock-toolbar-inner {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Slightly wider spacing between clusters */
+  min-width: max-content;
+}
+
+.dock-toolbar-cluster {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Subtle dots instead of long lines for a cleaner separator */
+.dock-divider {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* Individual Toolbar Icon Button */
+.dock-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  /* Matching sidebar button radius */
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  flex-shrink: 0;
+  outline: none;
+  background: transparent;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.dock-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--highlight-color, #ffffff);
+  border-color: color-mix(in srgb, var(--highlight-color, #ffffff) 30%, transparent);
+  box-shadow: 0 0 15px color-mix(in srgb, var(--highlight-color, #ffffff) 15%, transparent);
+}
+
+.dock-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dock-btn:hover .dock-icon-wrapper {
+  transform: scale(1.2);
+}
+
+.dock-btn:active {
+  transform: translateY(1px);
+}
+
+.dock-btn-active {
+  background: color-mix(in srgb, var(--highlight-color, #ffffff) 15%, transparent);
+  border-color: color-mix(in srgb, var(--highlight-color, #ffffff) 30%, transparent);
+  color: var(--highlight-color, #ffffff) !important;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--highlight-color, #ffffff) 10%, transparent);
+}
+
+.dock-btn-active .dock-icon-wrapper {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--highlight-color, #ffffff) 40%, transparent));
+}
+
+
+
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT THEME OPTIMIZATIONS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Note List Shading in Light Theme */
+html:not(.dark) .note-list-row {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+html:not(.dark) .note-list-row:hover {
+  background: #f8fafc;
+  /* very subtle gray-blue tint */
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+html:not(.dark) .note-list-row-active {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  border-left-color: var(--accent-strong) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* 2. Premium Editor Dock in Light Theme */
+html:not(.dark) .dock-toolbar {
+  background: rgba(255, 255, 255, 0.85);
+  /* Frosty white */
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 20px 40px -8px rgba(0, 0, 0, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.8) inset;
+}
+
+html:not(.dark) .dock-divider {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+html:not(.dark) .dock-btn {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+html:not(.dark) .dock-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #000;
+}
+
+html:not(.dark) .dock-btn-active {
+  background: #ffffff;
+  color: #000;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }

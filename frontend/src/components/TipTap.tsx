@@ -2,7 +2,7 @@ import React, { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "reac
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { TextStyle } from "@tiptap/extension-text-style";
-import { FontFamily } from "@tiptap/extension-text-style";
+import { FontFamily } from "@tiptap/extension-font-family";
 import StarterKit from "@tiptap/starter-kit";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { useLocation, useNavigate } from "react-router-dom";

@@ -2,10 +2,9 @@ import React from "react";
 import type { Editor } from "@tiptap/react";
 import { Archive, Star, Sparkles, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import RelativeTimeLabel from "./RelativeTimeLabel";
+import { EditorStats } from "./EditorStats";
 import type { Note } from "@/store/useNoteStore";
 import type { Folder } from "@/store/useFolderStore";
-import EditorToolbar from "@/tools/EditorToolbar";
 
 type EditorHeaderProps = {
   note: Note;
@@ -22,8 +21,10 @@ type EditorHeaderProps = {
 
   onToggleArchive: (id: string) => void;
   onAskAi?: () => void;
+  onAskAiHover?: () => void;
   isAiOpen?: boolean;
   isMobile?: boolean;
+  isSaving?: boolean;
 };
 
 
@@ -43,8 +44,10 @@ const EditorHeader = ({
 
   onToggleArchive,
   onAskAi,
+  onAskAiHover,
   isAiOpen,
   isMobile,
+  isSaving,
 }: EditorHeaderProps) => {
 
   return (
@@ -109,6 +112,8 @@ const EditorHeader = ({
           <button
             type="button"
             onClick={onAskAi}
+            onMouseEnter={onAskAiHover}
+            onFocus={onAskAiHover}
             className={`ignite-button h-8 !px-4 ${isAiOpen ? "nav-action-btn-active" : ""}`}
             aria-label="Toggle AI Assistant"
           >
@@ -126,13 +131,10 @@ const EditorHeader = ({
           )}
           {folderLabel ?? folder?.name ?? "All Notes"}
         </span>
-        <RelativeTimeLabel updatedAt={note.updatedAt} />
+        <EditorStats editor={editor} isSaving={isSaving} />
       </div>
-
-      {editor && !isMobile ? <EditorToolbar editor={editor} /> : null}
     </div>
 
   );
 };
 export default React.memo(EditorHeader);
-

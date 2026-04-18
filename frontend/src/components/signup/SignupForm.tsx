@@ -4,7 +4,6 @@ import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
-import { useAuthStore } from "@/store/useAuthStore";
 import Google from "../../assets/google.svg";
 import { toast } from "sonner";
 
@@ -14,7 +13,6 @@ const SignupForm = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { setAuth } = useAuthStore();
   const nav = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -23,21 +21,18 @@ const SignupForm = () => {
       toast.error("Password must be at least 6 characters");
       return;
     }
+
     setLoading(true);
     try {
       const res = await api.post("/users/register", { name, email, password });
       if (res.data) {
-        setAuth(
-          {
-            id: res.data.user._id || res.data.user.id,
-            name: res.data.user.name,
-            email: res.data.user.email,
-            avatar: res.data.user.avatar,
+        toast.success(res.data.message || "Registration successful! Please verify your email.");
+        nav("/verify-email", {
+          state: {
+            email: res.data.user?.email || email,
+            name: res.data.user?.name || name,
           },
-          res.data.accessToken
-        );
-        toast.success(`Welcome to Notesify, ${res.data.user.name}! 🎉`);
-        nav("/");
+        });
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -54,7 +49,6 @@ const SignupForm = () => {
   return (
     <div className="relative flex w-full flex-col justify-center">
       <div className="relative mx-auto w-full max-w-md">
-        {/* Logo & Header */}
         <div className="mb-8 flex flex-col items-start gap-4 text-left [@media(max-height:800px)]:mb-6">
           <div className="relative">
             <div className="absolute inset-0 rounded-2xl bg-white/10 blur-[30px] scale-110" />
@@ -68,20 +62,32 @@ const SignupForm = () => {
           </div>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight text-white">Create account</h1>
-            <p className="text-sm text-zinc-200">Join the minimalist workspace for your <span className="text-white">ideas</span>.</p>
+            <p className="text-sm text-zinc-200">
+              Join the minimalist workspace for your <span className="text-white">ideas</span>.
+            </p>
           </div>
         </div>
 
-        {/* Translucent Obsidian Glass Card */}
         <div className="group auth-card-group">
           <div className="auth-card-border" />
 
           <div className="auth-card [@media(max-height:800px)]:p-6">
-            <form onSubmit={handleRegister} className="space-y-5 [@media(max-height:800px)]:space-y-4">
-              {/* Name */}
+            <form
+              id="signup-form"
+              name="signup"
+              onSubmit={handleRegister}
+              className="space-y-5 [@media(max-height:800px)]:space-y-4"
+            >
               <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1">Full Name</label>
+                <label
+                  htmlFor="signup-name"
+                  className="ml-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300"
+                >
+                  Full Name
+                </label>
                 <Input
+                  id="signup-name"
+                  name="name"
                   type="text"
                   placeholder="John Doe"
                   className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
@@ -92,10 +98,16 @@ const SignupForm = () => {
                 />
               </div>
 
-              {/* Email */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1">Email Address</label>
+                <label
+                  htmlFor="signup-email"
+                  className="ml-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300"
+                >
+                  Email Address
+                </label>
                 <Input
+                  id="signup-email"
+                  name="email"
                   type="email"
                   placeholder="name@example.com"
                   className="h-12 border-white/10 bg-white/[0.03] text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
@@ -105,11 +117,17 @@ const SignupForm = () => {
                 />
               </div>
 
-              {/* Password */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300 ml-1">Password</label>
+                <label
+                  htmlFor="signup-password"
+                  className="ml-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-zinc-300"
+                >
+                  Password
+                </label>
                 <div className="relative">
                   <Input
+                    id="signup-password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="Min. 6 characters"
                     className="h-12 border-white/10 bg-white/[0.03] pr-12 text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/5 transition-all duration-300 [@media(max-height:800px)]:h-10"
@@ -128,7 +146,6 @@ const SignupForm = () => {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 disabled={loading}
@@ -138,21 +155,19 @@ const SignupForm = () => {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black" />
-                    Creating account…
+                    Creating account...
                   </span>
                 ) : (
                   "Get Started"
                 )}
               </Button>
 
-              {/* Divider */}
               <div className="relative flex items-center gap-4 py-1 [@media(max-height:800px)]:py-0.5">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">or</span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>
 
-              {/* Google */}
               <Button
                 type="button"
                 onClick={handleGoogleSignup}
@@ -167,7 +182,7 @@ const SignupForm = () => {
               </Button>
             </form>
 
-            <div className="mt-6 pt-5 border-t border-white/5 text-center [@media(max-height:800px)]:mt-4 [@media(max-height:800px)]:pt-4">
+            <div className="mt-6 border-t border-white/5 pt-5 text-center [@media(max-height:800px)]:mt-4 [@media(max-height:800px)]:pt-4">
               <p className="text-sm text-zinc-400">
                 Already have an account?{" "}
                 <Link to="/login" className="font-semibold text-white transition-all hover:underline decoration-white/30 underline-offset-4">
@@ -178,10 +193,10 @@ const SignupForm = () => {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="mt-6 flex flex-col items-center gap-4 text-left [@media(max-height:800px)]:mt-4">
-          <p className="text-sm text-zinc-200 max-w-[380px] leading-relaxed">
-            By signing up, you agree to our <span className=" transition-colors text-[#818cf8] font-semibold hover:text-indigo-400 cursor-pointer">Terms</span> and <span className=" transition-colors text-[#818cf8] font-semibold hover:text-indigo-400 cursor-pointer">Privacy Policy</span>.
+          <p className="max-w-[380px] text-sm leading-relaxed text-zinc-200">
+            By signing up, you agree to our <span className="cursor-pointer font-semibold text-[#818cf8] transition-colors hover:text-indigo-400">Terms</span> and{" "}
+            <span className="cursor-pointer font-semibold text-[#818cf8] transition-colors hover:text-indigo-400">Privacy Policy</span>.
           </p>
         </div>
       </div>

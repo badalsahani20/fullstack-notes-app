@@ -16,7 +16,7 @@ const aiAssistCacheSchema = new mongoose.Schema(
     },
     action: {
       type: String,
-      enum: ["grammar", "summarize", "explain", "rewrite"],
+      enum: ["grammar", "summarize", "explain", "rewrite", "continue"],
       required: true,
       index: true,
     },

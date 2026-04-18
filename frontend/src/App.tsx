@@ -5,10 +5,13 @@ import { Toaster } from "sonner";
 import PrivateRoute from "./components/PrivateRoute";
 import AuthLayout from "./components/AuthLayout";
 import { Loader } from "lucide-react";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 // Lazy-loaded components
-const Login = lazy(() => import("./pages/Login"));
-const Register = lazy(() => import("./pages/Register"));
 const NoteEditor = lazy(() => import("./pages/NoteEditor"));
 const EmptyState = lazy(() => import("./components/EmptyEditorState"));
 const OAuthSuccess = lazy(() => import("./pages/OAuthSuccess"));
@@ -16,8 +19,6 @@ const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const NotesListPanel = lazy(() => import("./components/NotesListPanel"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
-const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const GlobalChatPage = lazy(() => import("./pages/GlobalChatPage"));
 
 const RouteLoader = () => (
@@ -35,10 +36,12 @@ function App() {
           {/* Public routes */}
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Login />} />
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
+            <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           </Route>
-          <Route path="/register" element={<Register />} />
+          <Route path="/signup" element={<Register />} />
           <Route path="/oauth-success" element={<OAuthSuccess />} />
 
           {/* Protected routes — redirect to /login if not authenticated */}

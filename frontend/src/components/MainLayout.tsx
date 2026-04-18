@@ -22,7 +22,8 @@ const MainLayout = ({ middlePanel }: Pops) => {
     showNotesPanel,
     showMainPanel,
     isMobile,
-    animationKey
+    animationKey,
+    isNoteEditor
   } = useNotesLayout();
   const { fetchFolders } = useFolderStore();
   const { isMobileDrawerOpen, setMobileDrawerOpen } = usePanelStore();
@@ -89,6 +90,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
         showMainPanel={showMainPanel}
         isMobile={isMobile}
         animationKey={animationKey}
+        isNoteEditor={isNoteEditor}
         
         header={
           <AppHeader

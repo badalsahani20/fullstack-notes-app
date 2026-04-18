@@ -46,7 +46,13 @@ const userSchema = new mongoose.Schema({
         },
     ],
     forgotPasswordToken: { type: String, select: false},
-    forgotPasswordExpiry: { type: Date, select: false}
+    forgotPasswordExpiry: { type: Date, select: false},
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    verificationToken: { type: String, select: false},
+    verificationTokenExpires: { type: Date, select: false},
 } , {timestamps: true});
 
 userSchema.index(

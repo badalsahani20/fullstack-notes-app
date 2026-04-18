@@ -1,5 +1,6 @@
 import express from "express";
 import authMiddleware from "../middleware/auth.middleware.js";
+import verifiedMiddleware from "../middleware/verified.middleware.js";
 import {
   aiAssistController,
   chatWithAiController,
@@ -10,6 +11,7 @@ import {
 
 const router = express.Router();
 router.use(authMiddleware);
+router.use(verifiedMiddleware);
 
 router.post("/check-note/:noteId", checkGrammarController);
 router.post("/assist", aiAssistController);

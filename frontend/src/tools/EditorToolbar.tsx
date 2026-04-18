@@ -11,8 +11,7 @@ import { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { uploadImage } from "@/utils/uploadImage";
 import { toast } from "sonner";
-
-
+import { useEditorUIStore } from "@/store/useEditorUIStore";
 type Props = {
   editor: Editor;
   isMobile?: boolean;
@@ -25,13 +24,9 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
   const searchParams = new URLSearchParams(location.search);
   const focusParam = searchParams.get("focus");
   const isFocusMode = focusParam === "1" || focusParam === "2";
+  const { markerColor } = useEditorUIStore();
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const toolbarButtonClass = (active = false) => cn(
-    "flex items-center justify-center rounded-md p-1.5 transition-colors focus:outline-none",
-    active ? "bg-[var(--active-surface)] text-[var(--accent-strong)] shadow-sm" : "text-[var(--muted-text)] hover:bg-[var(--surface-ghost)] hover:text-[var(--text-strong)]"
-  );
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,137 +50,90 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
     navigate(`${location.pathname}?${next.toString()}`, { replace: true });
   };
 
-  if (isMobile) {
-    return (
-      <div 
-        className="editor-toolbar-mobile" 
-        style={{ transform: `translateY(-${yOffset}px)` }}
-      >
-        <div className="toolbar-scroll-container">
-          <div className="toolbar-inner-row flex items-center gap-2 px-1">
-            {/* Group 1: Core Formatting */}
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} icon={<Bold size={18} />} title="Bold" />
-              <ToolbarButton active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} icon={<Italic size={18} />} title="Italic" />
-              <ToolbarButton active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} icon={<Underline size={18} />} title="Underline" />
-              <ToolbarButton active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} icon={<Strikethrough size={18} />} title="Strikethrough" />
-              <ToolbarButton active={editor.isActive("markerHighlight")} onClick={() => editor.chain().focus().toggleMarkerHighlight("#fef08a").run()} icon={<Highlighter size={18} />} title="Highlight" />
-            </div>
+  return (
+    <div 
+      className={cn("dock-toolbar-wrapper", isMobile && "dock-toolbar-mobile")}
+      style={isMobile ? { transform: `translateY(-${yOffset}px)` } : undefined}
+    >
+      <div className="dock-toolbar">
+        <div className="dock-toolbar-inner">
+          {/* Group 1: Utilities */}
+          <div className="dock-toolbar-cluster">
+            <ToolbarButton 
+              active={isFocusMode} 
+              onClick={toggleFocusMode} 
+              icon={isFocusMode ? <Minimize2 size={16} strokeWidth={1.5} /> : <Maximize2 size={16} strokeWidth={1.5} />} 
+              title="Toggle Focus Mode" 
+              color="#3b82f6"
+            />
+          </div>
 
-            <div className="w-px h-5 bg-[var(--divider)] opacity-50" />
+          <div className="dock-divider" />
 
-            {/* Group 2: Lists */}
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} icon={<List size={18} />} title="Bullet List" />
-              <ToolbarButton active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} icon={<ListOrdered size={18} />} title="Numbered List" />
-              <ToolbarButton active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()} icon={<CheckSquare size={18} />} title="Task List" />
-            </div>
+          {/* Group 2: Basic Formatting */}
+          <div className="dock-toolbar-cluster">
+            <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} icon={<Bold size={16} strokeWidth={1.5} />} title="Bold" color="#10b981" />
+            <ToolbarButton active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} icon={<Italic size={16} strokeWidth={1.5} />} title="Italic" color="#10b981" />
+            <ToolbarButton active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} icon={<Underline size={16} strokeWidth={1.5} />} title="Underline" color="#10b981" />
+            <ToolbarButton active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} icon={<Strikethrough size={16} strokeWidth={1.5} />} title="Strikethrough" color="#10b981" />
+            <ToolbarButton active={editor.isActive("markerHighlight")} onClick={() => editor.chain().focus().toggleMarkerHighlight(markerColor).run()} icon={<Highlighter size={16} strokeWidth={1.5} />} title="Highlight" color="#fbbf24" />
+          </div>
 
-            <div className="w-px h-5 bg-[var(--divider)] opacity-50" />
+          <div className="dock-divider" />
 
-            {/* Group 3: Insertions */}
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton active={false} onClick={() => fileInputRef.current?.click()} icon={<ImageIcon size={18} />} title="Insert Image" />
-              <ToolbarButton active={false} onClick={() => editor.chain().focus().setHorizontalRule().run()} icon={<Minus size={18} />} title="Horizontal Rule" />
-              <ToolbarButton active={editor.isActive("table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} icon={<TableIcon size={18} />} title="Insert Table" />
-            </div>
+          {/* Group 3: Lists */}
+          <div className="dock-toolbar-cluster">
+            <ToolbarButton active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} icon={<List size={16} strokeWidth={1.5} />} title="Bullet List" color="#3b82f6" />
+            <ToolbarButton active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} icon={<ListOrdered size={16} strokeWidth={1.5} />} title="Numbered List" color="#3b82f6" />
+            <ToolbarButton active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()} icon={<CheckSquare size={16} strokeWidth={1.5} />} title="Task List" color="#3b82f6" />
+          </div>
 
-            <div className="w-px h-5 bg-[var(--divider)] opacity-50" />
+          <div className="dock-divider" />
 
-            {/* Group 4: Quotes & block code */}
-            <div className="flex items-center gap-0.5">
-              <ToolbarButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} icon={<Quote size={18} />} title="Blockquote" />
-              <ToolbarButton active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} icon={<Code size={18} />} title="Code Block" />
-            </div>
+          {/* Group 4: Insertions */}
+          <div className="dock-toolbar-cluster">
+            <ToolbarButton active={false} onClick={() => fileInputRef.current?.click()} icon={<ImageIcon size={16} strokeWidth={1.5} />} title="Insert Image" color="#8b5cf6" />
+            <ToolbarButton active={false} onClick={() => editor.chain().focus().setHorizontalRule().run()} icon={<Minus size={16} strokeWidth={1.5} />} title="Horizontal Rule" color="#8b5cf6" />
+            <ToolbarButton active={editor.isActive("table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} icon={<TableIcon size={16} strokeWidth={1.5} />} title="Insert Table" color="#8b5cf6" />
+          </div>
 
-            <div className="w-px h-5 bg-[var(--divider)] opacity-50" />
+          <div className="dock-divider" />
 
-            {/* Group 5: Clear Formatting */}
-            <div className="flex items-center gap-1.5">
-              <ToolbarButton active={false} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} icon={<Eraser size={18} />} title="Clear Formatting" />
-            </div>
+          {/* Group 5: Blocks */}
+          <div className="dock-toolbar-cluster">
+            <ToolbarButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} icon={<Quote size={16} strokeWidth={1.5} />} title="Blockquote" color="#f43f5e" />
+            <ToolbarButton active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} icon={<Code size={16} strokeWidth={1.5} />} title="Code Block" color="#f43f5e" />
+          </div>
+
+          <div className="dock-divider" />
+
+          {/* Group 6: Cleanup */}
+          <div className="dock-toolbar-cluster">
+            <ToolbarButton active={false} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} icon={<Eraser size={16} strokeWidth={1.5} />} title="Clear Formatting" color="#ef4444" />
           </div>
         </div>
-        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
       </div>
-    );
-  }
-
-  return (
-    <div className="editor-toolbar flex flex-col items-center bg-[var(--panel-bg-strong)] backdrop-blur-md border border-[var(--divider)] rounded-xl p-1 mb-4 w-fit mx-auto shadow-2xl overflow-visible">
-      <div className="flex items-center gap-2 px-1.5 py-1 relative">
-        
-        {/* Group 1: Utilities */}
-        <div className="flex items-center gap-0.5">
-          <button type="button" onClick={toggleFocusMode} onMouseDown={(e) => e.preventDefault()} className={toolbarButtonClass(isFocusMode)} title="Toggle Focus Mode">
-            {isFocusMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
-        </div>
-
-        <div className="w-px h-4 bg-[var(--divider)] opacity-50" />
-
-        {/* Group 2: Basic Formatting */}
-        <div className="flex items-center gap-0.5">
-          <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} icon={<Bold size={16} />} title="Bold" />
-          <ToolbarButton active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} icon={<Italic size={16} />} title="Italic" />
-          <ToolbarButton active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} icon={<Underline size={16} />} title="Underline" />
-          <ToolbarButton active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()} icon={<Strikethrough size={16} />} title="Strikethrough" />
-          <ToolbarButton active={editor.isActive("markerHighlight")} onClick={() => editor.chain().focus().toggleMarkerHighlight("#fef08a").run()} icon={<Highlighter size={16} />} title="Highlight" />
-        </div>
-
-        <div className="w-px h-4 bg-[var(--divider)] opacity-50" />
-
-        {/* Group 3: Lists */}
-        <div className="flex items-center gap-0.5">
-          <ToolbarButton active={editor.isActive("bulletList")} onClick={() => editor.chain().focus().toggleBulletList().run()} icon={<List size={16} />} title="Bullet List" />
-          <ToolbarButton active={editor.isActive("orderedList")} onClick={() => editor.chain().focus().toggleOrderedList().run()} icon={<ListOrdered size={16} />} title="Numbered List" />
-          <ToolbarButton active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()} icon={<CheckSquare size={16} />} title="Task List" />
-        </div>
-
-        <div className="w-px h-4 bg-[var(--divider)] opacity-50" />
-
-        {/* Group 4: Insertions */}
-        <div className="flex items-center gap-0.5">
-          <ToolbarButton active={false} onClick={() => fileInputRef.current?.click()} icon={<ImageIcon size={16} />} title="Insert Image" />
-          <ToolbarButton active={false} onClick={() => editor.chain().focus().setHorizontalRule().run()} icon={<Minus size={16} />} title="Horizontal Rule" />
-          <ToolbarButton active={editor.isActive("table")} onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} icon={<TableIcon size={16} />} title="Insert Table" />
-        </div>
-
-        <div className="w-px h-4 bg-[var(--divider)] opacity-50" />
-
-        {/* Group 5: Blocks */}
-        <div className="flex items-center gap-0.5">
-          <ToolbarButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} icon={<Quote size={16} />} title="Blockquote" />
-          <ToolbarButton active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} icon={<Code size={16} />} title="Code Block" />
-        </div>
-
-        <div className="w-px h-4 bg-[var(--divider)] opacity-50" />
-
-        {/* Group 6: Cleanup */}
-        <div className="flex items-center gap-1">
-          <ToolbarButton active={false} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()} icon={<Eraser size={16} />} title="Clear Formatting" />
-        </div>
-      </div>
-
       <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleImageUpload} />
     </div>
   );
 };
 
-
-const ToolbarButton = ({ active, onClick, icon, title, className }: { active: boolean, onClick: () => void, icon: React.ReactNode, title: string, className?: string }) => (
+const ToolbarButton = ({ active, onClick, icon, title, className, color }: { active: boolean, onClick: () => void, icon: React.ReactNode, title: string, className?: string, color?: string }) => (
   <button
     type="button"
     title={title}
     onClick={onClick}
     onMouseDown={(e) => e.preventDefault()}
     className={cn(
-      "flex items-center justify-center rounded-md p-1.5 transition-colors focus:outline-none",
-      active ? "bg-[var(--active-surface)] text-[var(--accent-strong)] shadow-sm" : "text-[var(--muted-text)] hover:bg-[var(--surface-ghost)] hover:text-[var(--text-strong)]",
+      "dock-btn transition-all duration-300",
+      active && "dock-btn-active",
       className
     )}
+    style={{ "--highlight-color": color } as React.CSSProperties}
   >
-    {icon}
+    <div className="dock-icon-wrapper">
+      {icon}
+    </div>
   </button>
 );
 

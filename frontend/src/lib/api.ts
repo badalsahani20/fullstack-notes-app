@@ -37,9 +37,42 @@ export const requestSessionRefresh = async () => {
 const isAuthRoute = (url = "") =>
   url.includes("/users/login") ||
   url.includes("/users/register") ||
+  url.includes("/users/verify-email") ||
   url.includes("/users/refresh") ||
   url.includes("/users/forgot-password") ||
-  url.includes("/users/reset-password");
+  url.includes("/users/reset-password") ||
+  url.includes("/users/google") ||
+  url.includes("/users/showcase");
+
+const isPublicPage = () => {
+    const path = window.location.pathname;
+    return (
+        path === "/login" ||
+        path === "/signup" ||
+        path === "/register" ||
+        path === "/verify-email" ||
+        path === "/forgot-password" ||
+        path.startsWith("/reset-password")
+    );
+};
+
+const createAuthError = (config: InternalAxiosRequestConfig) => {
+  const error = new Error("Session expired. Please log in again.") as Error & {
+    config: InternalAxiosRequestConfig;
+    response: {
+      status: number;
+      data: { message: string };
+    };
+  };
+
+  error.config = config;
+  error.response = {
+    status: 401,
+    data: { message: "Session expired. Please log in again." },
+  };
+
+  return error;
+};
 
 // Request interceptor
 api.interceptors.request.use(async (config) => {
@@ -49,13 +82,19 @@ api.interceptors.request.use(async (config) => {
     try {
       token = await requestSessionRefresh();
     } catch {
-      token = null;
+      useAuthStore.getState().clearAuth();
+      if (!isPublicPage()) window.location.href = "/login";
+      throw createAuthError(config);
     }
   }
 
   if (token) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
+  } else if (!isAuthRoute(config.url)) {
+    useAuthStore.getState().clearAuth();
+    if (!isPublicPage()) window.location.href = "/login";
+    throw createAuthError(config);
   }
 
   return config;
@@ -77,7 +116,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshErr) {
         useAuthStore.getState().clearAuth();
-        window.location.href = "/login";
+        if (!isPublicPage()) window.location.href = "/login";
         return Promise.reject(refreshErr);
       }
     }

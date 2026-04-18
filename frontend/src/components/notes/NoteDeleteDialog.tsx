@@ -43,7 +43,8 @@ const NoteDeleteDialog = ({ noteId, noteTitle, onConfirm, onCancel, isPending }:
     setSkipConfirm(saved === "true");
   }, []);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     // Persist the checkbox preference
     if (skipConfirm) {
       window.localStorage.setItem(SKIP_NOTE_DELETE_CONFIRM_KEY, "true");
@@ -69,24 +70,35 @@ const NoteDeleteDialog = ({ noteId, noteTitle, onConfirm, onCancel, isPending }:
           </DialogDescription>
         </DialogHeader>
 
-        <label className="mt-2 flex items-center gap-2 text-sm text-[var(--text-strong)]">
-          <input
-            type="checkbox"
-            checked={skipConfirm}
-            onChange={(e) => setSkipConfirm(e.target.checked)}
-            className="h-4 w-4 rounded border border-[var(--divider)] bg-transparent accent-[var(--accent-strong)]"
-          />
-          Don&apos;t ask again
-        </label>
+        <form 
+          id="delete-note-form"
+          name="delete-note"
+          onSubmit={handleConfirm}
+        >
+          <label 
+            htmlFor="skip-delete-confirm"
+            className="mt-2 flex items-center gap-2 text-sm text-[var(--text-strong)] cursor-pointer"
+          >
+            <input
+              id="skip-delete-confirm"
+              name="skipConfirm"
+              type="checkbox"
+              checked={skipConfirm}
+              onChange={(e) => setSkipConfirm(e.target.checked)}
+              className="h-4 w-4 rounded border border-[var(--divider)] bg-transparent accent-[var(--accent-strong)]"
+            />
+            Don&apos;t ask again
+          </label>
 
-        <DialogFooter className="mt-4 gap-2 sm:justify-end">
-          <Button variant="outline" onClick={onCancel} disabled={isPending}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} disabled={isPending}>
-            {isPending ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-4 gap-2 sm:justify-end">
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="destructive" disabled={isPending}>
+              {isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

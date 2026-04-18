@@ -57,14 +57,29 @@ const NewNotebookDialog = ({ isOpen, onClose }: NewNotebookDialogProps) => {
             Give your notebook a name to stay organized.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleCreate} className="grid gap-4 py-4">
-          <Input
-            placeholder="Notebook name (e.g., Personal, Work, Ideas)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            autoFocus
-            disabled={isPending}
-          />
+        <form 
+          id="new-notebook-form"
+          name="new-notebook"
+          onSubmit={handleCreate} 
+          className="grid gap-4 py-4"
+        >
+          <div className="space-y-2">
+            <label 
+              htmlFor="notebook-name"
+              className="text-sm font-medium text-[var(--text-strong)]"
+            >
+              Notebook Name
+            </label>
+            <Input
+              id="notebook-name"
+              name="name"
+              placeholder="Notebook name (e.g., Personal, Work, Ideas)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              disabled={isPending}
+            />
+          </div>
           <DialogFooter>
             <Button
               type="button"
