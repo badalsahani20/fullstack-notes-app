@@ -4,6 +4,11 @@ A production-grade, full-stack notes application built on the MERN stack — fea
 
 **[Live Demo](https://notesify-eta.vercel.app) · [GitHub](https://github.com/badalsahani20/fullstack-notes-app)**
 
+<p align="center">
+  <img src="./assets/dashboard.png" alt="Notesify Dashboard" width="100%">
+</p>
+
+
 ---
 
 ## Architecture Highlights
@@ -49,14 +54,23 @@ MongoDB full-text indexing provides high-relevance ranking via linguistic scores
 ## Features
 
 ### Iris AI — Intelligent Writing Assistant
+
+<img src="./assets/ai-assistant.png" alt="Iris AI Assistant" width="100%">
+
 - **Inline Ghostwriter** — custom TipTap extension renders AI suggestions as faded ghost text before acceptance
 - **Selection actions** — bubble menu on selected text: Improve, Summarize, Rewrite, Brainstorm
 - **Grammar audit panel** — scans the entire note, surfaces fixes in a dedicated review panel
 - **Multimodal chat** — attach images for visual analysis or OCR tasks
+
+<img src="./assets/ai-chat.png" alt="Iris Global AI Chat" width="100%">
+
 - **Streaming responses** — real-time token-by-token streaming via `ReadableStream`
 - **Context injection** — active note content injected into system prompt for context-aware responses
 
 ### Professional Editor (TipTap / ProseMirror)
+
+<img src="./assets/editor.png" alt="Notesify Editor" width="100%">
+
 - Markdown-style shortcuts for headers, lists, bold, italic
 - Drag-and-drop / paste image upload → auto-hosted on Cloudinary
 - Resizable tables, task lists, auto-detected language code blocks
