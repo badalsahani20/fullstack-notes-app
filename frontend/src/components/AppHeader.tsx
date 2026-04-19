@@ -4,7 +4,8 @@ import UserMenu from "@/components/header/UserMenu";
 import HeaderSearch from "@/components/header/HeaderSearch";
 import NotificationsMenu from "@/components/header/NotificationsMenu";
 import { useState } from "react";
-import NewNotebookDialog from "@/components/folders/NewNotebookDialog";
+import { FolderFormDialog } from "@/components/folders/FolderFormDialog";
+import { useFolderStore } from "@/store/useFolderStore";
 
 type AppHeaderProps = {
   theme: "light" | "dark";
@@ -16,14 +17,26 @@ const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
   const { folderId } = useParams();
   const navigate = useNavigate();
 
+  const { addFolder } = useFolderStore();
+
   const [isNewNotebookOpen, setIsNewNotebookOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleCreateNote = () => {
     navigate(folderId ? `/folders/${folderId}/note/new` : `/note/new`);
   };
 
-  const handleOpenNewNotebook = () => {
-    setIsNewNotebookOpen(true);
+  const handleCreateFolder = async (name: string) => {
+    setIsSaving(true);
+    try {
+      const folder = await addFolder(name);
+      if (folder?._id) {
+        setIsNewNotebookOpen(false);
+        navigate(`/folders/${folder._id}`);
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -81,7 +94,7 @@ const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
 
           <button 
             type="button" 
-            onClick={handleOpenNewNotebook} 
+            onClick={() => setIsNewNotebookOpen(true)} 
             className="ignite-button !bg-transparent border-white/10"
           >
             <Plus size={18} />
@@ -91,9 +104,12 @@ const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
         <UserMenu />
       </div>
 
-      <NewNotebookDialog 
-        isOpen={isNewNotebookOpen} 
+      <FolderFormDialog 
+        open={isNewNotebookOpen} 
+        mode="create"
+        isSaving={isSaving}
         onClose={() => setIsNewNotebookOpen(false)} 
+        onSubmit={handleCreateFolder}
       />
     </header>
   );

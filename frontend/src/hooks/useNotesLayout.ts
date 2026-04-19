@@ -23,7 +23,7 @@ export const useNotesLayout = () => {
 
   const showFoldersPanel = isMobile
     ? location.pathname === "/folders" && !folderId && !noteId
-    : isFolderPanelOpen && !isEditorFocusMode;
+    : isFolderPanelOpen;
 
   const showNotesPanel = isMobile
     ? !noteId && !showFoldersPanel && !isSearchRoute && !isProfileRoute && !isChatRoute

@@ -2172,10 +2172,8 @@
 .desktop-dialog {
   border-color: var(--divider);
   color: var(--text-strong);
-  top: calc(3.8rem + 1rem);
-  transform: translateX(-50%);
-  max-height: calc(100vh - 3.8rem - 2rem);
-  overflow-y: auto;
+  max-width: 440px;
+  overflow: hidden;
 }
 
 .custom-scrollbar {
@@ -2433,10 +2431,10 @@
 
 .ProseMirror table {
   border-collapse: collapse;
-  margin: 1rem 0;
-  overflow: hidden;
-  table-layout: fixed;
-  width: 100%;
+  margin: 1.5rem 0;
+  table-layout: auto;
+  min-width: 100%;
+  width: auto;
 }
 
 .ProseMirror table td,
@@ -2813,8 +2811,10 @@ span[data-ai-ghost] {
 
 .editor-content-shell .ProseMirror table {
   border-collapse: collapse;
-  margin: 1.25rem 0;
-  width: 100%;
+  margin: 1.5rem 0;
+  table-layout: auto;
+  min-width: 100%;
+  width: auto;
 }
 
 .editor-content-shell .ProseMirror table td,
@@ -4409,6 +4409,7 @@ span[data-ai-ghost] {
   position: absolute;
   left: 0;
   right: 0;
+  width: 100%;
   z-index: 1000;
   display: flex;
   justify-content: center;
@@ -4448,9 +4449,15 @@ span[data-ai-ghost] {
 
   animation: dockRise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 
-  max-width: calc(100vw - 24px);
+  max-width: calc(100% - 2rem);
   overflow-x: auto;
   scrollbar-width: none;
+  /* Add subtle fade on edges when overflowing */
+  mask-image: linear-gradient(to right,
+      transparent,
+      black 10px,
+      black calc(100% - 10px),
+      transparent);
 }
 
 .dock-toolbar::-webkit-scrollbar {
