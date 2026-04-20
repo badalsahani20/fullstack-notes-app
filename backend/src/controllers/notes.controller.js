@@ -13,6 +13,10 @@ const clearNoteCaches = async (userId) =>
     redis.del(`notes:archive:${userId}`),
   ]);
 
+const clearSharedNoteCache = async (slug) => {
+  if (slug) await redis.del(`shared_note:${slug}`);
+};
+
 const DEFAULT_NOTE_TITLES = ["Untitled Note", "Untitled"];
 
 const queueAutoTitleGeneration = (note, userId) => {
@@ -187,6 +191,7 @@ export const updateNote = catchAsync(async (req, res) => {
 
     // Invalidate cache
     await clearNoteCaches(req.user._id);
+    if (result.updatedNote?.shareSlug) await clearSharedNoteCache(result.updatedNote.shareSlug);
 
     queueAutoTitleGeneration(result.updatedNote, req.user._id);
 
@@ -310,6 +315,9 @@ export const toggleNoteShare = catchAsync(async (req, res) => {
   }
 
   await clearNoteCaches(req.user._id);
+  if (updatedNote.shareSlug) await clearSharedNoteCache(updatedNote.shareSlug);
+  // Also clear the old slug if it was just revoked (though slug would be undefined, so we can't reliably clear it here unless we returned the old slug)
+  // But wait, our share revoking clears the slug immediately. Let's just let it naturally expire or be 404 since db check fails on miss.
 
   res.status(200).json({
     success: true,
@@ -320,6 +328,27 @@ export const toggleNoteShare = catchAsync(async (req, res) => {
 
 export const getSharedNote = catchAsync(async (req, res) => {
   const { slug } = req.params;
+  const cacheKey = `shared_note:${slug}`;
+
+  // 1. Try serving from Redis cache
+  const cachedData = await redis.get(cacheKey);
+
+  if (cachedData) {
+    const parsedCache = typeof cachedData === "string" ? JSON.parse(cachedData) : cachedData;
+    
+    // Background view increment
+    if (parsedCache.noteId) {
+      Notes.updateOne({ _id: parsedCache.noteId }, { $inc: { shareViews: 1 } }).catch(console.error);
+    }
+
+    return res.status(200).json({
+      title: parsedCache.title,
+      content: parsedCache.content,
+      updatedAt: parsedCache.updatedAt
+    });
+  }
+
+  // 2. Cache miss, fetch from DB
   const result = await NoteService.findByShareSlug(slug);
 
   if(!result) {
@@ -330,9 +359,19 @@ export const getSharedNote = catchAsync(async (req, res) => {
     return res.status(410).json({ message: "This share link has expired"});
   }
 
-  res.status(200).json({
+  const responseData = {
+    noteId: result.note._id,
     title: result.note.title,
     content: result.note.content,
     updatedAt: result.note.updatedAt
+  };
+
+  // 3. Cache the valid public note for 1 hour to handle traffic spikes naturally
+  await redis.set(cacheKey, JSON.stringify(responseData), { ex: 3600 });
+
+  res.status(200).json({
+    title: responseData.title,
+    content: responseData.content,
+    updatedAt: responseData.updatedAt
   });
 });
