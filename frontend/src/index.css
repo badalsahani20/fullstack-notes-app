@@ -2429,12 +2429,33 @@
   display: block;
 }
 
+.tableWrapper {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  max-width: 100%;
+  border-radius: 6px;
+  /* Thin custom scrollbar for tables */
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.tableWrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.tableWrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+}
+
 .ProseMirror table {
   border-collapse: collapse;
-  margin: 1.5rem 0;
+  margin: 0; /* Let tableWrapper handle margin */
   table-layout: auto;
   min-width: 100%;
-  width: auto;
+  width: max-content; /* Ensure table stretches past container if large */
 }
 
 .ProseMirror table td,
@@ -2448,6 +2469,8 @@
 .ProseMirror table th {
   background: var(--surface-muted);
   font-weight: 700;
+  border-bottom: 2px solid color-mix(in srgb, var(--text-strong) 15%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--text-strong) 10%, transparent);
 }
 
 @media (max-width: 1280px) {
@@ -2811,23 +2834,30 @@ span[data-ai-ghost] {
 
 .editor-content-shell .ProseMirror table {
   border-collapse: collapse;
-  margin: 1.5rem 0;
+  margin: 0;
   table-layout: auto;
   min-width: 100%;
-  width: auto;
+  width: max-content;
 }
 
 .editor-content-shell .ProseMirror table td,
 .editor-content-shell .ProseMirror table th {
   border: 1px solid var(--divider);
   padding: 0.5rem;
-  min-width: 1em;
+  min-width: 9rem;
   position: relative;
+}
+
+.editor-content-shell .ProseMirror table td > p,
+.editor-content-shell .ProseMirror table th > p {
+  min-width: max-content;
 }
 
 .editor-content-shell .ProseMirror table th {
   background: var(--surface-ghost);
   font-weight: bold;
+  border-bottom: 2px solid color-mix(in srgb, var(--text-strong) 15%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--text-strong) 10%, transparent);
 }
 
 

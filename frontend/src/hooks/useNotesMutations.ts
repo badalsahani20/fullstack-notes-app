@@ -540,3 +540,23 @@ export const useMoveNoteToFolderMutation = () => {
     });
 };
 
+export const useToggleShareMutation = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ noteId, isShared, expiresAt }: { noteId: string, isShared: boolean, expiresAt?: string | null }) => {
+            const res = await api.post(`/notes/${noteId}/share`, { isShared, expiresAt });
+            return res.data.note || res.data;
+        },
+        onSuccess: (updatedNote, { noteId }) => {
+            queryClient.setQueryData(["note", noteId], updatedNote);
+            queryClient.setQueryData(["notes"], (old: Note[] = []) => updateNoteInList(old, updatedNote));
+            toast.success(updatedNote.isShared ? "Public link enabled" : "Public link disabled");
+        },
+        onError: (error: any) => {
+            console.error("Failed to toggle share status:", error);
+            toast.error(error?.response?.data?.message || "Failed to update sharing settings");
+        }
+    });
+};
+

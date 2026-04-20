@@ -13,13 +13,14 @@ import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 // Lazy-loaded components
 const NoteEditor = lazy(() => import("./pages/NoteEditor"));
-const EmptyState = lazy(() => import("./components/EmptyEditorState"));
+const EmptyState = lazy(() => import("./components/editor/EmptyEditorState"));
 const OAuthSuccess = lazy(() => import("./pages/OAuthSuccess"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-const NotesListPanel = lazy(() => import("./components/NotesListPanel"));
+const NotesListPanel = lazy(() => import("./components/notes/NotesListPanel"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const GlobalChatPage = lazy(() => import("./pages/GlobalChatPage"));
+const SharedNotePage = lazy(() => import("./pages/SharedNotePage"));
 
 const RouteLoader = () => (
   <div className="flex h-screen w-full items-center justify-center bg-[#121212]">
@@ -43,6 +44,7 @@ function App() {
           </Route>
           <Route path="/signup" element={<Register />} />
           <Route path="/oauth-success" element={<OAuthSuccess />} />
+          <Route path="/shared/:slug" element={<SharedNotePage />} />
 
           {/* Protected routes — redirect to /login if not authenticated */}
           <Route element={<PrivateRoute />}>

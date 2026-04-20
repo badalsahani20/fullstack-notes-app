@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
+﻿import { Suspense, useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -7,9 +7,9 @@ import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { usePanelStore } from "@/store/usePanelStore";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
-import TipTap from "@/components/TipTap";
-const AiAuditPanel = lazy(() => import("@/components/AiAuditPanel"));
-import EmptyEditorState from "@/components/EmptyEditorState";
+import TipTap from "@/components/editor/TipTap";
+const AiAuditPanel = lazy(() => import("@/components/ai/AiAuditPanel"));
+import EmptyEditorState from "@/components/editor/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -18,7 +18,7 @@ import EditorToolbar from "@/tools/EditorToolbar";
 import AiResultDialog from "@/components/ai/AiResultDialog";
 import { NoteEditorSkeleton } from "@/components/ui/noteEditorSkeleton";
 
-const preloadAiAuditPanel = () => import("@/components/AiAuditPanel");
+const preloadAiAuditPanel = () => import("@/components/ai/AiAuditPanel");
 
 const AiPanelSkeleton = ({ mobileMode = false }: { mobileMode?: boolean }) => (
   <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}>

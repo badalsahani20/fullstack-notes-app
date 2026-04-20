@@ -12,6 +12,7 @@ import trashRoute from "./src/routes/trash.route.js";
 import passport from "./config/passport.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import publicRoute from "./src/routes/public.route.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,6 +29,7 @@ app.use(cors({
 }));
 
 connectDB();
+app.use("/api/public", publicRoute);
 app.use(passport.initialize());
 app.use("/api/users", userRoute);
 app.use("/api/notes", notesRoute);

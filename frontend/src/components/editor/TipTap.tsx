@@ -7,10 +7,10 @@ import { FontFamily } from "@tiptap/extension-font-family";
 import StarterKit from "@tiptap/starter-kit";
 import { Table, TableCell, TableHeader, TableRow } from "@tiptap/extension-table";
 import { useLocation, useNavigate } from "react-router-dom";
-import EditorBubbleMenu from "./editorBubbleMenu";
-import { ImageUploadExtension } from "../extensions/imageUploadExtension";
-import { MarkerHighlightExtension } from "../extensions/markerHighlightExtension";
-import { AiGhostExtension } from "../extensions/aiGhostExtension";
+import EditorBubbleMenu from "./EditorBubbleMenu";
+import { ImageUploadExtension } from "../../extensions/imageUploadExtension";
+import { MarkerHighlightExtension } from "../../extensions/markerHighlightExtension";
+import { AiGhostExtension } from "../../extensions/aiGhostExtension";
 import { AiInlineMenu } from "./AiInlineMenu";
 
 import { TaskList } from "@tiptap/extension-task-list";
@@ -237,15 +237,17 @@ import { useAiChat } from "@/hooks/useAiChat";
 
 type TipTapProps = {
   content: string;
-  onChange: (html: string) => void;
+  onChange?: (html: string) => void;
   onEditorReady?: (editor: Editor | null) => void;
   aiChat?: ReturnType<typeof useAiChat>;
+  editable?: boolean;
 };
 
-const TipTap = ({ content, onChange, onEditorReady, aiChat }: TipTapProps) => {
+const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: TipTapProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const editor = useEditor({
+    editable,
     extensions: [
       StarterKit.configure({
         codeBlock: { HTMLAttributes: { class: "editor-code-block" } },
@@ -263,7 +265,7 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat }: TipTapProps) => {
       TableRow, TableHeader, TableCell,
     ],
     content,
-    onUpdate: ({ editor }) => { onChange(editor.getHTML()); },
+    onUpdate: ({ editor }) => { onChange?.(editor.getHTML()); },
     editorProps: {
       handlePaste(view, event) {
         const plainText = event.clipboardData?.getData("text/plain") ?? "";
@@ -309,7 +311,7 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat }: TipTapProps) => {
   });
 
   const handleEditorKeyDown = (event: ReactKeyboardEvent) => {
-    if (!editor) return;
+    if (!editor || !editable) return;
     if (event.key === "Escape") {
       const next = new URLSearchParams(location.search);
       if (next.has("focus")) {
@@ -338,10 +340,12 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat }: TipTapProps) => {
 
   return (
     <div className="editor-shell relative mx-auto w-full max-w-[46rem]" style={{ ["--editor-font-size" as string]: `18px` }}>
-      <EditorBubbleMenu editor={editor} onAction={aiChat?.runAction} loadingAction={aiChat?.loadingAction} />
-      <AiInlineMenu editor={editor} />
+      {editable && aiChat && (
+        <EditorBubbleMenu editor={editor} onAction={aiChat.runAction} loadingAction={aiChat.loadingAction} />
+      )}
+      {editable && <AiInlineMenu editor={editor} />}
       <div className="overflow-x-auto">
-        <EditorContent className="editor-content-shell" editor={editor} spellCheck={true} onKeyDown={handleEditorKeyDown} />
+        <EditorContent className="editor-content-shell" editor={editor} spellCheck={editable} onKeyDown={handleEditorKeyDown} />
       </div>
     </div>
   );

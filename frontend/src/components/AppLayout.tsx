@@ -4,7 +4,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDefaultLayout } from "react-resizable-panels";
 
-import MobileCreateButton from "./MobileCreateButton";
+import MobileCreateButton from "./header/MobileCreateButton";
 
 const panelEase = [0.22, 1, 0.36, 1] as const;
 

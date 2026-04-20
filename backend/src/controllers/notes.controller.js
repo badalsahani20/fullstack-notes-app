@@ -298,3 +298,41 @@ export const restoreNote = catchAsync(async (req, res) => {
     note: restoredNote
   });
 })
+
+export const toggleNoteShare = catchAsync(async (req, res) => {
+  const { isShared, expiresAt } = req.body;
+  const { id } = req.params;
+
+  const updatedNote = await NoteService.updateShareSettings(id, req.user._id, { isShared, expiresAt });
+
+  if(!updatedNote) {
+    return res.status(404).json({ message: "Note not found"});
+  }
+
+  await clearNoteCaches(req.user._id);
+
+  res.status(200).json({
+    success: true,
+    message: isShared ? "Note is now public" : "Note is now private",
+    note: updatedNote
+  });
+})
+
+export const getSharedNote = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+  const result = await NoteService.findByShareSlug(slug);
+
+  if(!result) {
+    return res.status(404).json({ message: "Note link invalid or disabled" });
+  }
+
+  if(result.expired) {
+    return res.status(410).json({ message: "This share link has expired"});
+  }
+
+  res.status(200).json({
+    title: result.note.title,
+    content: result.note.content,
+    updatedAt: result.note.updatedAt
+  });
+});

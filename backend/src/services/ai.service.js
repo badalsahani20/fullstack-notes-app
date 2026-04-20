@@ -29,7 +29,7 @@ const generateContentWithFallback = async (prompt) => {
   if (process.env.GEMINI_API_KEY) {
     try {
       const result = await model.generateContent(prompt);
-      console.log("💎 Action answered by Gemini 3.1 Flash Lite");
+      console.log("💎 Action answered by Gemma-3-27b-it");
       return result.response.text().trim();
     } catch (error) {
       console.warn("Gemini Error, falling back to OpenRouter:", error.message);
@@ -44,10 +44,10 @@ const generateContentWithFallback = async (prompt) => {
     });
 
     const completion = await openRouter.chat.send({
-      httpReferer: process.env.BACKEND_URL || 'http://localhost:5000',
+      httpReferer: process.env.BACKEND_URL || 'http://localhost:5500',
       appTitle: 'Notesify',
       chatRequest: {
-        model: "meta-llama/llama-3.1-8b-instruct", // Using free, high-speed LLaMA 3 for free fallback
+        model: "meta-llama/llama-3.1-8b-instruct",
         messages: [{ role: 'user', content: prompt }],
         stream: false,
       },
@@ -216,7 +216,7 @@ export const chatWithAi = async ({
 
   // 3. Build the GROQ-specific User Prompt (Strictly Text Only)
   const groqUserContent = imageBase64 
-    ? `${message}\n\n[System Note: The user attached an image, but this model cannot view images. Please politely inform them you can only read text.]` 
+    ? `${message}\n\n[System Note: The user attached an image, but this model cannot view images. Please politely inform them image process model is exhausted.]` 
     : message;
 
   const groqMessages = [
@@ -224,7 +224,6 @@ export const chatWithAi = async ({
     { role: "user", content: groqUserContent }
   ];
 
-  /* --- EXECUTION --- */
 
   const executeNvidia = async () => {
     if (!process.env.NVIDIA_API_KEY) throw new Error("No NVIDIA API Key");

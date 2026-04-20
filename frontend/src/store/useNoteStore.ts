@@ -12,6 +12,10 @@ export interface Note {
   isArchived: boolean;
   updatedAt: string;
   lastAccessedAt: string | null;
+  isShared?: boolean;
+  shareSlug?: string;
+  shareExpiresAt?: string | null;
+  shareViews?: number;
   chatHistory?: { id: string; role: 'user' | 'assistant'; content: string }[];
 }
 

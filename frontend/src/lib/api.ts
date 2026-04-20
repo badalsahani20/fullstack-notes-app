@@ -42,18 +42,20 @@ const isAuthRoute = (url = "") =>
   url.includes("/users/forgot-password") ||
   url.includes("/users/reset-password") ||
   url.includes("/users/google") ||
-  url.includes("/users/showcase");
+  url.includes("/users/showcase") ||
+  url.includes("/public/");
 
 const isPublicPage = () => {
-    const path = window.location.pathname;
-    return (
-        path === "/login" ||
-        path === "/signup" ||
-        path === "/register" ||
-        path === "/verify-email" ||
-        path === "/forgot-password" ||
-        path.startsWith("/reset-password")
-    );
+  const path = window.location.pathname;
+  return (
+    path === "/login" ||
+    path === "/signup" ||
+    path === "/register" ||
+    path === "/verify-email" ||
+    path === "/forgot-password" ||
+    path.startsWith("/reset-password") ||
+    path.startsWith("/shared/")
+  );
 };
 
 const createAuthError = (config: InternalAxiosRequestConfig) => {

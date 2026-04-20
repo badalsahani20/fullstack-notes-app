@@ -2,12 +2,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Suspense, lazy, useEffect } from "react";
 import { Archive, Bot, FileText, Plus, Star, Trash2, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { FolderPanelSkeleton } from "./ui/folderPanelSkeleton";
+import { FolderPanelSkeleton } from "@/components/ui/folderPanelSkeleton";
 import { useFolderStore } from "@/store/useFolderStore";
-import { FolderFormDialog } from "./folders/FolderFormDialog";
+import { FolderFormDialog } from "@/components/folders/FolderFormDialog";
 import { useState } from "react";
 
-const FoldersPanel = lazy(() => import("./folderPanel"));
+const FoldersPanel = lazy(() => import("@/components/folders/FolderPanel"));
 
 type Props = {
   open: boolean;

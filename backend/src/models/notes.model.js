@@ -58,6 +58,24 @@ const notesSchema = new mongoose.Schema({
             content: String
         }],
         default: []
+    },
+    // Sharing
+    isShared: {
+        type: Boolean,
+        default: false
+    },
+    shareSlug: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    shareExpiresAt: {
+        type: Date,
+        default: null
+    },
+    shareViews: {
+        type: Number,
+        default: 0
     }
 },{timestamps: true, versionKey: false});
 
@@ -71,6 +89,8 @@ notesSchema.index({ user: 1, isDeleted: 1, title: "text", content: "text"},
         }
     }
 );
+// Compound index for public share slug lookups: GET /api/public/notes/:slug
+notesSchema.index({ shareSlug: 1, isShared: 1, isDeleted: 1 });
 
     // Pre-save hook to assign soft random color if not provided
 notesSchema.pre("save", function (next) {

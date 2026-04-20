@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Clock, ArrowDownAz, ListFilter } from "lucide-react";
-import NoteCard from "./noteCard";
-import FolderCard from "./folderCard";
+import NoteCard from "./NoteCard";
+import FolderCard from "../folders/FolderCard";
 import NoteDeleteDialog, { SKIP_NOTE_DELETE_CONFIRM_KEY } from "@/components/notes/NoteDeleteDialog";
 import NotesPanelHeader from "@/components/notes/NotesPanelHeader";
 import NotesPanelSearch from "@/components/notes/NotesPanelSearch";
@@ -378,20 +378,37 @@ const NotesListPanel = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1.5 cursor-pointer text-[var(--muted-text)] hover:text-[var(--text-strong)] hover:bg-[var(--surface-ghost)] rounded-md transition-colors">
-                  <ListFilter size={16} />
+                <button
+                  className={`flex items-center gap-1 p-1.5 cursor-pointer rounded-md transition-colors text-xs font-medium ${
+                    sortOrder === "title"
+                      ? "text-[var(--accent-strong)] bg-[var(--accent-strong)]/8"
+                      : "text-[var(--muted-text)] hover:text-[var(--text-strong)] hover:bg-[var(--surface-ghost)]"
+                  }`}
+                  title="Sort notes"
+                >
+                  <ListFilter size={14} />
+                  <span className="hidden sm:inline">{sortOrder === "title" ? "A–Z" : "Recent"}</span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-                <DropdownMenuSeparator />
+              <DropdownMenuContent
+                align="end"
+                className="w-44 bg-[var(--panel-bg-strong)] border-[var(--divider)] text-[var(--text-strong)] shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
+              >
+                <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-text)] pb-1">Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-[var(--divider)]" />
                 <DropdownMenuRadioGroup value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
-                  <DropdownMenuRadioItem className="cursor-pointer" value="updatedAt">
-                    <Clock size={14} className="mr-2" />
+                  <DropdownMenuRadioItem
+                    className="cursor-pointer text-[13px] text-[var(--text-main)] focus:bg-[var(--surface-ghost)] focus:text-[var(--text-strong)] data-[state=checked]:text-[var(--accent-strong)]"
+                    value="updatedAt"
+                  >
+                    <Clock size={13} className="mr-2 opacity-60" />
                     Last Updated
                   </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem className="cursor-pointer" value="title">
-                    <ArrowDownAz size={14} className="mr-2" />
+                  <DropdownMenuRadioItem
+                    className="cursor-pointer text-[13px] text-[var(--text-main)] focus:bg-[var(--surface-ghost)] focus:text-[var(--text-strong)] data-[state=checked]:text-[var(--accent-strong)]"
+                    value="title"
+                  >
+                    <ArrowDownAz size={13} className="mr-2 opacity-60" />
                     Alphabetical
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>

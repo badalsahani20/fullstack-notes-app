@@ -1,10 +1,18 @@
 import React from "react";
 import type { Editor } from "@tiptap/react";
-import { Archive, Star, Sparkles, ChevronLeft } from "lucide-react";
+import { Archive, Star, Bot, ChevronLeft, Share2, MoreHorizontal } from "lucide-react";
 import { motion } from "framer-motion";
 import { EditorStats } from "./EditorStats";
+import { ShareModal } from "./ShareModal";
 import type { Note } from "@/store/useNoteStore";
 import type { Folder } from "@/store/useFolderStore";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type EditorHeaderProps = {
   note: Note;
@@ -18,7 +26,6 @@ type EditorHeaderProps = {
   /** Called on blur to commit the title if changed */
   onCommitTitle: () => void;
   onTogglePin: (id: string) => void;
-
   onToggleArchive: (id: string) => void;
   onAskAi?: () => void;
   onAskAiHover?: () => void;
@@ -27,10 +34,10 @@ type EditorHeaderProps = {
   isSaving?: boolean;
 };
 
-
 /**
  * Top header of the note editor page.
- * Contains: Title input, Star button, Ask AI button, and the Meta row (folder + time).
+ * Desktop: shows all actions inline.
+ * Mobile: collapses Share / Archive / Star into a "⋯" overflow menu.
  */
 const EditorHeader = ({
   note,
@@ -41,7 +48,6 @@ const EditorHeader = ({
   onDraftTitleChange,
   onCommitTitle,
   onTogglePin,
-
   onToggleArchive,
   onAskAi,
   onAskAiHover,
@@ -49,6 +55,7 @@ const EditorHeader = ({
   isMobile,
   isSaving,
 }: EditorHeaderProps) => {
+  const [isShareOpen, setIsShareOpen] = React.useState(false);
 
   return (
     <div className="desktop-editor-header">
@@ -80,35 +87,50 @@ const EditorHeader = ({
         </div>
 
         <div className="editor-meta-stack">
-          <button
-            type="button"
-            onClick={() => onToggleArchive(note._id)}
-            className={`editor-star-toggle ${note.isArchived ? "editor-archive-toggle-active" : ""}`}
-            aria-label={note.isArchived ? "Unarchive note" : "Archive note"}
-          >
-            <Archive size={15} />
-            <span className="hidden md:inline">{note.isArchived ? "Archived" : "Archive"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onTogglePin(note._id)}
-            className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
-            aria-label={note.pinned ? "Remove from favorites" : "Add to favorites"}
-          >
-            <motion.div
-              key={note.pinned ? "pinned" : "unpinned"}
-              initial={{ scale: 0.5, rotate: -30 }}
-              animate={{ scale: 1, rotate: 0 }}
-              whileHover={{ scale: 1.2, rotate: 15 }}
-              whileTap={{ scale: 0.8, rotate: -15 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              className="flex items-center justify-center p-0.5"
+          {/* ── Desktop: show all actions inline ── */}
+          <div className="hidden md:flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setIsShareOpen(true)}
+              className={`editor-star-toggle ${note.isShared ? "text-[var(--accent-strong)] border-[var(--accent-strong)]/30 bg-[var(--accent-strong)]/5" : ""}`}
+              aria-label="Share note"
             >
-              <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
-            </motion.div>
-            <span className="hidden md:inline">{note.pinned ? "Starred" : "Star"}</span>
-          </button>
+              <Share2 size={15} />
+              <span className="hidden md:inline">{note.isShared ? "Sharing" : "Share"}</span>
+            </button>
 
+            <button
+              type="button"
+              onClick={() => onToggleArchive(note._id)}
+              className={`editor-star-toggle ${note.isArchived ? "editor-archive-toggle-active" : ""}`}
+              aria-label={note.isArchived ? "Unarchive note" : "Archive note"}
+            >
+              <Archive size={15} />
+              <span className="hidden md:inline">{note.isArchived ? "Archived" : "Archive"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onTogglePin(note._id)}
+              className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
+              aria-label={note.pinned ? "Remove from favorites" : "Add to favorites"}
+            >
+              <motion.div
+                key={note.pinned ? "pinned" : "unpinned"}
+                initial={{ scale: 0.5, rotate: -30 }}
+                animate={{ scale: 1, rotate: 0 }}
+                whileHover={{ scale: 1.2, rotate: 15 }}
+                whileTap={{ scale: 0.8, rotate: -15 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                className="flex items-center justify-center p-0.5"
+              >
+                <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
+              </motion.div>
+              <span className="hidden md:inline">{note.pinned ? "Starred" : "Star"}</span>
+            </button>
+          </div>
+
+          {/* AI button — always visible */}
           <button
             type="button"
             onClick={onAskAi}
@@ -117,24 +139,78 @@ const EditorHeader = ({
             className={`ignite-button h-8 !px-4 ${isAiOpen ? "nav-action-btn-active" : ""}`}
             aria-label="Toggle AI Assistant"
           >
-            <Sparkles size={15} />
+            <Bot size={15} />
             <span className="hidden sm:inline">Ask AI</span>
           </button>
+
+          {/* ── Mobile: collapse Share / Archive / Star into ⋯ menu ── */}
+          <div className="flex md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="editor-star-toggle"
+                  aria-label="More actions"
+                >
+                  <MoreHorizontal size={16} />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="w-48 bg-[var(--panel-bg-strong)] border-[var(--divider)] text-[var(--text-strong)] shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
+              >
+                <DropdownMenuItem
+                  onSelect={() => setIsShareOpen(true)}
+                  className="cursor-pointer text-[13px] text-[var(--text-main)] focus:bg-[var(--surface-ghost)] focus:text-[var(--text-strong)] gap-2.5"
+                >
+                  <Share2 size={14} className={note.isShared ? "text-[var(--accent-strong)]" : "opacity-40"} />
+                  {note.isShared ? "Sharing (on)" : "Share note"}
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator className="bg-[var(--divider)]" />
+
+                <DropdownMenuItem
+                  onSelect={() => onTogglePin(note._id)}
+                  className="cursor-pointer text-[13px] text-[var(--text-main)] focus:bg-[var(--surface-ghost)] focus:text-[var(--text-strong)] gap-2.5"
+                >
+                  <Star
+                    size={14}
+                    fill={note.pinned ? "currentColor" : "none"}
+                    className={note.pinned ? "text-amber-400" : "opacity-40"}
+                  />
+                  {note.pinned ? "Starred" : "Star note"}
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onSelect={() => onToggleArchive(note._id)}
+                  className="cursor-pointer text-[13px] text-[var(--text-main)] focus:bg-[var(--surface-ghost)] focus:text-[var(--text-strong)] gap-2.5"
+                >
+                  <Archive size={14} className={note.isArchived ? "text-[var(--accent-strong)]" : "opacity-40"} />
+                  {note.isArchived ? "Unarchive" : "Archive note"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-
 
       <div className="editor-title-meta">
         <span className="editor-folder-label flex items-center gap-1.5 leading-none">
           {(folderLabel ?? folder?.name ?? "All Notes") === "AI Notes" && (
-            <Sparkles size={12} className="text-[var(--accent-strong)]" />
+            <Bot size={12} className="text-[var(--accent-strong)]" />
           )}
           {folderLabel ?? folder?.name ?? "All Notes"}
         </span>
         <EditorStats editor={editor} isSaving={isSaving} />
       </div>
-    </div>
 
+      <ShareModal
+        note={note}
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+      />
+    </div>
   );
 };
+
 export default React.memo(EditorHeader);

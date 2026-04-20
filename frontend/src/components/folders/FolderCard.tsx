@@ -1,4 +1,4 @@
-import type { Folder } from "../store/useFolderStore";
+import type { Folder } from "@/store/useFolderStore";
 import { cn } from "@/lib/utils";
 import { Notebook, RotateCcw, Trash2, X } from "lucide-react";
 

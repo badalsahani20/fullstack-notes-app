@@ -72,7 +72,7 @@ export const EditorStats = ({ editor, isSaving = false }: EditorStatsProps) => {
         {syncState === "synced" && (
           <>
             <Cloud size={13} className="opacity-40" />
-            <span className="opacity-50">Saved to cloud</span>
+            <span className="opacity-50">Saved</span>
           </>
         )}
       </div>

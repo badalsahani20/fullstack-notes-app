@@ -2,19 +2,22 @@ import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { FolderPanelSkeleton } from "@/components/ui/folderPanelSkeleton";
 
-const FoldersPanel = lazy(() => import("./folderPanel"));
-import AppHeader from "./AppHeader";
-import MobileDrawer from "./MobileDrawer";
+const FoldersPanel = lazy(() => import("./folders/FolderPanel"));
+import AppHeader from "./header/AppHeader";
+import MobileDrawer from "./header/MobileDrawer";
 import AppLayout from "./AppLayout";
 import { useNotesLayout } from "@/hooks/useNotesLayout";
-import ActivityBar from "./SideBar";
+import ActivityBar from "./header/SideBar";
 import { useFolderStore } from "@/store/useFolderStore";
 import { usePanelStore } from "@/store/usePanelStore";
+import { WhatsNewModal } from "@/components/ui/WhatsNewModal";
+import { useWhatsNew } from "@/hooks/useWhatsNew";
 
 type Pops = {
   middlePanel: React.ReactNode;
 }
 const MainLayout = ({ middlePanel }: Pops) => {
+  const { isOpen: isWhatsNewOpen, dismiss: dismissWhatsNew } = useWhatsNew();
   const bootstrapStartedRef = useRef(false);
   const {
     showGlobalHeader,
@@ -116,6 +119,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
       {isMobile && (
         <MobileDrawer open={isMobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)} />
       )}
+      <WhatsNewModal isOpen={isWhatsNewOpen} onDismiss={dismissWhatsNew} />
     </>
   );
 };

@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMoveNoteToFolderMutation } from "@/hooks/useNotesMutations";
-import { FolderFormDialog } from "./folders/FolderFormDialog";
+import { FolderFormDialog } from "./FolderFormDialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

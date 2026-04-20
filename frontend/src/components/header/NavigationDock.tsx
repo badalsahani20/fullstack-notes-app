@@ -1,6 +1,6 @@
 import { Folder, Home, PlusCircle, Search, Trash2 } from 'lucide-react';
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import Dock from './Dock';
+import Dock from '@/components/ui/Dock';
 
 const NavigationDock = () => {
     const navigate = useNavigate();
