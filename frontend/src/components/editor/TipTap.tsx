@@ -279,7 +279,7 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
   addNodeView() {
     return ReactNodeViewRenderer(TipTapCodeBlock);
   },
-}).configure({ lowlight, defaultLanguage: "plaintext" });
+}).configure({ lowlight, defaultLanguage: "javascript" });
 
 import { useAiChat } from "@/hooks/useAiChat";
 

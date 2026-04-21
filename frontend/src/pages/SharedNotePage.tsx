@@ -1,4 +1,4 @@
-﻿import { useParams, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import TipTap from "@/components/editor/TipTap";
@@ -54,10 +54,12 @@ const ErrorState = ({ status }: { status?: number }) => (
         )}
       </div>
       <h1 className="text-2xl font-bold text-white mb-3 tracking-tight">
-        {status === 410 ? "Link Expired" : "Note Not Found"}
+        {status === 429 ? "Too Many Requests" : status === 410 ? "Link Expired" : "Note Not Found"}
       </h1>
       <p className="text-white/40 text-sm leading-relaxed mb-8">
-        {status === 410
+        {status === 429
+          ? "You've viewed this shared note too many times recently. Please wait a few minutes before trying again."
+          : status === 410
           ? "This share link has expired and is no longer accessible. Ask the owner to generate a new one."
           : "This link may be broken or the owner may have disabled public sharing for this note."}
       </p>

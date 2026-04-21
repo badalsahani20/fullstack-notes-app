@@ -19,6 +19,7 @@ const __dirname = path.dirname(__filename);
 
 
 const app = express();
+app.set("trust proxy", 1); // Extract true client IP behind reverse proxies (Vercel/Render)
 
 app.use(express.json({ limit: "15mb" })); // Increased limit to allow large Base64 Image Uploads
 app.use(express.urlencoded({ limit: "15mb", extended: true }));
