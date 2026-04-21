@@ -329,7 +329,7 @@ export const toggleNoteShare = catchAsync(async (req, res) => {
 export const getSharedNote = catchAsync(async (req, res) => {
   const { slug } = req.params;
   const cacheKey = `shared_note:${slug}`;
-
+        
   // 1. Try serving from Redis cache
   const cachedData = await redis.get(cacheKey);
 

@@ -2249,31 +2249,7 @@
   padding: 0.18rem 0.42rem;
 }
 
-.ProseMirror pre {
-  position: relative;
-  margin: 1.15rem 0;
-  overflow-x: auto;
-  border: 1px solid color-mix(in srgb, var(--accent-strong) 22%, var(--divider));
-  border-radius: 1rem;
-  background:
-    linear-gradient(180deg,
-      color-mix(in srgb, var(--surface-elevated) 92%, #0f172a),
-      color-mix(in srgb, var(--surface-muted) 88%, #08111f));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 14px 28px rgba(2, 6, 23, 0.14);
-}
 
-.ProseMirror pre::before {
-  content: "Code";
-  display: block;
-  padding: 0.7rem 1rem 0;
-  color: color-mix(in srgb, var(--accent-strong) 72%, white);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 
 .ProseMirror pre code {
   display: block;
@@ -2303,25 +2279,25 @@
 .ProseMirror pre code .hljs-selector-tag,
 .ProseMirror pre code .hljs-title,
 .ProseMirror pre code .hljs-section {
-  color: #93c5fd;
+  color: #569cd6; /* ChatGPT/VSCode blue/purple */
 }
 
 .ProseMirror pre code .hljs-string,
 .ProseMirror pre code .hljs-attribute,
 .ProseMirror pre code .hljs-template-tag,
 .ProseMirror pre code .hljs-literal {
-  color: #86efac;
+  color: #ce9178; /* ChatGPT orange/red for strings */
 }
 
 .ProseMirror pre code .hljs-number,
 .ProseMirror pre code .hljs-symbol,
 .ProseMirror pre code .hljs-bullet {
-  color: #fca5a5;
+  color: #b5cea8; /* Greenish/light for numbers */
 }
 
 .ProseMirror pre code .hljs-comment,
 .ProseMirror pre code .hljs-quote {
-  color: #94a3b8;
+  color: #6a9955; /* ChatGPT/VSCode classic comment green */
 }
 
 .ProseMirror ul,
@@ -3453,12 +3429,8 @@ span[data-ai-ghost] {
 
 .gc-code-block {
   overflow: hidden;
-  border-radius: 0.95rem;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background:
-    radial-gradient(circle at top right, rgba(99, 102, 241, 0.16), transparent 30%),
-    linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(2, 6, 23, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 0.5rem;
+  background: #0d0d0d;
 }
 
 .gc-code-header {
@@ -3466,37 +3438,34 @@ span[data-ai-ghost] {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.7rem 0.9rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(15, 23, 42, 0.78);
+  padding: 0.25rem 0.5rem;
+  background: #2f2f2f;
+  color: #b4b4b4;
 }
 
 .gc-code-language {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #cbd5e1;
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: lowercase;
+  color: #b4b4b4;
 }
 
 .gc-code-copy {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  padding: 0.35rem 0.7rem;
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: #e2e8f0;
-  background: rgba(30, 41, 59, 0.88);
-  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  color: #b4b4b4;
+  background: transparent;
+  border: none;
+  transition: color 0.15s ease;
 }
 
 .gc-code-copy:hover {
-  background: rgba(51, 65, 85, 0.95);
-  border-color: rgba(129, 140, 248, 0.4);
-  transform: translateY(-1px);
+  background: transparent;
+  color: #ffffff;
 }
 
 .gc-code-pre {
@@ -3504,6 +3473,26 @@ span[data-ai-ghost] {
   overflow-x: auto;
   padding: 1rem;
   background: transparent;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.gc-code-pre::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.gc-code-pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gc-code-pre::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.gc-code-pre::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .gc-code-content {
@@ -3517,31 +3506,31 @@ span[data-ai-ghost] {
 }
 
 .gc-token-comment {
-  color: #64748b;
+  color: #6a9955;
 }
 
 .gc-token-string {
-  color: #86efac;
+  color: #ce9178;
 }
 
 .gc-token-keyword {
-  color: #c4b5fd;
+  color: #569cd6;
 }
 
 .gc-token-number {
-  color: #fca5a5;
+  color: #b5cea8;
 }
 
 .gc-token-function {
-  color: #7dd3fc;
+  color: #dcdcaa;
 }
 
 .gc-token-property {
-  color: #f9a8d4;
+  color: #9cdcfe;
 }
 
 .gc-token-tag {
-  color: #fdba74;
+  color: #569cd6;
 }
 
 .gc-thinking {

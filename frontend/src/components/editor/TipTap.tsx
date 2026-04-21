@@ -12,7 +12,11 @@ import { ImageUploadExtension } from "../../extensions/imageUploadExtension";
 import { MarkerHighlightExtension } from "../../extensions/markerHighlightExtension";
 import { AiGhostExtension } from "../../extensions/aiGhostExtension";
 import { AiInlineMenu } from "./AiInlineMenu";
+import { TipTapCodeBlock } from "./TipTapCodeBlock";
 
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, common } from "lowlight";
+import { ReactNodeViewRenderer } from "@tiptap/react";
 import { TaskList } from "@tiptap/extension-task-list";
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TextAlign } from "@tiptap/extension-text-align";
@@ -38,11 +42,10 @@ const CODE_MARKERS = [
 
 const looksLikeCodeSnippet = (text: string) => {
   if (!text.includes("\n")) return false;
-  // If text looks like a document, it's NOT code
-  if (DOCUMENT_PATTERNS.some((p) => p.test(text))) return false;
-  // Require at least 2 different code markers to be confident
   const matchCount = CODE_MARKERS.filter((p) => p.test(text)).length;
-  return matchCount >= 2;
+  if (matchCount >= 2) return true; // Strong code confidence overrides document patterns
+  if (DOCUMENT_PATTERNS.some((p) => p.test(text))) return false; // Likely a document with a stray code word
+  return matchCount >= 1;
 };
 
 /** Lightweight Markdown → HTML converter for paste handling */
@@ -99,6 +102,43 @@ const markdownToHtml = (md: string): string => {
       continue;
     }
 
+    // Tab-separated table detection
+    if (line.includes("\t")) {
+      const tabsCount = line.split("\t").length - 1;
+      if (tabsCount > 0) {
+        let isTabTable = false;
+        let j = i + 1;
+        // Require at least one consecutive row with the exact same number of tabs to confirm it's a table
+        while (j < lines.length && lines[j].includes("\t") && lines[j].split("\t").length - 1 === tabsCount) {
+          isTabTable = true;
+          j++;
+        }
+
+        if (isTabTable) {
+          const tableHtml: string[] = ["<table>"];
+          // Optional Header vs Body inference: usually we just assume first row is header
+          const headers = lines[i].split("\t").map((c) => c.trim());
+          tableHtml.push("<tr>");
+          headers.forEach((h) => tableHtml.push(`<th>${inlineFormat(h)}</th>`));
+          tableHtml.push("</tr>");
+          i++;
+
+          // Body rows
+          while (i < j) {
+            const cells = lines[i].split("\t").map((c) => c.trim());
+            tableHtml.push("<tr>");
+            cells.forEach((c) => tableHtml.push(`<td>${inlineFormat(c)}</td>`));
+            tableHtml.push("</tr>");
+            i++;
+          }
+
+          tableHtml.push("</table>");
+          out.push(tableHtml.join(""));
+          continue;
+        }
+      }
+    }
+
     // Blockquote
     if (line.match(/^\s*>\s?/)) {
       const content = line.replace(/^\s*>\s?/, "");
@@ -149,14 +189,14 @@ const markdownToHtml = (md: string): string => {
   return out.join("");
 };
 
-/** Convert inline Markdown (bold, italic, code, links) to HTML */
+/* Convert inline Markdown (bold, italic, code, links) to HTML */
 const inlineFormat = (text: string): string =>
   text
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
-/** Split a Markdown table row into cells */
+/* Split a Markdown table row into cells */
 const parseTableRow = (row: string): string[] =>
   row
     .replace(/^\|/, "")
@@ -233,6 +273,14 @@ const Indent = Extension.create({
   },
 });
 
+const lowlight = createLowlight(common);
+
+const CustomCodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(TipTapCodeBlock);
+  },
+}).configure({ lowlight });
+
 import { useAiChat } from "@/hooks/useAiChat";
 
 type TipTapProps = {
@@ -250,8 +298,9 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
     editable,
     extensions: [
       StarterKit.configure({
-        codeBlock: { HTMLAttributes: { class: "editor-code-block" } },
+        codeBlock: false, // Disabling native codeBlock to use our CustomCodeBlock
       }),
+      CustomCodeBlock,
       TextStyle,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Color, FontSize, Indent, TaskList,
@@ -271,41 +320,54 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
         const plainText = event.clipboardData?.getData("text/plain") ?? "";
         const html = event.clipboardData?.getData("text/html") ?? "";
 
-        // If clipboard has rich HTML with tables, let TipTap handle it natively
-        if (html && /<(?:table|tr|td|th)\b/i.test(html)) {
+        // 1. Prioritize native IDE code blocks
+        const isIdeCopy = html && /vscode-editor-data|font-family:.*?(?:Consolas|monospace|Courier|JetBrains)/i.test(html);
+        const isCode = plainText && (isIdeCopy || looksLikeCodeSnippet(plainText));
+
+        if (isCode) {
+          // Wrap in code block if there's no rich HTML indicating it's a styled document
+          if (!html || (/<(?:pre|code|div|span)\b/i.test(html) && !/<(?:h[1-6]|ul|ol|table)\b/i.test(html))) {
+            event.preventDefault();
+            const { schema, tr } = view.state;
+            const codeNode = schema.nodes.codeBlock?.create({}, schema.text(plainText.replace(/\r\n/g, "\n")));
+            if (codeNode) {
+              view.dispatch(tr.replaceSelectionWith(codeNode).scrollIntoView());
+              return true;
+            }
+          }
+        }
+
+        // 2. Is there valid strong rich HTML?
+        // If the OS/browser gave us real formatted HTML components, let TipTap handle it natively instead of guessing with Markdown.
+        // We include data-type="table" because TipTap sometimes uses divs with data attributes.
+        const hasRichHtml = html && /<(?:h[1-6]|ul|ol|li|table|tr|td|th|blockquote|strong|em|b|i|u|a\b|div[^>]*data-)/i.test(html);
+        if (hasRichHtml) {
           return false;
         }
 
-        // If it looks like a document (Markdown), convert to HTML and insert
-        if (plainText && DOCUMENT_PATTERNS.some((p) => p.test(plainText))) {
+        // 3. Fallback: Parse as Markdown if it matches document structure
+        // This gracefully catches mobile Plain Text Table copies or raw Markdown pastes
+        if (plainText && DOCUMENT_PATTERNS.some((p) => p.test(plainText)) || plainText.includes("\t")) {
+          // Even if it doesn't match DOCUMENT_PATTERNS perfectly, tab-separation strongly hints at a table
           event.preventDefault();
           const convertedHtml = markdownToHtml(plainText);
           const tempDiv = document.createElement("div");
           tempDiv.innerHTML = convertedHtml;
           const { state } = view;
           const parser = DOMParser.fromSchema(state.schema);
-          const parsedSlice = parser.parseSlice(tempDiv);
-          const tr = state.tr.replaceSelection(parsedSlice);
-          view.dispatch(tr.scrollIntoView());
-          return true;
+          
+          try {
+            const parsedSlice = parser.parseSlice(tempDiv);
+            const tr = state.tr.replaceSelection(parsedSlice);
+            view.dispatch(tr.scrollIntoView());
+            return true;
+          } catch (e) {
+            console.warn("Markdown parse failed, falling back to basic paste", e);
+            return false;
+          }
         }
 
-        // Only wrap in code block if it genuinely looks like source code
-        if (!plainText || !looksLikeCodeSnippet(plainText)) {
-          return false;
-        }
-
-        // If there's HTML but NO code tags, skip auto-wrapping
-        if (html && !/<(?:pre|code)\b/i.test(html)) {
-          return false;
-        }
-
-        event.preventDefault();
-        const { schema, tr } = view.state;
-        const codeNode = schema.nodes.codeBlock?.create({}, schema.text(plainText.replace(/\r\n/g, "\n")));
-        if (!codeNode) return false;
-        view.dispatch(tr.replaceSelectionWith(codeNode).scrollIntoView());
-        return true;
+        return false;
       },
     },
   });
