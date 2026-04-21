@@ -1,6 +1,28 @@
+import React from "react";
 import { Check, CheckCheck, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 import type { Message, AssistResult, SelectionRange } from "@/components/ai/types";
+
+const markdownComponents = {
+  code({ className, children, ...props }: any) {
+    const rawCode = String(children ?? "").replace(/\n$/, "");
+    const language = className?.replace("language-", "") || "";
+    const isBlock = Boolean(language) || rawCode.includes("\n");
+
+    if (!isBlock) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+
+    return <MarkdownCodeBlock code={rawCode} language={language} />;
+  },
+};
+
 
 type AiMessageProps = {
   message: Message;
@@ -42,8 +64,8 @@ const AiMessage = ({
       </div>
       <div className="max-w-full overflow-hidden ">
         {message.role === "assistant" ? (
-          <div className="assistant-markdown prose prose-sm max-w-full overflow-hidden break-words">
-            <ReactMarkdown>{String(displayText || "")}</ReactMarkdown>
+          <div className="gc-markdown max-w-full overflow-hidden break-words">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{String(displayText || "")}</ReactMarkdown>
           </div>
         ) : (
           // User's own messages — plain text, no markdown needed
@@ -76,4 +98,14 @@ const AiMessage = ({
   );
 };
 
-export default AiMessage;
+export default React.memo(AiMessage, (prevProps, nextProps) => {
+  return (
+    prevProps.message === nextProps.message &&
+    prevProps.displayText === nextProps.displayText &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.showActions === nextProps.showActions &&
+    prevProps.result === nextProps.result &&
+    prevProps.selectionRange === nextProps.selectionRange &&
+    prevProps.copied === nextProps.copied
+  );
+});

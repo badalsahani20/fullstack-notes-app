@@ -5,6 +5,26 @@ import type { AssistResult } from "@/components/ai/types";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
+
+const markdownComponents = {
+  code({ className, children, ...props }: any) {
+    const rawCode = String(children ?? "").replace(/\n$/, "");
+    const language = className?.replace("language-", "") || "";
+    const isBlock = Boolean(language) || rawCode.includes("\n");
+
+    if (!isBlock) {
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    }
+
+    return <MarkdownCodeBlock code={rawCode} language={language} />;
+  },
+};
 
 type AiResultDialogProps = {
   result: AssistResult | null;
@@ -83,15 +103,10 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
           </DialogHeader>
 
           <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[var(--panel-bg)] selection:bg-[var(--accent-strong)]/30">
-            <div className="prose prose-sm dark:prose-invert max-w-none text-[var(--text-strong)]">
+            <div className="gc-markdown text-[var(--text-strong)] max-w-full overflow-hidden">
                <ReactMarkdown
-                components={{
-                    h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-3 mt-4 first:mt-0" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-base font-bold mb-2 mt-4" {...props} />,
-                    p: ({node, ...props}) => <p className="leading-relaxed mb-4 text-[14px] opacity-90" {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-4 space-y-2 opacity-90" {...props} />,
-                    li: ({node, ...props}) => <li className="text-[14px]" {...props} />,
-                }}
+                remarkPlugins={[remarkGfm]}
+                components={markdownComponents}
                >
                  {result.suggestion}
                </ReactMarkdown>

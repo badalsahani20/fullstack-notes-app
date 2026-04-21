@@ -279,7 +279,7 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
   addNodeView() {
     return ReactNodeViewRenderer(TipTapCodeBlock);
   },
-}).configure({ lowlight });
+}).configure({ lowlight, defaultLanguage: "plaintext" });
 
 import { useAiChat } from "@/hooks/useAiChat";
 
@@ -413,4 +413,12 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
   );
 };
 
-export default React.memo(TipTap);
+export default React.memo(TipTap, (prevProps, nextProps) => {
+  return (
+    prevProps.content === nextProps.content &&
+    prevProps.editable === nextProps.editable &&
+    prevProps.onChange === nextProps.onChange &&
+    prevProps.onEditorReady === nextProps.onEditorReady &&
+    prevProps.aiChat?.loadingAction === nextProps.aiChat?.loadingAction
+  );
+});

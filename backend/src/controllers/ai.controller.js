@@ -137,7 +137,8 @@ export const aiAssistController = catchAsync(async (req, res) => {
 
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, noteContext = "", imageBase64, sessionId } = req.body;
+  const { message, imageBase64, sessionId } = req.body;
+  const noteContext = req.body.noteContext || "";
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res.status(400).json({
@@ -146,7 +147,9 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     });
   }
 
-  const isGlobalChat = !noteContext || !noteContext.trim();
+  // Global chat intentionally omits noteContext.
+  // The editor AI panel always provides it, even if an empty string.
+  const isGlobalChat = typeof req.body.noteContext === "undefined";
 
   // Load stored history from DB
   let session = null;
@@ -220,6 +223,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     success: true,
     data: {
       reply: result.reply,
+      history: result.history,
       sessionId: activeSessionId, // frontend stores this for subsequent messages
     },
   });

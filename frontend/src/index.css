@@ -3305,19 +3305,22 @@ span[data-ai-ghost] {
   margin-bottom: 0;
 }
 
-.gc-markdown ul,
+.gc-markdown ul {
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+  list-style-type: disc;
+  color: inherit;
+}
+
 .gc-markdown ol {
   margin: 0.4rem 0;
   padding-left: 1.2rem;
+  list-style-type: decimal;
+  color: inherit;
 }
 
 .gc-markdown li {
   margin-bottom: 0.25rem;
-}
-
-.gc-markdown ul,
-.gc-markdown ol {
-  color: inherit;
 }
 
 .gc-markdown code {
@@ -3378,20 +3381,23 @@ span[data-ai-ghost] {
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Tables Ã¢â€â‚¬Ã¢â€â‚¬ */
 .gc-markdown table {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
   font-size: 0.82rem;
   margin: 0.75rem 0;
-  overflow: hidden;
   border-radius: 0.55rem;
   border: 1px solid var(--divider);
+  white-space: nowrap;
 }
 
 .gc-markdown th {
   background: color-mix(in srgb, var(--surface-muted) 80%, #6366f1 8%);
   color: var(--text-strong);
   font-weight: 600;
-  padding: 0.45rem 0.7rem;
+  padding: 0.65rem 0.85rem;
   text-align: left;
   border-bottom: 1px solid var(--divider);
   font-size: 0.8rem;
@@ -3399,11 +3405,13 @@ span[data-ai-ghost] {
 }
 
 .gc-markdown td {
-  padding: 0.42rem 0.7rem;
+  padding: 0.55rem 0.85rem;
   border-bottom: 1px solid color-mix(in srgb, var(--divider) 60%, transparent);
   color: inherit;
   vertical-align: top;
   line-height: 1.5;
+  min-width: 120px;
+  white-space: normal;
 }
 
 .gc-markdown tr:last-child td {

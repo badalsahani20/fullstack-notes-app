@@ -151,7 +151,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   /** Runs one of the quick-action presets (Improve, Summarize, Brainstorm, Rewrite) directly into the editor */
   const runAction = async (action: AiAction) => {
     const { text: selectedText, range } = getSelection(editor);
-    const sourceText = selectedText || plainNoteText;
+    const sourceText = selectedText || editor?.getText() || plainNoteText;
 
     if (!sourceText) {
       toast.error("No text found to process. Add content or select text first.");

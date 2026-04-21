@@ -3,7 +3,7 @@ import { NodeViewWrapper, NodeViewContent, type NodeViewProps } from "@tiptap/re
 import { CheckCheck, Copy } from "lucide-react";
 
 const SUPPORTED_LANGUAGES = [
-  { value: "", label: "Code (Auto)" },
+  { value: "plaintext", label: "Plain Text" },
   { value: "javascript", label: "JavaScript" },
   { value: "typescript", label: "TypeScript" },
   { value: "html", label: "HTML" },
@@ -28,7 +28,7 @@ export const TipTapCodeBlock = ({ node, updateAttributes }: NodeViewProps) => {
     setTimeout(() => setCopied(false), 1400);
   };
 
-  const language = node.attrs.language || "";
+  const language = node.attrs.language || "plaintext";
 
   return (
     <NodeViewWrapper className="gc-code-block editor-code-block tiptap-nodeview my-4">

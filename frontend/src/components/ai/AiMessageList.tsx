@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import AiMessage from "@/components/ai/AiMessage";
 import type { Message, AssistResult, SelectionRange } from "@/components/ai/types";
 
@@ -107,4 +107,17 @@ const AiMessageList = ({
   );
 };
 
-export default AiMessageList;
+export default React.memo(AiMessageList, (prevProps, nextProps) => {
+  return (
+    prevProps.messages === nextProps.messages &&
+    prevProps.streamingMessageId === nextProps.streamingMessageId &&
+    prevProps.streamedMessageText === nextProps.streamedMessageText &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.result === nextProps.result &&
+    prevProps.selectionRange === nextProps.selectionRange &&
+    prevProps.copied === nextProps.copied &&
+    prevProps.isSending === nextProps.isSending &&
+    prevProps.hasHistory === nextProps.hasHistory &&
+    prevProps.historyCount === nextProps.historyCount
+  );
+});
