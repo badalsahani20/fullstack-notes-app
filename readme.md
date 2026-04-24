@@ -2,7 +2,7 @@
 
 A production-grade, full-stack notes application built on the MERN stack — featuring a professional rich-text editor, multi-provider AI orchestration, optimistic concurrency control, and banking-level authentication patterns.
 
-**[Live Demo](https://notesify-eta.vercel.app) · [GitHub](https://github.com/badalsahani20/fullstack-notes-app)**
+**[Live Demo](https://notesify.in) · [GitHub](https://github.com/badalsahani20/fullstack-notes-app)**
 
 <p align="center">
   <img src="./assets/dashboard.png" alt="Notesify Dashboard" width="100%">
