@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
 
 // ─── Marquee Component (Interactive)
 const MarqueeRow = ({ prompts, direction = "left", onChipClick }: { prompts: string[], direction?: "left" | "right", onChipClick: (s: string) => void }) => {
