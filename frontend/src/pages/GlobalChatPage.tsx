@@ -85,7 +85,7 @@ const MarqueeRow = ({ prompts, direction = "left", onChipClick }: { prompts: str
   </div>
 );
 
-const EmptyState = ({ onChipClick }: { onChipClick: (text: string) => void }) => (
+const EmptyState = ({ onChipClick, prompts }: { onChipClick: (text: string) => void, prompts: { students: string[], devs: string[] } }) => (
   <div className="gc-empty">
     <div className="gc-empty-orb ai-rail-button ai-rail-button-active !w-20 !h-20 !rounded-3xl mx-auto cursor-default font-medium">
       <div className="iris-orb iris-orb-lg" />
@@ -97,13 +97,14 @@ const EmptyState = ({ onChipClick }: { onChipClick: (text: string) => void }) =>
     </p>
     
     <div className="gc-marquee-wrapper">
-      <MarqueeRow prompts={STUDENT_PROMPTS} onChipClick={onChipClick} />
-      <MarqueeRow prompts={DEV_PROMPTS} direction="right" onChipClick={onChipClick} />
+      <MarqueeRow prompts={prompts.students} onChipClick={onChipClick} />
+      <MarqueeRow prompts={prompts.devs} direction="right" onChipClick={onChipClick} />
     </div>
   </div>
 );
 
 
+/* ─── Main Page ───────────────────────────────── */
 const GlobalChatPage = () => {
   const {
     sessions, sessionsLoading,
@@ -113,6 +114,7 @@ const GlobalChatPage = () => {
   } = useGlobalChatStore();
 
   const [input, setInput] = useState("");
+  const [prompts, setPrompts] = useState({ students: STUDENT_PROMPTS, devs: DEV_PROMPTS });
 
   const isMobile = useMediaQuery("(max-width: 960px)");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -126,7 +128,22 @@ const GlobalChatPage = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+  useEffect(() => { 
+    fetchSessions(); 
+    // Fetch dynamic prompts
+    import("@/lib/api").then(({ default: api }) => {
+      api.get("/public/prompts")
+        .then(res => {
+          if (res.data.success) {
+            setPrompts({
+              students: res.data.data.studentPrompts,
+              devs: res.data.data.devPrompts
+            });
+          }
+        })
+        .catch(() => {}); // Keep fallbacks on error
+    });
+  }, [fetchSessions]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -253,7 +270,7 @@ const GlobalChatPage = () => {
               <div className="gc-loading-dot" style={{ animationDelay: "300ms" }} />
             </div>
           ) : messages.length === 0 ? (
-            <EmptyState onChipClick={(text) => sendMessage(text)} />
+            <EmptyState onChipClick={(text) => sendMessage(text)} prompts={prompts} />
           ) : (
             messages.map((msg) => {
               const isActiveStream = msg.id === streamingMessageId;
