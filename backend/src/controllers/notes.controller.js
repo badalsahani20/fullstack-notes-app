@@ -201,6 +201,9 @@ export const updateNote = catchAsync(async (req, res) => {
 export const deleteNote = catchAsync(async (req, res) => {
     const { version } = req.body;
 
+    const noteBefore = await NoteService.findNotesById(req.params.id, req.user._id);
+    const oldSlug = noteBefore?.shareSlug;
+
     const result = await NoteService.removeNote(req.params.id, req.user._id, version);
     if(!result) {
         await clearNoteCaches(req.user._id);
@@ -215,6 +218,7 @@ export const deleteNote = catchAsync(async (req, res) => {
 
     // Invalidate cache
     await clearNoteCaches(req.user._id);
+    if (oldSlug) await clearSharedNoteCache(oldSlug);
 
     res.status(200).json({message: "Note Moved to Trash" });
 })
@@ -308,6 +312,9 @@ export const toggleNoteShare = catchAsync(async (req, res) => {
   const { isShared, expiresAt } = req.body;
   const { id } = req.params;
 
+  const noteBefore = await NoteService.findNotesById(id, req.user._id);
+  const oldSlug = noteBefore?.shareSlug;
+
   const updatedNote = await NoteService.updateShareSettings(id, req.user._id, { isShared, expiresAt });
 
   if(!updatedNote) {
@@ -315,9 +322,10 @@ export const toggleNoteShare = catchAsync(async (req, res) => {
   }
 
   await clearNoteCaches(req.user._id);
-  if (updatedNote.shareSlug) await clearSharedNoteCache(updatedNote.shareSlug);
-  // Also clear the old slug if it was just revoked (though slug would be undefined, so we can't reliably clear it here unless we returned the old slug)
-  // But wait, our share revoking clears the slug immediately. Let's just let it naturally expire or be 404 since db check fails on miss.
+  if (oldSlug) await clearSharedNoteCache(oldSlug);
+  if (updatedNote.shareSlug && updatedNote.shareSlug !== oldSlug) {
+    await clearSharedNoteCache(updatedNote.shareSlug);
+  }
 
   res.status(200).json({
     success: true,
@@ -366,8 +374,18 @@ export const getSharedNote = catchAsync(async (req, res) => {
     updatedAt: result.note.updatedAt
   };
 
-  // 3. Cache the valid public note for 1 hour to handle traffic spikes naturally
-  await redis.set(cacheKey, JSON.stringify(responseData), { ex: 3600 });
+  // 3. Calculate TTL: Use the smaller of 1 hour OR the actual remaining time until expiry
+  let ttl = 3600; 
+  if (result.note.shareExpiresAt) {
+    const secondsUntilExpiry = Math.floor((new Date(result.note.shareExpiresAt).getTime() - Date.now()) / 1000);
+    if (secondsUntilExpiry <= 0) {
+      return res.status(410).json({ message: "This share link has expired" });
+    }
+    ttl = Math.min(ttl, secondsUntilExpiry);
+  }
+
+  // 4. Cache the valid public note
+  await redis.set(cacheKey, JSON.stringify(responseData), { ex: ttl });
 
   res.status(200).json({
     title: responseData.title,

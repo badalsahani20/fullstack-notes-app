@@ -35,6 +35,7 @@ type GlobalChatStore = {
   startNewChat: () => void;
   sendMessage: (text: string, image?: string | null) => Promise<void>;
   setAttachedImage: (img: string | null) => void;
+  reset: () => void;
 };
 
 export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
@@ -146,4 +147,14 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   },
 
   setAttachedImage: (img) => set({ attachedImage: img }),
+  reset: () => set({
+    sessions: [],
+    sessionsLoading: false,
+    activeSessionId: null,
+    messages: [],
+    messagesLoading: false,
+    isSending: false,
+    attachedImage: null,
+    imageDisabled: false,
+  }),
 }));

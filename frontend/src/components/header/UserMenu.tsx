@@ -12,25 +12,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/useAuthStore";
-import api from "@/lib/api";
 import { toast } from "sonner";
+import { logout } from "@/lib/auth";
 
-/**
- * The user profile dropdown in the top header.
- * Handles displaying the user's name/avatar, and the logout action.
- */
 const UserMenu = () => {
-  const { user, clearAuth } = useAuthStore();
+  const { user } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      await api.post("/users/logout");
-    } catch (error) {
-      console.error("Logout failed", error);
-    }
-    clearAuth();
-    navigate("/login");
+    await logout();
   };
 
   const initials = useMemo(() => {

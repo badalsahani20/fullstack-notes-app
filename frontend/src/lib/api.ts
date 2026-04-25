@@ -1,5 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { useAuthStore } from "../store/useAuthStore";
+import { clearAllLocalState } from "./state";
 
 //_retry doesn't exist in InternalAxiosRequestConfig, so we need to extend it
 interface CustomAxiosRequest extends InternalAxiosRequestConfig {
@@ -84,7 +85,7 @@ api.interceptors.request.use(async (config) => {
     try {
       token = await requestSessionRefresh();
     } catch {
-      useAuthStore.getState().clearAuth();
+      clearAllLocalState();
       if (!isPublicPage()) window.location.href = "/login";
       throw createAuthError(config);
     }
@@ -94,7 +95,7 @@ api.interceptors.request.use(async (config) => {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   } else if (!isAuthRoute(config.url)) {
-    useAuthStore.getState().clearAuth();
+    clearAllLocalState();
     if (!isPublicPage()) window.location.href = "/login";
     throw createAuthError(config);
   }
@@ -117,7 +118,7 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshErr) {
-        useAuthStore.getState().clearAuth();
+        clearAllLocalState();
         if (!isPublicPage()) window.location.href = "/login";
         return Promise.reject(refreshErr);
       }

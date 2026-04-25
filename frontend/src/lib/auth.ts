@@ -1,4 +1,5 @@
 import api from "./api";
+import { clearAllLocalState } from "./state";
 
 export interface User {
     id: string;
@@ -9,7 +10,7 @@ export interface User {
 // * Validate the session by calling the /me endpoint.
 export const checkAuth = async (): Promise<User | null> => {
     try {
-        const response = await api.get("/auth/me");
+        const response = await api.get("/users/me");
         return response.data;
     } catch {
         return null;
@@ -19,9 +20,12 @@ export const checkAuth = async (): Promise<User | null> => {
 // * Logs out by calling the backend to clear the HttpOnly cookies.
 export const logout = async () => {
     try {
-        await api.post("/auth/logout");
-        window.location.href = "/login";
+        await api.post("/users/logout");
     } catch (error) {
-        console.error("Logout failed", error);
+        console.error("Logout failed on server", error);
+    } finally {
+        // Always clear local state even if server request fails
+        clearAllLocalState();
+        window.location.href = "/login";
     }
 }

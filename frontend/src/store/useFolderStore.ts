@@ -24,6 +24,7 @@ interface FolderState {
     updateFolder: (id: string, updates: Partial<Pick<Folder, "name" | "color">>) => Promise<void>;
     deleteFolder: (id: string) => Promise<void>;
     setActiveFolder: (id: string | null) => void;
+    reset: () => void;
 }
 
 export const useFolderStore = create<FolderState>((set, get) => ({
@@ -121,4 +122,12 @@ export const useFolderStore = create<FolderState>((set, get) => ({
     },
 
     setActiveFolder: (_id) => set({ activeFolderId:_id}),
+    reset: () => set({ 
+        folders: [], 
+        fetchedAt: 0, 
+        hasFetched: false, 
+        loading: false, 
+        error: null, 
+        activeFolderId: null 
+    }),
 }))

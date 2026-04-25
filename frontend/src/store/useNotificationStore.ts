@@ -79,6 +79,7 @@ type NotificationStore = {
   markAllAsRead: () => void;
   removeNotification: (id: string) => void;
   clearAll: () => void;
+  reset: () => void;
 };
 
 export const useNotificationStore = create<NotificationStore>()(
@@ -113,6 +114,7 @@ export const useNotificationStore = create<NotificationStore>()(
       })),
 
       clearAll: () => set({ notifications: [] }),
+      reset: () => set({ notifications: STATIC_NOTIFICATIONS }),
     }),
     {
       name: 'notesify-notifications', // localStorage key

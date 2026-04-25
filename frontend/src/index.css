@@ -62,6 +62,8 @@
   --sidebar-row-hover: #F1F3F5;
   --sidebar-row-active: rgba(59, 130, 246, 0.08);
   --sidebar-badge-bg: #E9ECEF;
+  --code-bg: #fff1f2;
+  --code-text: #e11d48;
 }
 
 /* Page Transitions */
@@ -134,6 +136,8 @@
   --sidebar-row-hover: rgba(255, 255, 255, 0.035);
   --sidebar-row-active: rgba(30, 64, 175, 0.2);
   --sidebar-badge-bg: rgba(255, 255, 255, 0.06);
+  --code-bg: rgba(253, 164, 175, 0.12);
+  --code-text: #fda4af;
 
   --theme-transition: background 0.4s ease-in-out,
     color 0.4s ease-in-out,
@@ -911,7 +915,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--muted-text);
 }
@@ -2061,9 +2065,10 @@
 
 .assistant-markdown :where(code):not(:where(pre code)) {
   border-radius: 0.45rem;
-  background: color-mix(in srgb, var(--surface-muted) 82%, #10223d);
-  color: color-mix(in srgb, var(--accent-strong) 76%, #dc2626);
+  background: var(--code-bg);
+  color: var(--code-text);
   padding: 0.14rem 0.36rem;
+  border: 1px solid color-mix(in srgb, var(--code-text) 15%, transparent);
 }
 
 .assistant-markdown pre {
@@ -2242,11 +2247,12 @@
 
 .ProseMirror code {
   border-radius: 0.45rem;
-  background: color-mix(in srgb, var(--surface-muted) 82%, #10223d);
-  color: #fda4af;
+  background: var(--code-bg);
+  color: var(--code-text);
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
-  font-size: 0.9em;
+  font-size: 0.88em;
   padding: 0.18rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--code-text) 15%, transparent);
 }
 
 

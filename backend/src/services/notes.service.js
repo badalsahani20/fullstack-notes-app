@@ -230,7 +230,7 @@ export const updateShareSettings = async (noteId, userId, { isShared, expiresAt}
         }
         note.isShared = true;
         // Fallback to 24 hours if no expiry is provided (or if 'Forever' was somehow sent)
-        note.shareExpiresAt = expiresAt ? new Date(expiresAt) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        note.shareExpiresAt = expiresAt ? new Date(expiresAt) : new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours in ms
     } else {
         note.isShared = false;
         note.shareSlug = undefined; // Hard delete the slug so the next share creates a new one

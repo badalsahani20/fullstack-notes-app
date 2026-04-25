@@ -34,6 +34,7 @@ interface NoteState {
   setSearchQuery: (query: string) => void;
   activeNoteId: string | null;
   setActiveNoteId: (id: string | null) => void;
+  reset: () => void;
 }
 
 export const useNoteStore = create<NoteState>((set) => ({
@@ -41,4 +42,5 @@ export const useNoteStore = create<NoteState>((set) => ({
   setSearchQuery: (query: string) => set({ searchQuery: query }),
   activeNoteId: null,
   setActiveNoteId: (id: string | null) => set({ activeNoteId: id }),
+  reset: () => set({ searchQuery: "", activeNoteId: null }),
 }));

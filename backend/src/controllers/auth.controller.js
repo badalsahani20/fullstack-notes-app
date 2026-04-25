@@ -3,6 +3,7 @@ import * as AuthService from "../services/auth.service.js";
 import catchAsync from "../utils/catchAsync.js";
 import crypto from "crypto";
 import * as MailService from "../services/mail.service.js";
+import { redis } from "../../config/redis.js";
 
 const getRefreshCookieOptions = () => ({
   httpOnly: true,
@@ -167,8 +168,45 @@ export const getMe = catchAsync(async (req, res, next) => {
 
 export const googleCallback = catchAsync(async (req, res) => {
   const user = req.user;
+  
+  // 1. Generate a secure, short-lived temporary code
+  const tempCode = crypto.randomBytes(32).toString("hex");
+  
+  // 2. Store in Redis (valid for 60 seconds)
+  // Mapping code -> userId
+  await redis.set(`oauth_code:${tempCode}`, user._id.toString(), { ex: 60 });
+
+  // 3. Redirect with the code
+  res.redirect(
+    `${process.env.FRONTEND_URL}/oauth-success?code=${tempCode}`
+  );
+});
+
+export const exchangeCode = catchAsync(async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ message: "No exchange code provided" });
+  }
+
+  // 1. Verify code in Redis
+  const userId = await redis.get(`oauth_code:${code}`);
+  if (!userId) {
+    return res.status(400).json({ message: "Invalid or expired exchange code" });
+  }
+
+  // 2. Consume the code (delete it so it can't be reused)
+  await redis.del(`oauth_code:${code}`);
+
+  // 3. Generate real tokens
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const accessToken = user.generateAccessToken();
   const refreshToken = user.generateRefreshToken();
 
+  // 4. Store the refresh token in DB (Rotation logic)
   const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
   await User.updateOne(
     { _id: user._id },
@@ -182,14 +220,21 @@ export const googleCallback = catchAsync(async (req, res) => {
     }
   );
 
-  res.cookie("refreshToken", refreshToken, {
-    ...getRefreshCookieOptions(),
+  // 5. Set cookie and return access token
+  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
+  
+  res.status(200).json({
+    success: true,
+    accessToken,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      isVerified: user.isVerified,
+    }
   });
-
-  res.redirect(
-    `${process.env.FRONTEND_URL}/oauth-success`
-  );
-})
+});
 
 export const forgotPassword = catchAsync(async(req, res) => {
   const { email } = req.body;
