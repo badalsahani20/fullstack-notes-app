@@ -2,7 +2,7 @@ import crypto from "crypto";
 import Notes from "../models/notes.model.js";
 import AiAssistCache from "../models/aiAssistCache.model.js";
 import catchAsync from "../utils/catchAsync.js";
-import { checkGrammar, chatWithAi, runAiAssist, generateTitle } from "../services/ai.service.js";
+import { checkGrammar, chatWithAi, runAiAssist, generateTitle, getDynamicPrompts } from "../services/ai.service.js";
 import GlobalChatSession from "../models/globalChatSession.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
 
@@ -265,33 +265,10 @@ export const getAllSessionsController = catchAsync(async (req, res) => {
 
 // GET /api/public/prompts — dynamic quick prompts for the chat empty state
 export const getDynamicPromptsController = catchAsync(async (req, res) => {
-  const studentPrompts = [
-    "Summarize 'The Great Gatsby'",
-    "Explain the Pythagoras theorem",
-    "How to write a strong thesis statement?",
-    "Outline a psychology essay",
-    "Most important themes in '1984'",
-    "Explain photosynthesis simply",
-    "Key causes of the French Revolution",
-    "Solve x² + 5x + 6 = 0",
-  ];
-
-  const devPrompts = [
-    "Refactor a React component",
-    "Explain Redis caching logic",
-    "Optimize a complex SQL query",
-    "Setup a Vite + Tailwind project",
-    "How to handle CORS in Node.js?",
-    "Write a unit test with Vitest",
-    "Explain Docker containers",
-    "Best practices for API security",
-  ];
+  const prompts = await getDynamicPrompts();
 
   res.status(200).json({
     success: true,
-    data: {
-      studentPrompts,
-      devPrompts,
-    },
+    data: prompts,
   });
 });

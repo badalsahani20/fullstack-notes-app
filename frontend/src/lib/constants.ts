@@ -1,7 +1,6 @@
-/* ─── Global Chat Seed Prompts ─────────────────── 
-   These serve as fallbacks to prevent a "flash of empty content"
-   while the backend API is loading.
-   ─────────────────────────────────────────────── */
+// These serve as fallbacks to prevent a "flash of empty content"
+// while the backend API is loading.
+
 
 export const STUDENT_PROMPTS = [
   "Summarize 'The Great Gatsby'",
