@@ -41,10 +41,10 @@ const VerifyEmailPage = () => {
       try {
         // Small delay to ensure any background session provider check settles first
         await new Promise(resolve => setTimeout(resolve, 800));
-        
+
         const apiUrl = import.meta.env.VITE_API_URL;
         console.log("Starting verification with fetch...");
-        
+
         const res = await fetch(`${apiUrl}/users/verify-email/${token}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -78,9 +78,9 @@ const VerifyEmailPage = () => {
             isVerified: true,
           },
           data.accessToken
-      );
+        );
 
-    } catch (error: any) {
+      } catch (error: any) {
         clearTimeout(timeoutId);
         if (!isMounted) return;
 
@@ -95,8 +95,8 @@ const VerifyEmailPage = () => {
         }
 
         setStatus("error");
-        setMessage(error.message?.includes("Abort") 
-          ? "The request timed out. Please check your internet or try refreshing." 
+        setMessage(error.message?.includes("Abort")
+          ? "The request timed out. Please check your internet or try refreshing."
           : "This verification link is invalid or has expired.");
       }
     };
@@ -207,10 +207,10 @@ const VerifyEmailPage = () => {
                 <Link to="/signup">Create a new account</Link>
               </Button>
             ) : token ? (
-              <Button 
+              <Button
                 asChild={status === "pending" && showManualContinue}
-                type="button" 
-                disabled={status === "pending" && !showManualContinue} 
+                type="button"
+                disabled={status === "pending" && !showManualContinue}
                 className={`auth-primary-button h-12 w-full ${status === "pending" && !showManualContinue ? "cursor-default opacity-90" : "auth-gradient-hover"}`}
               >
                 {status === "pending" && showManualContinue ? (

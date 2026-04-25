@@ -22,7 +22,7 @@ const OAuthSuccess = () => {
           // Fallback legacy flow: Use the cookie to refresh
           await requestSessionRefresh();
         }
-        
+
         navigate("/", { replace: true });
       } catch (error) {
         console.error("OAuth completion failed:", error);

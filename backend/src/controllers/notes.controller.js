@@ -25,7 +25,7 @@ const queueAutoTitleGeneration = (note, userId) => {
   }
 
   const plainText = stripHtml(note.content).trim();
-  if (!plainText) {
+  if (plainText.length < 120) {
     return;
   }
 

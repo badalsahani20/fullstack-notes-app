@@ -1,4 +1,4 @@
-﻿import { Suspense, useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
@@ -56,6 +56,7 @@ const NoteEditor = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const createdNoteIdRef = useRef<string | null>(null);
 
   const note = isNew
     ? { _id: "new", title: draftTitle, content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
@@ -136,6 +137,7 @@ const NoteEditor = () => {
         folderId: folderId
       });
       if (newNote?._id) {
+        createdNoteIdRef.current = newNote._id;
         const path = folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`;
         navigate(`${path}${location.search}`, { replace: true });
         return newNote;
@@ -206,10 +208,14 @@ const NoteEditor = () => {
     return <EmptyEditorState />;
   }
 
+  const editorKey = (isNew || (note?._id && note._id === createdNoteIdRef.current)) 
+    ? "stable-new-note-editor" 
+    : note?._id;
+
   const editorPane = (
     <AnimatePresence mode="wait" initial={false}>
       <motion.section
-        key={note._id}
+        key={editorKey}
         initial={isNew ? {} : { opacity: 0, x: 16 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -12 }}
@@ -235,7 +241,7 @@ const NoteEditor = () => {
 
         <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
           <TipTap
-            key={note._id}
+            key={editorKey}
             content={isNew ? "" : note.content}
             onChange={handleContentChange}
             onEditorReady={setEditorInstance}
