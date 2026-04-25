@@ -3710,6 +3710,68 @@ span[data-ai-ghost] {
   transform: translateY(-1px);
 }
 
+.gc-marquee-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 32rem;
+  margin-top: 1rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to right,
+      transparent,
+      black 15%,
+      black 85%,
+      transparent);
+}
+
+.gc-marquee-container {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.gc-marquee-content {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.6rem;
+  padding: 0.2rem 0;
+  min-width: 100%;
+}
+
+.gc-marquee-content:hover {
+  animation-play-state: paused;
+}
+
+.animate-scroll-left {
+  animation: scroll-left 45s linear infinite;
+}
+
+.animate-scroll-right {
+  animation: scroll-right 45s linear infinite;
+}
+
+@keyframes scroll-left {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  from {
+    transform: translateX(-50%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
 
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Compose Ã¢â€â‚¬Ã¢â€â‚¬ */

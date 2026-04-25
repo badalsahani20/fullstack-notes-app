@@ -49,7 +49,42 @@ const timeAgo = (iso: string) => {
   return `${Math.floor(h / 24)}d ago`;
 };
 
-/* ─── Empty state ─────────────────────────────── */
+/* ─── Prompts Data ──────────────────────────── */
+const STUDENT_PROMPTS = [
+  "Summarize 'The Great Gatsby'",
+  "Explain the Pythagoras theorem",
+  "How to write a strong thesis statement?",
+  "Outline a psychology essay",
+  "Most important themes in '1984'",
+  "Explain photosynthesis simply",
+  "Key causes of the French Revolution",
+  "Solve x² + 5x + 6 = 0",
+];
+
+const DEV_PROMPTS = [
+  "Refactor a React component",
+  "Explain Redis caching logic",
+  "Optimize a complex SQL query",
+  "Setup a Vite + Tailwind project",
+  "How to handle CORS in Node.js?",
+  "Write a unit test with Vitest",
+  "Explain Docker containers",
+  "Best practices for API security",
+];
+
+/* ─── Marquee Component ─────────────────────── */
+const MarqueeRow = ({ prompts, direction = "left", onChipClick }: { prompts: string[], direction?: "left" | "right", onChipClick: (s: string) => void }) => (
+  <div className="gc-marquee-container">
+    <div className={cn("gc-marquee-content", direction === "right" ? "animate-scroll-right" : "animate-scroll-left")}>
+      {[...prompts, ...prompts].map((s, i) => (
+        <button key={`${s}-${i}`} className="gc-chip" onClick={() => onChipClick(s)}>
+          {s}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
 const EmptyState = ({ onChipClick }: { onChipClick: (text: string) => void }) => (
   <div className="gc-empty">
     <div className="gc-empty-orb ai-rail-button ai-rail-button-active !w-20 !h-20 !rounded-3xl mx-auto cursor-default font-medium">
@@ -60,22 +95,15 @@ const EmptyState = ({ onChipClick }: { onChipClick: (text: string) => void }) =>
       Your AI learning companion. Ask questions, explore ideas,
       <br /> or dig into any topic — no note needed.
     </p>
-    <div className="gc-empty-chips">
-      {[
-        "Explain Big O notation",
-        "Help me outline an essay",
-        "What is the CAP theorem?",
-        "Summarize quantum entanglement",
-      ].map((s) => (
-        <button key={s} className="gc-chip" onClick={() => onChipClick(s)}>
-          {s}
-        </button>
-      ))}
+    
+    <div className="gc-marquee-wrapper">
+      <MarqueeRow prompts={STUDENT_PROMPTS} onChipClick={onChipClick} />
+      <MarqueeRow prompts={DEV_PROMPTS} direction="right" onChipClick={onChipClick} />
     </div>
   </div>
 );
 
-/* ─── Main Page ───────────────────────────────── */
+
 const GlobalChatPage = () => {
   const {
     sessions, sessionsLoading,
