@@ -235,7 +235,7 @@ export const chatWithAi = async ({
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "google/gemma-2-9b-it",
+        model: "google/gemma-3-27b-it",
         messages: [...baseMessages, { role: "user", content: nvidiaUserContent }],
         stream: false,
         max_tokens: 1024,
