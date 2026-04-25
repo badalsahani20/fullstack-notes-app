@@ -128,7 +128,7 @@ export const loginUser = async (email, password) => {
 export const refreshAccessToken = async (refreshTokenFromCookie) => {
     if(!refreshTokenFromCookie) {
         const error = new Error("No refresh token provided");
-        error.statusCode = 400;
+        error.statusCode = 401;
         throw error;
     }
 
