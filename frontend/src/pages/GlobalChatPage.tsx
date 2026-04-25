@@ -7,6 +7,7 @@ import type { Message } from "@/components/ai/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
+import { STUDENT_PROMPTS, DEV_PROMPTS } from "@/lib/constants";
 import {
   ArrowUp,
   Bot,
@@ -48,29 +49,6 @@ const timeAgo = (iso: string) => {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 };
-
-/* ─── Prompts Data ──────────────────────────── */
-const STUDENT_PROMPTS = [
-  "Summarize 'The Great Gatsby'",
-  "Explain the Pythagoras theorem",
-  "How to write a strong thesis statement?",
-  "Outline a psychology essay",
-  "Most important themes in '1984'",
-  "Explain photosynthesis simply",
-  "Key causes of the French Revolution",
-  "Solve x² + 5x + 6 = 0",
-];
-
-const DEV_PROMPTS = [
-  "Refactor a React component",
-  "Explain Redis caching logic",
-  "Optimize a complex SQL query",
-  "Setup a Vite + Tailwind project",
-  "How to handle CORS in Node.js?",
-  "Write a unit test with Vitest",
-  "Explain Docker containers",
-  "Best practices for API security",
-];
 
 /* ─── Marquee Component ─────────────────────── */
 const MarqueeRow = ({ prompts, direction = "left", onChipClick }: { prompts: string[], direction?: "left" | "right", onChipClick: (s: string) => void }) => (
