@@ -6,6 +6,14 @@
 
 export type AiAction = "grammar" | "summarize" | "explain" | "rewrite" | "continue";
 
+export const actionMeta: Record<AiAction, { label: string; prompt: string }> = {
+  grammar: { label: "Improve", prompt: "Clean up grammar, punctuation, and small wording issues in this note." },
+  summarize: { label: "Summarize", prompt: "Summarize the key ideas from this note into a concise explanation." },
+  explain: { label: "Explain", prompt: "Explain this note in simpler language with clear takeaways." },
+  rewrite: { label: "Rewrite", prompt: "Rewrite this note for clarity and better flow while keeping meaning intact." },
+  continue: { label: "Continue Writing", prompt: "Continue the content in a consistent tone and style." },
+};
+
 export type AssistResult = {
   action: AiAction;
   suggestion: string;
@@ -14,11 +22,27 @@ export type AssistResult = {
 };
 
 export type SelectionRange = { from: number; to: number } | null;
+export interface VizSegment {
+  id?: string;
+  kind: "viz";
+  type: "mermaid" | "chart" | "math";
+  title: string;
+  data: string;
+}
+
+export interface textSegment {
+  id?: string;
+  kind: "text";
+  content: string;
+}
+
+export type IrisSegment = textSegment | VizSegment;
 
 export type Message = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  segments?: IrisSegment[];
   skipAnimation?: boolean;
 };
 

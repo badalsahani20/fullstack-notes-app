@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
-import { CheckCheck, Copy } from "lucide-react";
+import { useMemo, useState, lazy, Suspense } from "react";
+import { CheckCheck, Copy, Loader2 } from "lucide-react";
+
+const MermaidDiagram = lazy(() => import("@/components/chat/viz/MermaidDiagram"));
 
 type MarkdownCodeBlockProps = {
   code: string;
@@ -108,8 +110,21 @@ const getLanguageLabel = (language?: string) => {
 };
 
 const MarkdownCodeBlock = ({ code, language }: MarkdownCodeBlockProps) => {
+  const normalizedLanguage = normalizeLanguage(language);
   const [copied, setCopied] = useState(false);
   const highlighted = useMemo(() => highlightCode(code, language), [code, language]);
+
+  if (normalizedLanguage === "mermaid") {
+    return (
+      <Suspense fallback={
+        <div className="flex h-48 items-center justify-center rounded-xl bg-white/5 animate-pulse">
+          <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+        </div>
+      }>
+        <MermaidDiagram code={code} />
+      </Suspense>
+    );
+  }
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code);

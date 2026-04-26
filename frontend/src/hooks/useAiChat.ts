@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { AxiosError } from "axios";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
+import type { Note } from "@/store/useNoteStore";
 import { stripHtml } from "@/utils/stripHtml";
 import { useTypewriter } from "@/hooks/useTypewriter";
 
@@ -31,6 +33,17 @@ const resolveNoteContext = (editor: Editor | null, noteText: string) => {
   return getActiveNoteSection(noteText, cursor);
 };
 
+const getPersistedHistoryFromMessages = (messages: Message[]) =>
+  messages
+    .filter((message) => message.id !== "welcome")
+    .map((message) => ({
+      id: message.id,
+      role: message.role as "user" | "assistant",
+      content: message.text,
+      ...(message.role === "assistant" && message.segments ? { segments: message.segments } : {}),
+    }))
+    .slice(-50);
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -45,6 +58,7 @@ const resolveNoteContext = (editor: Editor | null, noteText: string) => {
  * @param editor      - TipTap editor instance (used for selection tracking)
  */
 export const useAiChat = (noteId: string, noteContent: string, editor: Editor | null) => {
+  const queryClient = useQueryClient();
   // ── State ──────────────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<Message[]>([
     { id: "welcome", role: "assistant", text: "Ask about the current note or use the quick actions below to refine it." },
@@ -76,9 +90,14 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const lastSentContextRef = useRef("");
   // Lets us cancel in-flight requests when the user hits Stop
   const abortControllerRef = useRef<AbortController | null>(null);
+  const messagesRef = useRef<Message[]>(messages);
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const plainNoteText = useMemo(() => stripHtml(noteContent), [noteContent]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   // ── Effects ────────────────────────────────────────────────────────────────
 
@@ -89,10 +108,11 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         id: m.id || `${Date.now()}-${Math.random()}`,
         role: m.role,
         text: m.content as string,
+        segments: m.segments,
         skipAnimation: true, // New flag
       }));
 
-      setMessages((prev) => {
+      const nextMessages = ((prev: Message[]) => {
         // Keep the welcome message at the top, then historic messages, then current messages
         const welcomeMessage = prev.find((m) => m.id === "welcome");
         const otherMessages = prev.filter((m) => m.id !== "welcome");
@@ -101,7 +121,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           ...historicMessages,
           ...otherMessages,
         ];
-      });
+      })(messagesRef.current);
+
+      messagesRef.current = nextMessages;
+      setMessages(nextMessages);
 
       setChatHistory(
         activeNote.chatHistory.map((m: any) => ({
@@ -115,9 +138,11 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   useEffect(() => {
     setHistoryLoaded(false);
-    setMessages([
+    const nextMessages: Message[] = [
       { id: "welcome", role: "assistant", text: "Hi! How can i help you today?" },
-    ]);
+    ];
+    messagesRef.current = nextMessages;
+    setMessages(nextMessages);
     setChatHistory([]);
   }, [noteId]);
 
@@ -246,7 +271,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     const textToSend = trimmed || "Describe this image context.";
     
     const userMessage: Message = { id: `${Date.now()}-chat-user`, role: "user", text: textToSend };
-    setMessages((prev) => [...prev, userMessage]);
+    const optimisticMessages = [...messagesRef.current, userMessage];
+    messagesRef.current = optimisticMessages;
+    setMessages(optimisticMessages);
     setChatInput("");
     const sentImage = attachedImage;
     setAttachedImage(null);
@@ -263,27 +290,38 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       );
 
       const reply = res.data?.data?.reply?.trim() || "No reply returned.";
+      const segments = Array.isArray(res.data?.data?.segments) ? res.data.data.segments : undefined;
       const nextHistory = Array.isArray(res.data?.data?.history) ? res.data.data.history : history;
       setChatHistory(nextHistory);
 
-      const assistantMessage: Message = { id: `${Date.now()}-chat-assistant`, role: "assistant", text: reply };
+      const assistantMessage: Message = {
+        id: `${Date.now()}-chat-assistant`,
+        role: "assistant",
+        text: reply,
+        segments,
+      };
       setResult(null);
-      setMessages((prev) => [...prev, assistantMessage]);
+      const persistedMessages = [...messagesRef.current, assistantMessage];
+      messagesRef.current = persistedMessages;
+      setMessages(persistedMessages);
 
       // Persist to DB — cap at 50 messages to prevent BSON size bloat
-      const dbHistory = [
-        ...(activeNote?.chatHistory || []),
-        { id: userMessage.id, role: "user", content: userMessage.text },
-        { id: assistantMessage.id, role: "assistant", content: assistantMessage.text },
-      ].slice(-50);
-      if (activeNote) {
-        void updateNoteAsync({ noteId, updates: { chatHistory: dbHistory as any }, version: activeNote.version });
+      const dbHistory = getPersistedHistoryFromMessages(persistedMessages);
+      const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
+      if (latestNote) {
+        void updateNoteAsync({
+          noteId,
+          updates: { chatHistory: dbHistory as Note["chatHistory"] },
+          version: latestNote.version,
+        });
       }
 
     } catch (error) {
       if (error && typeof error === "object" && "name" in error && error.name === "CanceledError") {
         setChatInput(trimmed); // restore their draft
-        setMessages((prev) => prev.slice(0, -1)); // remove the optimistic user message
+        const rolledBackMessages = messagesRef.current.slice(0, -1);
+        messagesRef.current = rolledBackMessages;
+        setMessages(rolledBackMessages); // remove the optimistic user message
         return;
       }
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -299,7 +337,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       setChatHistory((prev) => [...prev, { role: "user", content: trimmed }]);
       const errorMessage: Message = { id: `${Date.now()}-chat-error`, role: "assistant", text: message };
-      setMessages((prev) => [...prev, errorMessage]);
+      const failedMessages = [...messagesRef.current, errorMessage];
+      messagesRef.current = failedMessages;
+      setMessages(failedMessages);
     } finally {
       setIsSendingChat(false);
     }
@@ -307,13 +347,16 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   /** Clears the current session and DB history for this note */
   const startNewChat = async () => {
-    setMessages([
+    const nextMessages: Message[] = [
       { id: "welcome", role: "assistant", text: "Hi! How can i help you today?" },
-    ]);
+    ];
+    messagesRef.current = nextMessages;
+    setMessages(nextMessages);
     setChatHistory([]);
     setHistoryLoaded(false);
-    if (activeNote) {
-      void updateNoteAsync({ noteId, updates: { chatHistory: [] }, version: activeNote.version });
+    const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
+    if (latestNote) {
+      void updateNoteAsync({ noteId, updates: { chatHistory: [] }, version: latestNote.version });
     }
     toast.success("Chat history cleared");
   };

@@ -3,6 +3,7 @@ import remarkGfm from "remark-gfm";
 import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
+import IrisMessageBody from "./IrisMessageBody";
 
 const markdownComponents = {
   code({ className, children, ...props }: any) {
@@ -32,6 +33,7 @@ interface GlobalChatMessagesProps {
   sendMessage: (text: string) => void;
   prompts: { students: string[], devs: string[] };
   bottomRef: React.RefObject<HTMLDivElement | null>;
+  fullWidthAssistant?: boolean;
 }
 
 export const GlobalChatMessages = ({
@@ -44,9 +46,10 @@ export const GlobalChatMessages = ({
   sendMessage,
   prompts,
   bottomRef,
+  fullWidthAssistant = false,
 }: GlobalChatMessagesProps) => {
   return (
-    <div className="gc-messages custom-scrollbar">
+    <div className={`gc-messages custom-scrollbar${fullWidthAssistant ? " gc-messages-fullwidth-assistant" : ""}`}>
       {messagesLoading ? (
         <div className="gc-loading-wrap">
           <div className="gc-loading-dot" style={{ animationDelay: "0ms" }} />
@@ -66,7 +69,13 @@ export const GlobalChatMessages = ({
                 <>
                   <div className="gc-msg-bubble gc-msg-bubble-ai">
                     <div className="gc-markdown max-w-full">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{displayText}</ReactMarkdown>
+                      {(isActiveStream && isStreaming) ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                          {displayText}
+                        </ReactMarkdown>
+                      ) : (
+                        <IrisMessageBody segments={msg.segments ?? [{ kind: "text", content: msg.text }]} />
+                      )} 
                     </div>
                     {isActiveStream && isStreaming && (
                       <span className="gc-cursor" />
@@ -102,5 +111,4 @@ export const GlobalChatMessages = ({
     </div>
   );
 };
-
 

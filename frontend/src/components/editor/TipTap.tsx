@@ -355,7 +355,7 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
           tempDiv.innerHTML = convertedHtml;
           const { state } = view;
           const parser = DOMParser.fromSchema(state.schema);
-          
+
           try {
             const parsedSlice = parser.parseSlice(tempDiv);
             const tr = state.tr.replaceSelection(parsedSlice);

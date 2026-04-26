@@ -7,7 +7,7 @@ import {
   Star,
   Trash2,
 } from "lucide-react";
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink, useParams, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { usePanelStore } from "@/store/usePanelStore";
@@ -16,9 +16,22 @@ import { cn } from "@/lib/utils";
 
 const ActivityBar = () => {
   const { noteId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { searchQuery, setSearchQuery } = useNoteStore();
   const { isFolderPanelOpen, toggleFolderPanel } = usePanelStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  const toggleNotesPanel = (e: React.MouseEvent) => {
+    const params = new URLSearchParams(location.search);
+    const focus = params.get("focus");
+    // If in focus mode, toggle between focus=1 (notes visible) and focus=2 (notes hidden)
+    if (focus === "1" || focus === "2") {
+      e.preventDefault();
+      params.set("focus", focus === "1" ? "2" : "1");
+      navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+    }
+  };
 
   return (
     <aside className="desktop-rail">
@@ -45,10 +58,16 @@ const ActivityBar = () => {
           <nav className="flex w-full flex-row sm:flex-col gap-2 justify-around sm:justify-start">
             {/* All Notes */}
             <NavLink
-              to={noteId ? `/note/${noteId}` : "/"}
-              className={({ isActive }) =>
-                cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
-              }
+              to={noteId ? `/note/${noteId}${location.search}` : `/${location.search}`}
+              onClick={toggleNotesPanel}
+              className={({ isActive }) => {
+                const focus = new URLSearchParams(location.search).get("focus");
+                const isNotesActive = focus ? focus === "1" : isActive;
+                return cn(
+                  "nav-action-btn transition-all duration-300", 
+                  isNotesActive && "nav-action-btn-active"
+                );
+              }}
               style={{ "--highlight-color": "#10b981" } as any}
               title="All Notes"
             >
@@ -57,7 +76,7 @@ const ActivityBar = () => {
 
             {/* Favorites */}
             <NavLink
-              to={noteId ? `/favorites/note/${noteId}` : "/favorites"}
+              to={noteId ? `/favorites/note/${noteId}${location.search}` : `/favorites${location.search}`}
               className={({ isActive }) =>
                 cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
               }
@@ -70,7 +89,7 @@ const ActivityBar = () => {
             {/* AI Chat */}
             {/* Iris AI */}
             <NavLink
-              to="/chat"
+              to={`/chat${location.search}`}
               className={({ isActive }) =>
                 cn(
                   "ai-rail-button group mx-auto mb-2 flex items-center justify-center transition-all",
@@ -109,7 +128,7 @@ const ActivityBar = () => {
 
       <div className="flex flex-row sm:flex-col items-center gap-2 px-2 sm:px-0 pb-2 sm:pb-4 dark:bg-zinc-900">
         <NavLink
-          to="/archive"
+          to={`/archive${location.search}`}
           className={({ isActive }) =>
             cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
           }
@@ -120,7 +139,7 @@ const ActivityBar = () => {
         </NavLink>
 
         <NavLink
-          to="/trash"
+          to={`/trash${location.search}`}
           className={({ isActive }) =>
             cn("nav-action-btn transition-all duration-300", isActive && "nav-action-btn-active")
           }

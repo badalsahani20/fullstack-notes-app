@@ -72,7 +72,6 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
   const aiMenuRef = React.useRef<HTMLDivElement>(null);
   const moreRef = React.useRef<HTMLDivElement>(null);
   const markerRef = React.useRef<HTMLDivElement>(null);
-  const customInput = React.useRef<HTMLInputElement>(null);
 
   // Close flyouts when selection collapses natively
   React.useEffect(() => {
@@ -221,45 +220,6 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
                   </button>
                 )}
 
-                {/* Custom colour picker */}
-                <div className="bubble-marker-custom">
-                  <span className="bubble-marker-custom-label">Custom</span>
-                  <div
-                    className="bubble-marker-custom-swatch"
-                    style={{ background: markerColor }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      customInput.current?.click();
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    title="Pick custom colour"
-                  />
-                  <input
-                    ref={customInput}
-                    type="color"
-                    defaultValue={markerColor}
-                    className="bubble-marker-color-input"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    onInput={(e) => {
-                      const color = (e.target as HTMLInputElement).value;
-                      setMarkerColor(color);
-                      editor.chain().setMarkerHighlight(color).run();
-                    }}
-                    onChange={(e) => {
-                      const color = (e.target as HTMLInputElement).value;
-                      setMarkerColor(color);
-                      editor.chain().focus().setMarkerHighlight(color).run();
-                      setShowMarker(false);
-                    }}
-                  />
-                </div>
               </div>
             )}
           </div>

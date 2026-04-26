@@ -92,7 +92,7 @@ const EditorHeader = ({
             <button
               type="button"
               onClick={() => setIsShareOpen(true)}
-              className={`editor-star-toggle ${note.isShared ? "text-[var(--accent-strong)] border-[var(--accent-strong)]/30 bg-[var(--accent-strong)]/5" : ""}`}
+              className={`editor-star-toggle editor-share-toggle ${note.isShared ? "text-[var(--accent-strong)] border-[var(--accent-strong)]/30 bg-[var(--accent-strong)]/5" : ""}`}
               aria-label="Share note"
             >
               <Share2 size={15} />
@@ -102,7 +102,7 @@ const EditorHeader = ({
             <button
               type="button"
               onClick={() => onToggleArchive(note._id)}
-              className={`editor-star-toggle ${note.isArchived ? "editor-archive-toggle-active" : ""}`}
+              className={`editor-star-toggle editor-archive-toggle ${note.isArchived ? "editor-archive-toggle-active" : ""}`}
               aria-label={note.isArchived ? "Unarchive note" : "Archive note"}
             >
               <Archive size={15} />
@@ -112,7 +112,7 @@ const EditorHeader = ({
             <button
               type="button"
               onClick={() => onTogglePin(note._id)}
-              className={`editor-star-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
+              className={`editor-star-toggle editor-pin-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
               aria-label={note.pinned ? "Remove from favorites" : "Add to favorites"}
             >
               <motion.div
@@ -131,17 +131,19 @@ const EditorHeader = ({
           </div>
 
           {/* AI button — always visible */}
-          <button
-            type="button"
-            onClick={onAskAi}
-            onMouseEnter={onAskAiHover}
-            onFocus={onAskAiHover}
-            className={`ignite-button h-8 !px-4 ${isAiOpen ? "nav-action-btn-active" : ""}`}
-            aria-label="Toggle AI Assistant"
-          >
-            <Bot size={15} />
-            <span className="hidden sm:inline">Ask AI</span>
-          </button>
+          {!isMobile && (
+            <button
+              type="button"
+              onClick={onAskAi}
+              onMouseEnter={onAskAiHover}
+              onFocus={onAskAiHover}
+              className={`ignite-button h-8 !px-4 ${isAiOpen ? "nav-action-btn-active" : ""}`}
+              aria-label="Toggle AI Assistant"
+            >
+              <Bot size={15} />
+              <span className="hidden sm:inline">Ask AI</span>
+            </button>
+          )}
 
           {/* ── Mobile: collapse Share / Archive / Star into ⋯ menu ── */}
           <div className="flex md:hidden">

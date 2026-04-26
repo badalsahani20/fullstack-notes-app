@@ -1,3 +1,4 @@
+import type { ReactNode, RefObject } from "react";
 import { X, ImageIcon, Square, ArrowUp } from "lucide-react";
 import { toast } from "sonner";
 
@@ -9,8 +10,12 @@ interface GlobalChatComposeProps {
   isSending: boolean;
   imageDisabled: boolean;
   handleSend: () => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-  fileRef: React.RefObject<HTMLInputElement | null>;
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  fileRef: RefObject<HTMLInputElement | null>;
+  topSlot?: ReactNode;
+  placeholder?: string;
+  onStop?: () => void;
+  disclaimerText?: string;
 }
 
 export const GlobalChatCompose = ({
@@ -23,8 +28,11 @@ export const GlobalChatCompose = ({
   handleSend,
   textareaRef,
   fileRef,
+  topSlot,
+  placeholder = "Ask Iris anything...",
+  onStop,
+  disclaimerText = "Iris can make mistakes. Double-check important info.",
 }: GlobalChatComposeProps) => {
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -49,6 +57,8 @@ export const GlobalChatCompose = ({
   return (
     <div className="gc-compose-wrap">
       <div className="gc-compose">
+        {topSlot}
+
         {attachedImage && (
           <div className="gc-img-preview-wrap">
             <div className="gc-img-preview">
@@ -63,7 +73,7 @@ export const GlobalChatCompose = ({
         <textarea
           ref={textareaRef}
           className="gc-textarea custom-scrollbar"
-          placeholder="Ask Iris anything…"
+          placeholder={placeholder}
           rows={1}
           value={input}
           disabled={isSending}
@@ -93,7 +103,11 @@ export const GlobalChatCompose = ({
           <input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleFileChange} />
 
           {isSending ? (
-            <button type="button" className="gc-send-btn gc-send-btn-stop">
+            <button
+              type="button"
+              className="gc-send-btn gc-send-btn-stop"
+              onClick={onStop}
+            >
               <Square size={13} fill="currentColor" />
             </button>
           ) : (
@@ -108,7 +122,7 @@ export const GlobalChatCompose = ({
           )}
         </div>
       </div>
-      <p className="gc-disclaimer">Iris can make mistakes. Double-check important info.</p>
+      <p className="gc-disclaimer">{disclaimerText}</p>
     </div>
   );
 };

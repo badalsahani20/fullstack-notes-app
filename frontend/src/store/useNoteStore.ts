@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { IrisSegment } from "@/components/ai/types";
 
 export interface Note {
   _id: string;
@@ -16,7 +17,7 @@ export interface Note {
   shareSlug?: string;
   shareExpiresAt?: string | null;
   shareViews?: number;
-  chatHistory?: { id: string; role: 'user' | 'assistant'; content: string }[];
+  chatHistory?: { id: string; role: 'user' | 'assistant'; content: string; segments?: IrisSegment[] }[];
 }
 
 export interface TrashFolder {

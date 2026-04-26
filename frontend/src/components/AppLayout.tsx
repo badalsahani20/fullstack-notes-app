@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDefaultLayout } from "react-resizable-panels";
@@ -32,8 +32,16 @@ const AppLayout = ({
 }: Props) => {
   const foldersPanelRef = useRef<PanelImperativeHandle | null>(null);
   const notesPanelRef = useRef<PanelImperativeHandle | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({ id: "notesify-layout-v1" });
+
+  // Handle smooth transition when toggling panels
+  useEffect(() => {
+    setIsTransitioning(true);
+    const timer = setTimeout(() => setIsTransitioning(false), 450);
+    return () => clearTimeout(timer);
+  }, [showNotesPanel, showFoldersPanel]);
 
   // Folders panel: toggle open/close based on store state
   useEffect(() => {
@@ -164,13 +172,17 @@ const AppLayout = ({
                 collapsible={true}
                 collapsedSize="0%"
                 panelRef={notesPanelRef}
+                className={isTransitioning ? "panel-transition" : ""}
               >
-                <div className="desktop-notes-column w-full h-full overflow-hidden">
+                <div 
+                  className="desktop-notes-column w-full h-full overflow-hidden"
+                  style={{ opacity: showNotesPanel ? 1 : 0 }}
+                >
                   {middlePanel}
                 </div>
               </ResizablePanel>
 
-              <ResizableHandle withHandle />
+              {showNotesPanel && <ResizableHandle />}
 
               {/* Editor: fills remaining space. initial={false} prevents 8px shift on mount */}
               <ResizablePanel id="main" minSize="20%">

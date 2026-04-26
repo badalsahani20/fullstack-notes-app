@@ -1,10 +1,15 @@
 import { create } from "zustand";
 import api from "@/lib/api";
 
+export type IrisSegment = 
+  | {id?: string; kind: "text"; content: string}
+  | {id?: string; kind: "viz"; type: "mermaid" | "chart" | "math"; title: string; data: string };
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  segments?: IrisSegment[];
   skipAnimation?: boolean;
 };
 
@@ -64,10 +69,11 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
     set({ messagesLoading: true, activeSessionId: sessionId, messages: [] });
     try {
       const { data } = await api.get(`/ai/chat/session/${sessionId}`);
-      const mapped: ChatMessage[] = data.data.messages.map((m: { role: string; content: string }) => ({
+      const mapped: ChatMessage[] = data.data.messages.map((m: { role: string; content: string; segments?: IrisSegment[] }) => ({
         id: crypto.randomUUID(),
         role: m.role as "user" | "assistant",
         text: m.content,
+        segments: m.segments,
         skipAnimation: true,
       }));
       set({ messages: mapped });
@@ -105,6 +111,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
         id: crypto.randomUUID(),
         role: "assistant",
         text: data.data.reply,
+        segments: data.data.segments,
       };
 
       const newSessionId = data.data.sessionId;

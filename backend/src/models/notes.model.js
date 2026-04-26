@@ -1,6 +1,30 @@
 import mongoose from "mongoose";
 import { generateSoftColor } from "../utils/colorUtils.js";
 
+const irisSegmentSchema = new mongoose.Schema(
+    {
+        kind: { type: String },
+        type: { type: String },
+        title: { type: String },
+        data: { type: String },
+        content: { type: String }
+    },
+    { _id: false }
+);
+
+const chatHistoryEntrySchema = new mongoose.Schema(
+    {
+        id: { type: String },
+        role: { type: String },
+        content: { type: String },
+        segments: {
+            type: [irisSegmentSchema],
+            default: undefined
+        }
+    },
+    { _id: false }
+);
+
 const notesSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -52,11 +76,7 @@ const notesSchema = new mongoose.Schema({
         suggestion: String
     }],
     chatHistory: {
-        type: [{
-            id: String,
-            role: String,
-            content: String
-        }],
+        type: [chatHistoryEntrySchema],
         default: []
     },
     // Sharing

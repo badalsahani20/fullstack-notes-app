@@ -46,7 +46,7 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
   const toggleFocusMode = () => {
     const next = new URLSearchParams(location.search);
     if (isFocusMode) next.delete("focus");
-    else next.set("focus", "1");
+    else next.set("focus", "2"); // Default to clean full screen
     navigate(`${location.pathname}?${next.toString()}`, { replace: true });
   };
 

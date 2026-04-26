@@ -5,6 +5,7 @@ import catchAsync from "../utils/catchAsync.js";
 import { checkGrammar, chatWithAi, runAiAssist, generateTitle, getDynamicPrompts } from "../services/ai.service.js";
 import GlobalChatSession from "../models/globalChatSession.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
+import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
@@ -223,6 +224,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     success: true,
     data: {
       reply: result.reply,
+      segments: result.segments,
       history: result.history,
       sessionId: activeSessionId, // frontend stores this for subsequent messages
     },
@@ -242,7 +244,13 @@ export const getChatSessionController = catchAsync(async (req, res) => {
   res.status(200).json({
     success: true,
     data: {
-      messages: session.messages,
+      messages: session.messages.map((message) => ({
+        ...message,
+        segments:
+          message.role === "assistant"
+            ? parseIrisResponse(message.content)
+            : undefined,
+      })),
       title: session.title,
     },
   });

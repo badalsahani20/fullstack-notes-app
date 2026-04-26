@@ -3,12 +3,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
+import { Bot, Sparkles, Loader2 } from "lucide-react";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { usePanelStore } from "@/store/usePanelStore";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/editor/TipTap";
-const AiAuditPanel = lazy(() => import("@/components/ai/AiAuditPanel"));
+const ContextualAiPanel = lazy(() => import("@/components/chat/ContextualAiPanel"));
 import EmptyEditorState from "@/components/editor/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -18,7 +19,7 @@ import EditorToolbar from "@/tools/EditorToolbar";
 import AiResultDialog from "@/components/ai/AiResultDialog";
 import { NoteEditorSkeleton } from "@/components/ui/noteEditorSkeleton";
 
-const preloadAiAuditPanel = () => import("@/components/ai/AiAuditPanel");
+const preloadAiPanel = () => import("@/components/chat/ContextualAiPanel");
 
 const AiPanelSkeleton = ({ mobileMode = false }: { mobileMode?: boolean }) => (
   <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}>
@@ -89,7 +90,7 @@ const NoteEditor = () => {
 
   useEffect(() => {
     if (isAiPanelOpen) {
-      void preloadAiAuditPanel();
+      void preloadAiPanel();
     }
   }, [isAiPanelOpen]);
 
@@ -233,7 +234,7 @@ const NoteEditor = () => {
           onTogglePin={handleTogglePin}
           onToggleArchive={handleToggleArchive}
           onAskAi={() => setAiPanelOpen(!isAiPanelOpen)}
-          onAskAiHover={() => void preloadAiAuditPanel()}
+          onAskAiHover={() => void preloadAiPanel()}
           isAiOpen={isAiPanelOpen}
           isMobile={isMobile}
           isSaving={isSavingNote}
@@ -267,8 +268,9 @@ const NoteEditor = () => {
           {editorPane}
           <div className="assistant-mobile-overlay">
             <Suspense fallback={<AiPanelSkeleton mobileMode />}>
-              <AiAuditPanel
+              <ContextualAiPanel
                 aiChat={aiChat}
+                noteTitle={draftTitle || note?.title}
                 onClose={() => setAiPanelOpen(false)}
                 mobileMode
               />
@@ -280,7 +282,7 @@ const NoteEditor = () => {
           <ResizablePanel minSize="0" className="min-w-0 h-full">
             {editorPane}
           </ResizablePanel>
-          <ResizableHandle withHandle className="assistant-resize-handle" />
+          <ResizableHandle className="assistant-resize-handle" />
           <ResizablePanel
             defaultSize="22rem"
             minSize="20rem"
@@ -288,13 +290,48 @@ const NoteEditor = () => {
             className="assistant-panel-shell h-full"
           >
             <Suspense fallback={<AiPanelSkeleton />}>
-              <AiAuditPanel aiChat={aiChat} onClose={() => setAiPanelOpen(false)} />
+              <ContextualAiPanel
+                aiChat={aiChat}
+                noteTitle={draftTitle || note?.title}
+                onClose={() => setAiPanelOpen(false)}
+              />
             </Suspense>
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (
         editorPane
       )}
+
+      {isMobile && !isAiPanelOpen ? (
+        <div className="mobile-ai-fab-stack">
+          <button
+            type="button"
+            className="mobile-ai-fab mobile-ai-fab-secondary disabled:opacity-80 disabled:cursor-not-allowed"
+            onClick={() => void aiChat.runAction("summarize")}
+            aria-label="Summarize note"
+            disabled={aiChat.loadingAction !== null}
+          >
+            {aiChat.loadingAction === "summarize" ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Sparkles size={16} />
+            )}
+            <span>{aiChat.loadingAction === "summarize" ? "Thinking..." : "Summarize"}</span>
+          </button>
+          <button
+            type="button"
+            className="mobile-ai-fab"
+            onClick={() => {
+              void preloadAiPanel();
+              setAiPanelOpen(true);
+            }}
+            aria-label="Open AI assistant"
+          >
+            <Bot size={16} />
+            <span>Ask AI</span>
+          </button>
+        </div>
+      ) : null}
 
       <AiResultDialog
         result={aiChat.result}
