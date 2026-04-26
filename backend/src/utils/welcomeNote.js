@@ -8,9 +8,10 @@ export const getWelcomeNote = () => ({
 
     <h3>1. The "Boring Admin" Checklist 📋</h3>
     <ul data-type="taskList">
-        <li data-type="taskItem" data-checked="false"><p>Create a folder (Because chaos is only cool in movies)</p></li>
+        <li data-type="taskItem" data-checked="false"><p>Create a <strong>Notebook</strong> (Because chaos is only cool in movies)</p></li>
+        <li data-type="taskItem" data-checked="false"><p>Try <u>Drag-and-Drop</u> to move this note into a folder 🖱️</p></li>
+        <li data-type="taskItem" data-checked="false"><p>Use <code>Ctrl + K</code> or the search bar to find your 3 AM ideas</p></li>
         <li data-type="taskItem" data-checked="true"><p>Read this masterpiece of an onboarding note</p></li>
-        <li data-type="taskItem" data-checked="false"><p>Ask the AI to rewrite your grocery list as a Shakespearean sonnet</p></li>
     </ul>
 
     <h3>2. Nerdy Stuff (Skip if you're too cool) 💻</h3>
