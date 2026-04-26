@@ -6,6 +6,8 @@ export const getWelcomeNote = () => ({
 
     <p><mark data-color="#fef08a"><strong>Breaking the Fourth Wall:</strong> This note is basically a tech demo disguised as a greeting. Sneaky, right?</mark></p>
 
+    <p><em>"Yeah, I'm just a totally ordinary, boring line of text... or am I? Select me and hit that <strong>Highlighter</strong> icon in the menu. Go on, give me some color. I look better in yellow anyway."</em></p>
+
     <h3>1. The "Boring Admin" Checklist 📋</h3>
     <ul data-type="taskList">
         <li data-type="taskItem" data-checked="false"><p>Create a <strong>Notebook</strong> (Because chaos is only cool in movies)</p></li>
