@@ -15,7 +15,7 @@ const PRIMARY_MODEL = "qwen/qwen3.5-flash-02-23";
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
 // --- VALIDATION HELPERS ---
-const ensureAiApiKey = () => { 
+const ensureAiApiKey = () => {
   if (!process.env.GEMINI_API_KEY && !process.env.OPEN_ROUTER) {
     throw new Error(`Both GEMINI and OPENROUTER api keys are missing`);
   }
@@ -46,9 +46,7 @@ const executeOpenRouter = async (modelId, messages, stream = false) => {
         model: modelId,
         messages: messages,
         stream: stream,
-        // Ask OpenRouter to include reasoning tokens in the stream
-        // Works with Qwen 3 (delta.reasoning) and Claude (delta.reasoning_content)
-        ...(stream ? { include_reasoning: true } : {}),
+        include_reasoning: false,
       }),
     },
   );
@@ -95,7 +93,11 @@ const executeNvidia = async (messages, stream = false) => {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    console.error("❌ NVIDIA error:", response.status, JSON.stringify(errorData));
+    console.error(
+      "❌ NVIDIA error:",
+      response.status,
+      JSON.stringify(errorData),
+    );
     throw new Error(
       `NVIDIA returned ${response.status}: ${JSON.stringify(errorData)}`,
     );
