@@ -83,7 +83,6 @@ export const GlobalChatMessages = ({
   streamingMessageId,
   streamedMessageText,
   isStreaming,
-  _isSending,
   sendMessage,
   prompts,
   bottomRef,
