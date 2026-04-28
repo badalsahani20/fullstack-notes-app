@@ -2,12 +2,45 @@ import crypto from "crypto";
 import Notes from "../models/notes.model.js";
 import AiAssistCache from "../models/aiAssistCache.model.js";
 import catchAsync from "../utils/catchAsync.js";
-import { checkGrammar, chatWithAi, runAiAssist, generateTitle, getDynamicPrompts } from "../services/ai.service.js";
+import {
+  checkGrammar,
+  chatWithAi,
+  runAiAssist,
+  generateTitle,
+  getDynamicPrompts,
+} from "../services/ai.service.js";
 import GlobalChatSession from "../models/globalChatSession.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
 import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
+
+/**
+ * Fetch note context when the message is plausibly about the note.
+ * First turn always fetches. Follow-ups fetch on broad note-related keywords.
+ * Clearly off-topic messages (greetings, math, general questions) are skipped.
+ */
+const shouldFetchNote = (message = "", history = []) => {
+  if (!history || history.length === 0) return true;
+
+  const lower = message.toLowerCase();
+  const noteKeywords = [
+    // Direct references
+    "note", "this", "content", "text", "document",
+    // Action verbs
+    "summarize", "summary", "explain", "rewrite", "improve",
+    "fix", "check", "review", "analyze", "analyse", "translate",
+    "continue", "expand", "shorten", "simplify", "edit", "update",
+    "help me", "help with", "work on", "look at",
+    // Structure references
+    "bullet", "point", "section", "paragraph", "heading",
+    "title", "step", "part", "line", "chapter",
+    // Question patterns
+    "what does", "what is in", "tell me", "read", "above",
+    "wrote", "written", "about", "based on", "from my",
+  ];
+  return noteKeywords.some((kw) => lower.includes(kw));
+};
 
 const hashText = (text = "") =>
   crypto
@@ -35,48 +68,44 @@ export const checkGrammarController = catchAsync(async (req, res) => {
 });
 
 export const aiAssistController = catchAsync(async (req, res) => {
-  const { noteId, action, selectedText, noteText } = req.body;
+  const { noteId, action, selectedText, noteText, stream } = req.body;
 
   if (!noteId || !action) {
-    return res.status(400).json({ success: false, message: "noteId and action are required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "noteId and action are required" });
   }
 
-  // Handle "new" notes that aren't in the DB yet
-  if (noteId === "new") {
-    const hasSelection = Boolean(selectedText && selectedText.trim());
-    const sourceType = hasSelection ? "selection" : "note";
-    const sourceText = (selectedText && selectedText.trim()) || (noteText && noteText.trim());
-
-    if (!sourceText || !sourceText.trim()) {
-      return res.status(400).json({ success: false, message: "Text is required for AI assist" });
+  // 1. Resolve Note and Source Text
+  let note = null;
+  if (noteId !== "new") {
+    note = await Notes.findOne({ _id: noteId, user: req.user._id });
+    if (!note) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Note not found" });
     }
-
-    const result = await runAiAssist({ action, text: sourceText });
-    return res.status(200).json({
-      success: true,
-      cached: false,
-      data: { ...result, sourceType },
-    });
-  }
-
-  const note = await Notes.findOne({ _id: noteId, user: req.user._id });
-  if (!note) {
-    return res.status(404).json({ success: false, message: "Note not found" });
   }
 
   const hasSelection = Boolean(selectedText && selectedText.trim());
   const sourceType = hasSelection ? "selection" : "note";
-  const sourceText = (selectedText && selectedText.trim()) || (noteText && noteText.trim()) || stripHtml(note.content);
+  const sourceText =
+    (selectedText && selectedText.trim()) ||
+    (noteText && noteText.trim()) ||
+    (note ? stripHtml(note.content) : "");
 
   if (!sourceText || !sourceText.trim()) {
-    return res.status(400).json({ success: false, message: "Text is required for AI assist" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Text is required for AI assist" });
   }
 
   const inputHash = hashText(sourceText);
 
+  // 2. Check Cache First
   const cached = await AiAssistCache.findOne({
     user: req.user._id,
-    note: note._id,
+    note: note?._id || null,
     action,
     sourceType,
     inputHash,
@@ -93,9 +122,88 @@ export const aiAssistController = catchAsync(async (req, res) => {
     });
   }
 
-  const result = await runAiAssist({ action, text: sourceText });
+  // 3. Call AI Service (Stream or Static)
+  const result = await runAiAssist({
+    action,
+    text: sourceText,
+    stream: !!stream,
+  });
 
-  if (action === "grammar" && !hasSelection) {
+  if (stream) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    let finalSuggestion = "";
+    const decoder = new TextDecoder();
+
+    try {
+      for await (const chunk of result) {
+        let chunkText = "";
+
+        if (typeof chunk.text === "function") {
+          // Gemini Path
+          chunkText = chunk.text();
+          res.write(
+            `data: ${JSON.stringify({ choices: [{ delta: { content: chunkText } }] })}\n\n`,
+          );
+        } else {
+          // OpenRouter Path
+          chunkText = decoder.decode(chunk);
+          res.write(chunkText);
+        }
+
+        // Accumulate clean text for caching
+        if (typeof chunk.text === "function") {
+          finalSuggestion += chunkText;
+        } else {
+          const lines = chunkText.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.slice(6));
+                finalSuggestion += data.choices?.[0]?.delta?.content || "";
+              } catch (e) {}
+            }
+          }
+        }
+      }
+
+      // Save the streamed result to cache after completion
+      await AiAssistCache.findOneAndUpdate(
+        {
+          user: req.user._id,
+          note: note?._id || null,
+          action,
+          sourceType,
+          inputHash,
+        },
+        {
+          user: req.user._id,
+          note: note?._id || null,
+          action,
+          sourceType,
+          inputHash,
+          noteUpdatedAt: note?.updatedAt || new Date(),
+          response: {
+            action,
+            suggestion: finalSuggestion,
+            original: sourceText,
+            errors: [],
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true },
+      );
+    } catch (err) {
+      console.error("AI Assist Stream Error:", err.message);
+    } finally {
+      res.end();
+    }
+    return;
+  }
+
+  // 🛡️ Static Path
+  if (action === "grammar" && !hasSelection && note) {
     note.grammarErrors = result.errors;
     await note.save();
   }
@@ -103,19 +211,18 @@ export const aiAssistController = catchAsync(async (req, res) => {
   await AiAssistCache.findOneAndUpdate(
     {
       user: req.user._id,
-      note: note._id,
+      note: note?._id || null,
       action,
       sourceType,
       inputHash,
-      noteUpdatedAt: note.updatedAt,
     },
     {
       user: req.user._id,
-      note: note._id,
+      note: note?._id || null,
       action,
       sourceType,
       inputHash,
-      noteUpdatedAt: note.updatedAt,
+      noteUpdatedAt: note?.updatedAt || new Date(),
       response: {
         action: result.action,
         suggestion: result.suggestion,
@@ -123,7 +230,7 @@ export const aiAssistController = catchAsync(async (req, res) => {
         original: result.original || "",
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true },
   );
 
   res.status(200).json({
@@ -136,10 +243,9 @@ export const aiAssistController = catchAsync(async (req, res) => {
   });
 });
 
-
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, sessionId } = req.body;
-  const noteContext = req.body.noteContext || "";
+  const { message, imageBase64, sessionId, stream } = req.body;
+  const noteId = req.body.noteId || null;
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res.status(400).json({
@@ -148,9 +254,8 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     });
   }
 
-  // Global chat intentionally omits noteContext.
-  // The editor AI panel always provides it, even if an empty string.
-  const isGlobalChat = typeof req.body.noteContext === "undefined";
+  // Editor chat sends noteId; global chat omits it entirely
+  const isGlobalChat = !noteId && typeof req.body.noteId === "undefined" && typeof req.body.noteContext === "undefined";
 
   // Load stored history from DB
   let session = null;
@@ -158,87 +263,182 @@ export const chatWithAiController = catchAsync(async (req, res) => {
 
   if (isGlobalChat) {
     if (sessionId) {
-      // Resume an existing session — verify it belongs to this user
-      session = await GlobalChatSession.findOne({ _id: sessionId, user: req.user._id });
+      session = await GlobalChatSession.findOne({
+        _id: sessionId,
+        user: req.user._id,
+      });
       if (!session) {
-        return res.status(404).json({ success: false, message: "Session not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Session not found" });
       }
     }
-    // If no sessionId: null session → will create a brand new one after the AI replies
 
     if (session) {
-      history = session.messages.map((m) => ({ role: m.role, content: m.content }));
+      history = session.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
     }
   } else {
-    // In-editor chat: frontend still manages history
     history = Array.isArray(req.body.history) ? req.body.history : [];
   }
 
-  // Call the AI service
-  const result = await chatWithAi({
-    message,
-    history,
-    summary: req.body.summary || "",
-    noteContext,
-    imageBase64,
-  });
-
-  // Persist to DB if global chat
+  // 🆔 Generate session ID early for new chats
   let activeSessionId = sessionId;
-  if (isGlobalChat) {
+  let activeSession = session;
+
+  if (isGlobalChat && !activeSessionId) {
+    const newSession = await GlobalChatSession.create({
+      user: req.user._id,
+      messages: [],
+    });
+    activeSessionId = newSession._id;
+    activeSession = newSession;
+  }
+
+  // 📝 Fetch note from DB when the message is note-related (broad keyword heuristic)
+  let noteContext = "";
+  let noteFetched = false;
+  if (!isGlobalChat && noteId && shouldFetchNote(message, history)) {
+    const note = await Notes.findOne({ _id: noteId, user: req.user._id }).lean();
+    if (note?.content) {
+      noteContext = `Title: ${note.title || "Untitled"}\n\n${stripHtml(note.content).slice(0, 8000)}`;
+      noteFetched = true;
+      console.log("📄 Note fetched for chat —", noteContext.length, "chars");
+    }
+  } else if (!isGlobalChat && noteId) {
+    console.log("⏭️  Note fetch skipped — not note-related");
+  }
+
+  let finalReply = "";
+
+  // ── Open SSE connection immediately so the browser isn't waiting blind ──────
+  if (stream) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("Access-Control-Expose-Headers", "X-Session-Id");
+    if (activeSessionId)
+      res.setHeader("X-Session-Id", activeSessionId.toString());
+    // Keep-alive comment — tells the browser the connection is live while AI thinks
+    res.write(": keep-alive\n\n");
+  }
+
+  // 🚀 Call the AI service (full fallback waterfall via chatWithAi)
+  let result;
+  try {
+    result = await chatWithAi({
+      message,
+      history,
+      summary: req.body.summary || "",
+      noteContext,
+      imageBase64,
+      stream: !!stream,
+    });
+  } catch (aiError) {
+    console.error("❌ All AI models failed:", aiError.message);
+    // SSE connection is already open — can't use the global error handler
+    if (stream) {
+      res.write(`data: ${JSON.stringify({ type: "error", message: "AI service unavailable" })}\n\n`);
+      res.end();
+    }
+    return;
+  }
+
+  if (stream) {
+    const decoder = new TextDecoder();
+
+    try {
+      // Emit tool activity event so the UI shows "📄 Read note"
+      if (noteFetched) {
+        res.write(`data: ${JSON.stringify({ type: "tool_call", tool: "get_note_content" })}\n\n`);
+      }
+
+      for await (const chunk of result) {
+        const text = decoder.decode(chunk);
+        res.write(text); // Pipe raw SSE chunks to frontend
+
+        // Accumulate clean text for DB persistence
+        const lines = text.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              finalReply += data.choices?.[0]?.delta?.content || "";
+            } catch (e) {
+              // Handle partial JSON or [DONE] tag
+            }
+          }
+        }
+      }
+    } catch (streamError) {
+      console.error("Streaming error:", streamError.message);
+    } finally {
+      res.end();
+    }
+  } else {
+    finalReply = result.reply;
+  }
+
+  // 💾 Persist completion to DB
+  if (isGlobalChat && activeSessionId) {
     const safeUserContent = imageBase64
       ? `[User attached an image] ${message}`.trim()
       : message;
-
     const newMessages = [
       { role: "user", content: safeUserContent },
-      { role: "assistant", content: result.reply },
+      { role: "assistant", content: finalReply },
     ];
 
-    if (session) {
-      // Append to existing session
-      const isFirstMessage = session.messages.length === 0;
-      session.messages.push(...newMessages);
-      await session.save(); // pre-save hook trims to cap
+    const sessionToUpdate =
+      activeSession || (await GlobalChatSession.findById(activeSessionId));
+    if (sessionToUpdate) {
+      const isFirstMessage = sessionToUpdate.messages.length === 0;
+      sessionToUpdate.messages.push(...newMessages);
+      await sessionToUpdate.save();
 
       if (isFirstMessage) {
-        await generateTitle(message)
-          .then((title) => GlobalChatSession.findByIdAndUpdate(session._id, { title }).exec())
+        generateTitle(message)
+          .then((title) =>
+            GlobalChatSession.findByIdAndUpdate(activeSessionId, {
+              title,
+            }).exec(),
+          )
           .catch(() => {});
       }
-    } else {
-      // Create a brand new session
-      const newSession = await GlobalChatSession.create({
-        user: req.user._id,
-        messages: newMessages,
-      });
-      activeSessionId = newSession._id; // return new sessionId to frontend
-
-      await generateTitle(message)
-        .then((title) => GlobalChatSession.findByIdAndUpdate(newSession._id, { title }).exec())
-        .catch(() => {});
     }
   }
+  // If we streamed, we already ended the response. Exit.
+  if (stream) return;
 
+  // Otherwise, send final JSON for static calls
   res.status(200).json({
     success: true,
     data: {
-      reply: result.reply,
-      segments: result.segments,
-      history: result.history,
-      sessionId: activeSessionId, // frontend stores this for subsequent messages
+      reply: finalReply,
+      segments: parseIrisResponse(finalReply),
+      history: [
+        ...history,
+        { role: "user", content: message },
+        { role: "assistant", content: finalReply },
+      ],
+      sessionId: activeSessionId,
     },
   });
 });
 
 // GET /api/ai/chat/session/:sessionId — load messages for a specific session
 export const getChatSessionController = catchAsync(async (req, res) => {
-  const session = await GlobalChatSession
-    .findOne({ _id: req.params.sessionId, user: req.user._id })
-    .lean();
+  const session = await GlobalChatSession.findOne({
+    _id: req.params.sessionId,
+    user: req.user._id,
+  }).lean();
 
   if (!session) {
-    return res.status(404).json({ success: false, message: "Session not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Session not found" });
   }
 
   res.status(200).json({
@@ -258,11 +458,10 @@ export const getChatSessionController = catchAsync(async (req, res) => {
 
 // GET /api/ai/sessions — sidebar: list all sessions (no messages, just metadata)
 export const getAllSessionsController = catchAsync(async (req, res) => {
-  const sessions = await GlobalChatSession
-    .find({ user: req.user._id })
+  const sessions = await GlobalChatSession.find({ user: req.user._id })
     .select("title updatedAt") // only what the sidebar needs
-    .sort({ updatedAt: -1 })   // newest first
-    .limit(20)                 // cap at 20 — sidebar doesn't need more
+    .sort({ updatedAt: -1 }) // newest first
+    .limit(20) // cap at 20 — sidebar doesn't need more
     .lean();
 
   res.status(200).json({

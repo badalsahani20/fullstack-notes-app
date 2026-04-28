@@ -3,69 +3,270 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mapDiffsToError } from "../utils/mapDiffsToError.js";
 import { client } from "../utils/groqClient.js";
 import { summarizeHistory } from "../utils/summarizeHistory.js";
-import { OpenRouter } from '@openrouter/sdk';
+import { OpenRouter } from "@openrouter/sdk";
 import Prompt from "../models/prompts.model.js";
 import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 
-
+// --- CONFIGURATION ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
-const NOTE_CONTEXT_PREFIX = "__NOTE_CONTEXT__:";
 
-const ensureAiApiKey = () => {
+const PRIMARY_MODEL = "qwen/qwen3.5-flash-02-23";
+const FALLBACK_MODEL = "llama-3.3-70b-versatile";
+
+// --- VALIDATION HELPERS ---
+const ensureAiApiKey = () => { 
   if (!process.env.GEMINI_API_KEY && !process.env.OPEN_ROUTER) {
-    throw new Error(`Both GEMINI and OPENROUTER api keys are missing from environment variables`);
+    throw new Error(`Both GEMINI and OPENROUTER api keys are missing`);
   }
 };
 
 const ensureGroqApiKey = () => {
   if (!process.env.GROQ_API_KEY) {
-    throw new Error("GROQ api key is missing from environment variables");
+    throw new Error("GROQ api key is missing");
   }
 };
 
+// --- CORE AI EXECUTION FUNCTIONS ---
+
+const executeOpenRouter = async (modelId, messages, stream = false) => {
+  if (!process.env.OPEN_ROUTER) throw new Error("No OPEN_ROUTER API Key found");
+
+  const response = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPEN_ROUTER}`,
+        "HTTP-Referer": process.env.BACKEND_URL || "http://localhost:5500",
+        "X-Title": "Notesify AI Assistant",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: modelId,
+        messages: messages,
+        stream: stream,
+        // Ask OpenRouter to include reasoning tokens in the stream
+        // Works with Qwen 3 (delta.reasoning) and Claude (delta.reasoning_content)
+        ...(stream ? { include_reasoning: true } : {}),
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `OpenRouter returned ${response.status}: ${JSON.stringify(errorData)}`,
+    );
+  }
+
+  //If streaming return the raw response body
+  if (stream) return response.body;
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content;
+
+  if (!content) throw new Error(`OpenRouter (${modelId}) returned no content`);
+
+  return content;
+};
+
+const executeNvidia = async (messages, stream = false) => {
+  if (!process.env.NVIDIA_API_KEY) throw new Error("No NVIDIA API Key");
+
+  console.log("🟦 Attempting NVIDIA (Gemma 3 27B)...");
+
+  const response = await fetch(
+    "https://integrate.api.nvidia.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemma-3-27b-it",
+        messages: messages,
+        stream: stream,
+        max_tokens: 1024,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error("❌ NVIDIA error:", response.status, JSON.stringify(errorData));
+    throw new Error(
+      `NVIDIA returned ${response.status}: ${JSON.stringify(errorData)}`,
+    );
+  }
+
+  if (stream) return response.body; // ReadableStream — pipe directly like OpenRouter
+
+  const data = await response.json();
+  console.log("✅ NVIDIA responded successfully");
+  return data.choices[0].message.content;
+};
+
+const executeGroq = async (messages) => {
+  if (!client?.chat?.completions)
+    throw new Error("Groq client not properly initialized");
+
+  const response = await client.chat.completions.create({
+    model: FALLBACK_MODEL,
+    messages: messages,
+  });
+  return response.choices[0].message.content;
+};
+
 // Helper: Tries Gemini first, falls back to OpenRouter if Gemini fails or is missing
-const generateContentWithFallback = async (prompt) => {
+const generateContentWithFallback = async (prompt, stream = false) => {
   ensureAiApiKey();
 
   // Try Gemini first if key exists
   if (process.env.GEMINI_API_KEY) {
     try {
-      const result = await model.generateContent(prompt);
-      console.log("💎 Action answered by Gemma-3-27b-it");
-      return result.response.text().trim();
+      if (stream) {
+        const result = await model.generateContentStream(prompt);
+        console.log("💎 Action answered by Gemma-3-27b-it (Stream)");
+        return result.stream;
+      } else {
+        const result = await model.generateContent(prompt);
+        console.log("💎 Action answered by Gemma-3-27b-it");
+        return result.response.text().trim();
+      }
     } catch (error) {
       console.warn("Gemini Error, falling back to OpenRouter:", error.message);
       if (!process.env.OPEN_ROUTER) throw error;
     }
   }
 
-  // Fallback to OpenRouter using direct fetch (reliable fallback)
+  // Fallback to OpenRouter using direct fetch
   if (process.env.OPEN_ROUTER) {
-    const openRouter = new OpenRouter({
-      apiKey: process.env.OPEN_ROUTER,
-    });
-
-    const completion = await openRouter.chat.send({
-      httpReferer: process.env.BACKEND_URL || 'http://localhost:5500',
-      appTitle: 'Notesify',
-      chatRequest: {
-        model: "meta-llama/llama-3.1-8b-instruct",
-        messages: [{ role: 'user', content: prompt }],
-        stream: false,
-      },
-    });
-
-    const content = completion?.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || !content.trim()) {
-      throw new Error("OpenRouter returned an empty response");
-    }
-
-    return content.trim();
+    return await executeOpenRouter(
+      "meta-llama/llama-3.1-8b-instruct",
+      [{ role: "user", content: prompt }],
+      stream,
+    );
   }
 
   throw new Error("No AI feature keys configured");
 };
+
+// --- ROUTING & ORCHESTRATION ---
+
+const getAiReply = async (
+  message,
+  imageBase64,
+  systemPrompt,
+  history,
+  stream = false,
+) => {
+  // Ensure history content is always text-only strings for safety
+  const safeHistory = history.map((h) => ({
+    role: h.role,
+    content:
+      typeof h.content === "string" ? h.content : JSON.stringify(h.content),
+  }));
+
+  // 1. Prepare message for Qwen (Multimodal Primary)
+  const qwenMessages = [
+    { role: "system", content: systemPrompt },
+    ...safeHistory,
+    {
+      role: "user",
+      content: imageBase64
+        ? [
+            { type: "text", text: message },
+            {
+              type: "image_url",
+              image_url: {
+                url: imageBase64.startsWith("data:")
+                  ? imageBase64
+                  : `data:image/jpeg;base64,${imageBase64}`,
+              },
+            },
+          ]
+        : message,
+    },
+  ];
+
+  try {
+    // 🔥 TRY PRIMARY: Qwen 3.5 Flash
+    const reply = await executeOpenRouter(PRIMARY_MODEL, qwenMessages, stream);
+    console.log("🤖 Chat answered by Qwen 3.5 Flash");
+    return reply;
+  } catch (error) {
+    console.error("❌ QWEN PRIMARY CRASHED:", error.message);
+    console.warn("Qwen Primary Failed, entering legacy fallback...");
+
+    // 🛡️ LEGACY FALLBACK WATERFALL (Gemma <-> Llama)
+    if (imageBase64) {
+      try {
+        const nvidiaMessages = [
+          { role: "system", content: systemPrompt },
+          ...safeHistory,
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `[System Directive: Describe image and answer prompt]\n\nUser prompt: ${message}`,
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageBase64.startsWith("data:")
+                    ? imageBase64
+                    : `data:image/jpeg;base64,${imageBase64}`,
+                },
+              },
+            ],
+          },
+        ];
+        console.log("📷 Falling back to NVIDIA Vision (Llama 3.1 70B)...");
+        return await executeNvidia(nvidiaMessages, stream);
+      } catch (err) {
+        console.warn(
+          "Nvidia Vision failed, final fallback to Groq text-only:",
+          err.message,
+        );
+        const groqMessages = [
+          { role: "system", content: systemPrompt },
+          ...safeHistory,
+          {
+            role: "user",
+            content: `${message}\n\n[System Note: Vision models exhausted. This model is reading a text-only representation.]`,
+          },
+        ];
+        return await executeGroq(groqMessages);
+      }
+    } else {
+      try {
+        const groqMessages = [
+          { role: "system", content: systemPrompt },
+          ...safeHistory,
+          { role: "user", content: message },
+        ];
+        console.log("⚡ Falling back to GROQ (Llama 70B)");
+        return await executeGroq(groqMessages);
+      } catch (err) {
+        console.warn(
+          "Groq failed, final fallback to NVIDIA Text:",
+          err.message,
+        );
+        const nvidiaMessages = [
+          { role: "system", content: systemPrompt },
+          ...safeHistory,
+          { role: "user", content: message },
+        ];
+        return await executeNvidia(nvidiaMessages, stream);
+      }
+    }
+  }
+};
+
+// --- EXPORTED SERVICES ---
 
 export const checkGrammar = async (text) => {
   const prompt = `You are a professional editor. Fix grammar, spelling, punctuation, and awkward phrasing while preserving meaning. Return only corrected text.\n\nText:\n${text}`;
@@ -94,23 +295,18 @@ const actionPrompts = {
     `Explain the following note in simpler language for a beginner. Use markdown for structure. Keep it accurate and clear. Return the markdown text only, no code blocks.Or if user asks a question about the note, answer it in a simple and clear way. Return the answer in markdown text only, no code blocks.\n\nNote:\n${text}`,
   rewrite: (text) =>
     `Rewrite the following text to improve clarity, flow, and grammar while preserving meaning. Use markdown for structural improvements if needed. Return the improved markdown text only, no code blocks.\n\nText:\n${text}`,
-  continue: (text) => 
+  continue: (text) =>
     `Continue the following text in a way that is consistent with the style and tone of the original text. Return plain text only. Continue naturally from the provided text.\n\nText:\n${text}`,
 };
 
-export const runAiAssist = async ({ action, text }) => {
+export const runAiAssist = async ({ action, text, stream = false }) => {
   if (!text || !text.trim()) {
     throw new Error("Text is required for AI assist");
   }
 
   if (action === "grammar") {
     const result = await checkGrammar(text);
-    return {
-      action,
-      suggestion: result.corrected,
-      errors: result.errors,
-      original: result.original,
-    };
+    return result;
   }
 
   const promptBuilder = actionPrompts[action];
@@ -119,9 +315,16 @@ export const runAiAssist = async ({ action, text }) => {
   }
 
   try {
-    let suggestion = await generateContentWithFallback(promptBuilder(text));
+    const result = await generateContentWithFallback(
+      promptBuilder(text),
+      stream,
+    );
 
-    // Clean up markdown code blocks if the AI ignored the instruction
+    // If streaming, return the stream object directly
+    if (stream) return result;
+
+    let suggestion = result;
+    // Clean up markdown code blocks if the AI ignored the instruction (only for static strings)
     if (suggestion.startsWith("```")) {
       suggestion = suggestion.replace(/^```[a-z]*\n?|```$/gi, "").trim();
     }
@@ -138,76 +341,17 @@ export const runAiAssist = async ({ action, text }) => {
   }
 };
 
-const PROMPT = `You are Iris, an intelligent AI learning assistant inside Notesify.
-
-## Role
-* You act as a highly intelligent, encouraging, and deeply knowledgeable tutor.
-* Help users understand topics clearly, quickly, and practically. Focus on their intent and explain in a structured, easy-to-learn way.
-
-## Style
--* Use emojis to make the content visual and engaging (e.g., 🚨, ✅, ❌, 👉, 🧠, 💡, 🔍, ⚠️) — but use them purposefully, not excessively.
-- * Keep a warm, encouraging, but professional tone.
-- Avoid long walls of text
-
-## Formatting
-- Use bullet points for steps*
-- Use markdown tables for comparisons
-- Use --- to separate major sections
-- Use code blocks with language tags when needed
-
-## Teaching
-- Break complex ideas step-by-step
-- Use simple analogies when helpful
-- Highlight key takeaways 👉
-- If unsure, say so (no guessing)
-
-## Visualization (IMPORTANT)
-
-Use ONLY when it improves understanding.
-
-Format:
-[IRIS_VIZ type="TYPE" title="TITLE"]
-content
-[/IRIS_VIZ]
-
-Rules:
-- TYPE: mermaid | chart | math
-- Max 2 visualizations
-- If unsure → skip
-
-Mermaid:
-- Valid syntax only
-- Prefer flowchart TD
-- Use sequenceDiagram only if needed
-- Keep simple and readable
-
-Chart:
-{"chartType":"bar|line|pie","labels":[...],"datasets":[{"label":"...","data":[...]}]}
-
-Chart rules:
-- Use type="chart" ONLY when you can provide valid JSON matching the chart schema
-- Never output placeholders like chart_data, sample data, or prose inside a chart block
-- If you do not have concrete chart values, use mermaid instead or skip visualization entirely
-
-Math:
-Valid KaTeX LaTeX
-
-Critical:
-- Never use \`\`\`mermaid
-- Never break IRIS_VIZ format
-If a diagram is useful, ALWAYS use IRIS_VIZ format instead of markdown code blocks.`;
-
-
 export const chatWithAi = async ({
   message,
   history = [],
   summary = "",
   noteContext = "",
-  imageBase64 = null
+  imageBase64 = null,
+  stream = false,
 }) => {
-  ensureGroqApiKey();
+  ensureAiApiKey(); // Only requires Gemini or OpenRouter — Groq is a fallback, not a prerequisite
 
-  if ((!message || !message.trim()) && !imageBase64) {
+  if (!message?.trim() && !imageBase64) {
     throw new Error("Message or Image is required for AI assist");
   }
 
@@ -217,109 +361,60 @@ export const chatWithAi = async ({
   }
 
   const trimmedHistory = history.slice(-6);
-  const safeContext = noteContext?.slice(0, 1500);
+  const safeContext = noteContext?.slice(0, 8000);
+  console.log("🧠 Context Size ", noteContext.length || 0, "chars");
 
-  // Combine all system rules into ONE message to prevent Nvidia 400 Error (Gemma strictly demands alternating formats)
+  const noteBlock = safeContext
+    ? [
+        "IMPORTANT: The user's note content is already provided below.",
+        "Do NOT ask the user to share or paste their note — you already have it.",
+        `\n--- USER'S NOTE ---\n${safeContext}\n--- END OF NOTE ---`,
+      ].join("\n")
+    : null;
+
   const combinedSystemPrompt = [
     PROMPT,
-    safeContext && `Relevant content from the user's note:\n ${safeContext}`,
-    summary && `Conversation summary: \n${summary}`
-  ].filter(Boolean).join("\n\n---\n\n");
+    noteBlock,
+    summary && `Conversation summary:\n${summary}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
-  // 1. Build the base system messages
-  const baseMessages = [
-    { role: "system", content: combinedSystemPrompt },
-    ...trimmedHistory,
-  ].filter(Boolean);
+  const reply = await getAiReply(
+    message,
+    imageBase64,
+    combinedSystemPrompt,
+    trimmedHistory,
+    stream,
+  );
 
-  // 2. Build the NVIDIA-specific User Prompt (Handles Image tag if it exists)
-  const nvidiaUserContent = imageBase64 ? [
-  { 
-    type: "text", 
-    text: `[System Directive: Provide a highly detailed description of what you see in the attached image, then answer the user's prompt.]\n\nUser prompt: ${message}` 
-  },
-  { 
-    type: "image_url", 
-    image_url: { 
-      url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}` 
-    } 
-  }
-] : message;
-
-  // 3. Build the GROQ-specific User Prompt (Strictly Text Only)
-  const groqUserContent = imageBase64 
-    ? `${message}\n\n[System Note: The user attached an image, but this model cannot view images. Please politely inform them image process model is exhausted.]` 
-    : message;
-
-  const groqMessages = [
-    ...baseMessages,
-    { role: "user", content: groqUserContent }
-  ];
-
-
-  const executeNvidia = async () => {
-    if (!process.env.NVIDIA_API_KEY) throw new Error("No NVIDIA API Key");
-    
-    const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.NVIDIA_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "google/gemma-3-27b-it",
-        messages: [...baseMessages, { role: "user", content: nvidiaUserContent }],
-        stream: false,
-        max_tokens: 1024,
-      })
-    });
-
-    if (!response.ok) throw new Error(`NVIDIA returned ${response.status}`);
-
-    const data = await response.json();
-    console.log("✅ Chat answered by NVIDIA Gemma 3!");
-    return data.choices[0].message.content;
-  };
-
-  const executeGroq = async () => {
-    if (!client?.chat?.completions) {
-      throw new Error("Groq client not properly initialized. Check GROQ_API_KEY.");
+  if (stream) {
+    // Fallback models (Groq, NVIDIA) return a plain string — not a ReadableStream.
+    // Wrap it so the controller's `for await (chunk of result)` loop works uniformly.
+    if (typeof reply === "string") {
+      const encoder = new TextEncoder();
+      const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: reply } }] })}\n\ndata: [DONE]\n\n`;
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(sseChunk));
+          controller.close();
+        },
+      });
     }
-    const response = await client.chat.completions.create({
-      model: "llama-3.3-70b-versatile", 
-      messages: groqMessages,
-    });
-    console.log("⚡ Chat answered by GROQ Llama 70B!");
-    return response.choices[0].message.content;
-  };
-
-  let reply = "";
-
-  // Dynamic Routing
-  if (imageBase64) {
-    // 📸 IMAGE PAYLOAD: Nvidia Primary -> Groq Text-Only Fallback
-    try {
-      reply = await executeNvidia();
-    } catch (error) {
-      console.warn("Nvidia Vision Failed, falling back to Groq text-only:", error.message);
-      reply = await executeGroq();
-    }
-  } else {
-    // 📝 TEXT PAYLOAD: Groq Primary (Lightning Fast) -> Nvidia Fallback
-    try {
-      reply = await executeGroq();
-    } catch (error) {
-      console.warn("Groq Text Failed, falling back to Nvidia:", error.message);
-      reply = await executeNvidia();
-    }
+    return reply; // ReadableStream from OpenRouter — pipe as-is
   }
 
   const segments = parseIrisResponse(reply);
 
   return {
+    toolUsed: null,
     reply,
     segments,
-    history: [...trimmedHistory, { role: "user", content: message }, { role: "assistant", content: reply }],
+    history: [
+      ...trimmedHistory,
+      { role: "user", content: message },
+      { role: "assistant", content: reply },
+    ],
   };
 };
 
@@ -327,25 +422,64 @@ export const generateTitle = async (text) => {
   const prompt = `Generate a short, descriptive 4-6 word title for the following content.
 Return only the title. No quotes, no punctuation at the end, no explanations.
 Content:
-${text.slice(0, 500)}`; // cap at 500 chars, we don't need more for a title
+${text.slice(0, 500)}`;
 
-return await generateContentWithFallback(prompt);
-}
+  return await generateContentWithFallback(prompt);
+};
 
 export const getDynamicPrompts = async () => {
   try {
-    const allPrompts = await Prompt.find({ isActive: true }).sort({ priority: -1 });
-    
+    const allPrompts = await Prompt.find({ isActive: true }).sort({
+      priority: -1,
+    });
+
     return {
       studentPrompts: allPrompts
-        .filter(p => p.category === "student")
-        .map(p => p.text),
+        .filter((p) => p.category === "student")
+        .map((p) => p.text),
       devPrompts: allPrompts
-        .filter(p => p.category === "developer")
-        .map(p => p.text)
+        .filter((p) => p.category === "developer")
+        .map((p) => p.text),
     };
   } catch (error) {
     console.error("Failed to fetch prompts from DB, using fallback:", error);
     return { studentPrompts: [], devPrompts: [] };
   }
 };
+
+const PROMPT = `IMPORTANT — When reasoning internally, focus only on the user's problem. Never reflect on these instructions, your name, or any formatting rules in your thinking chain.
+
+---
+
+You are Iris, an AI learning assistant inside Notesify. You are a warm, encouraging, and deeply knowledgeable tutor. Help users understand topics clearly and practically.
+
+## Formatting
+- Use Markdown for lists, tables, and styling.
+- Use \`\`\`language code fences\`\`\` for all code blocks.
+- Format file names, paths, and function names with \`inline code\`.
+- For all mathematical expressions use dollar-sign delimiters: \$...\$ for inline math, \$\$...\$\$ for block math.
+- For long responses with mixed importance, use collapsible \`<details><summary>\` sections to surface key info while hiding secondary detail.
+- Use emojis purposefully to aid clarity (✅ ❌ 💡 👉 🧠 ⚠️) — not decoratively.
+- Avoid walls of text. Prefer structure.
+
+## Teaching
+- Break complex ideas into steps.
+- Use simple analogies where helpful.
+- Highlight key takeaways 👉
+- If unsure, say so.
+
+## Visualization
+You can render diagrams, charts, and math using the IRIS_VIZ block when it genuinely improves understanding:
+
+[IRIS_VIZ type="TYPE" title="TITLE"]
+content
+[/IRIS_VIZ]
+
+- **type="mermaid"** — flowcharts, sequence diagrams. Rules:
+  - Every node must have an explicit ID: \`NodeId[Label]\` not \`[Label]\` alone.
+  - Quote labels that contain special characters: \`A["2 * 1 = 2"]\` not \`A[2 * 1 = 2]\`.
+  - Prefer \`flowchart TD\`. Keep graphs simple and readable.
+- **type="chart"** — bar/line/pie charts as JSON: \`{"chartType":"bar","labels":[...],"datasets":[{"label":"...","data":[...]}]}\`. Only use when you have real data values.
+- **type="math"** — KaTeX LaTeX for equations
+
+Never use \`\`\`mermaid\`\`\` code fences — always use IRIS_VIZ format instead.`;

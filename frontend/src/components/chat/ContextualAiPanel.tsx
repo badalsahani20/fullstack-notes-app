@@ -1,17 +1,9 @@
 import { useMemo, useRef } from "react";
-import { FileText, RefreshCcw, Type, Wand2, X, Loader2 } from "lucide-react";
-import { useTypewriter } from "@/hooks/useTypewriter";
+import { FileText, Type, X, RefreshCcw } from "lucide-react";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
 import type { useAiChat } from "@/hooks/useAiChat";
-import type { Message, AiAction } from "@/components/ai/types";
-import { actionMeta } from "@/components/ai/types";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import type { Message } from "../ai/types";
 
 type ContextualAiPanelProps = {
   aiChat: ReturnType<typeof useAiChat>;
@@ -39,19 +31,15 @@ const ContextualAiPanel = ({
     sendChatMessage,
     stopRequest,
     startNewChat,
-    runAction,
     selectionRange,
-    loadingAction,
+    streamingMessageId,
+    streamedMessageText,
+    isStreaming,
   } = aiChat;
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const { streamingMessageId, streamedMessageText, isStreaming } = useTypewriter(
-    messages as Message[],
-    new Set(["welcome"]),
-  );
 
   const prompts = useMemo(() => ({ students: [], devs: [] }), []);
 
@@ -71,39 +59,6 @@ const ContextualAiPanel = ({
         )}
         {noteTitle ? <span className="note-ai-context-note">{noteTitle}</span> : null}
       </div>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            disabled={isSendingChat || loadingAction !== null}
-            className="note-ai-actions-btn disabled:opacity-80 disabled:cursor-not-allowed"
-          >
-            {loadingAction ? (
-              <Loader2 size={13} className="animate-spin text-[var(--accent-strong)]" />
-            ) : (
-              <Wand2 size={13} />
-            )}
-            {loadingAction ? "Thinking..." : "Actions"}
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="end"
-          sideOffset={8}
-          className="assistant-actions-menu w-48 shadow-md z-[99999]"
-        >
-          {(Object.keys(actionMeta) as AiAction[]).map((action) => (
-            <DropdownMenuItem
-              key={action}
-              onClick={() => void runAction(action)}
-              className="assistant-actions-menu-item cursor-pointer text-sm py-1.5 transition-colors"
-              title={actionMeta[action].prompt}
-            >
-              {actionMeta[action].label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
   );
 
@@ -138,7 +93,13 @@ const ContextualAiPanel = ({
           <button
             type="button"
             className="ai-history-toggle"
-            onClick={loadHistory}
+            onClick={() => {
+              loadHistory();
+              // Let React re-render the messages before scrolling
+              setTimeout(() => {
+                bottomRef.current?.scrollIntoView({ behavior: "instant" });
+              }, 0);
+            }}
             aria-label={`Load ${historyCount} previous messages`}
           >
             Older chat ({historyCount} messages)

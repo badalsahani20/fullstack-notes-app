@@ -105,7 +105,6 @@ const makeSvgResponsive = (svg: string) => {
 const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
-  const diagramIdRef = useRef(`mermaid-${crypto.randomUUID()}`);
 
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -131,7 +130,10 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
 
         await mermaid.parse(cleanCode);
 
-        const { svg } = await mermaid.render(diagramIdRef.current, cleanCode);
+        // Generate a fresh ID each time — Mermaid caches by ID and will
+        // skip re-renders if the same ID is reused across calls.
+        const diagramId = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const { svg } = await mermaid.render(diagramId, cleanCode);
         const responsiveSvg = makeSvgResponsive(svg);
 
         if (renderIdRef.current !== currentRenderId) return;

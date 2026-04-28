@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import api from "@/lib/api";
+import { parseIrisResponse } from "../utils/parseIrisResponse";
+
+
 
 export type IrisSegment = 
   | {id?: string; kind: "text"; content: string}
@@ -11,6 +14,9 @@ export type ChatMessage = {
   text: string;
   segments?: IrisSegment[];
   skipAnimation?: boolean;
+  thought?: string;
+  isThinking?: boolean;
+  thinkingTime?: number;
 };
 
 export type ChatSession = {
@@ -91,64 +97,124 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   sendMessage: async (text: string, image?: string | null) => {
     const { activeSessionId, messages } = get();
 
-    // Optimistically add user message
+    // 1. Optimistically add user message
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
       text: image ? `[Image attached] ${text}` : text,
     };
-    set({ messages: [...messages, userMsg], isSending: true, attachedImage: null });
+
+    // 2. Add empty assistant message for streaming
+    const aiMsgId = crypto.randomUUID();
+    const aiMsg: ChatMessage = {
+      id: aiMsgId,
+      role: "assistant",
+      text: "", // Will be filled chunk by chunk
+      skipAnimation: true, // 🚀 Stops the jitter
+      isThinking: true,
+      thinkingTime: 0,
+    };
+
+    set({ 
+      messages: [...messages, userMsg, aiMsg], 
+      isSending: true, 
+      attachedImage: null 
+    });
 
     try {
-      const { data } = await api.post("/ai/chat", {
-        message: text,
-        sessionId: activeSessionId,
-        imageBase64: image || undefined,
-        // noteContext intentionally omitted — this is global chat
+      const { accessToken } = (await import("./useAuthStore")).useAuthStore.getState();
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          message: text,
+          sessionId: activeSessionId,
+          imageBase64: image || undefined,
+          stream: true,
+        }),
       });
 
-      const aiMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        text: data.data.reply,
-        segments: data.data.segments,
-      };
+      if (!response.ok) throw new Error("Failed to connect to AI");
+      if (!response.body) throw new Error("No response body");
 
-      const newSessionId = data.data.sessionId;
+      // 🆔 Catch early sessionId from header
+      const newSessionId = response.headers.get("X-Session-Id");
+      if (newSessionId) set({ activeSessionId: newSessionId });
 
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let lastUpdateTime = 0;
+      const THROTTLE_MS = 60;
+      const startTime = Date.now();
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const data = JSON.parse(line.slice(6));
+              const delta = data.choices?.[0]?.delta;
+              
+              const content = delta?.content || "";
+              fullText += content;
+
+              const now = Date.now();
+              if (now - lastUpdateTime > THROTTLE_MS) {
+                set((state) => ({
+                  messages: state.messages.map((m) =>
+                    m.id === aiMsgId ? { 
+                      ...m, 
+                      text: fullText,
+                      // isThinking drives the spinner — we never expose raw reasoning text
+                      isThinking: fullText.length === 0,
+                      thinkingTime: Math.floor((Date.now() - startTime) / 1000)
+                    } : m
+                  ),
+                }));
+                lastUpdateTime = now;
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      // 🎨 FINAL POLISH: Parse visualizations and clean up state
+      const segments = parseIrisResponse(fullText);
+      const totalThinkingTime = Math.floor((Date.now() - startTime) / 1000);
       set((state) => ({
-        messages: [...state.messages, aiMsg],
-        activeSessionId: newSessionId,
         isSending: false,
+        messages: state.messages.map((m) =>
+          m.id === aiMsgId ? { 
+            ...m, 
+            text: fullText,
+            // thought is intentionally omitted — raw reasoning is never surfaced to users
+            isThinking: false,
+            thinkingTime: totalThinkingTime,
+            segments,
+            skipAnimation: true 
+          } : m
+        ),
       }));
 
-      // If this was a brand new session, refresh sidebar after a short delay
-      // (title generation is async on backend — give it a moment)
-      if (!activeSessionId && newSessionId) {
-        setTimeout(() => get().fetchSessions(), 1500);
-      } else {
-        // Re-fetch to update updatedAt ordering in sidebar
-        get().fetchSessions();
-      }
+      // Refresh sidebar sessions
+      get().fetchSessions();
 
     } catch (err: any) {
-      // Check if NVIDIA rate limited image
-      if (err?.response?.data?.imageRateLimited) {
-        set({ imageDisabled: true, isSending: false });
-        return;
-      }
-
-      // Add error message to chat
       set((state) => ({
         isSending: false,
-        messages: [
-          ...state.messages,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant" as const,
-            text: "⚠️ Something went wrong. Please try again.",
-          },
-        ],
+        messages: state.messages.map((m) =>
+          m.id === aiMsgId ? { ...m, text: "⚠️ Something went wrong. Please try again." } : m
+        ),
       }));
     }
   },

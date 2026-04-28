@@ -1,5 +1,9 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+import { BrainCircuit } from "lucide-react";
 import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
@@ -23,6 +27,43 @@ const markdownComponents = {
   },
 };
 
+// --- Thinking Widget ---
+interface ThinkingWidgetProps {
+  isThinking: boolean;
+  thinkingTime?: number;
+}
+
+const ThinkingWidget = ({ isThinking, thinkingTime }: ThinkingWidgetProps) => {
+  // Thinking: show animated spinner
+  if (isThinking) {
+    return (
+      <div className="iris-thinking-indicator">
+        <BrainCircuit size={12} className="iris-thinking-indicator-icon" />
+        <span>Thinking</span>
+        <span className="iris-thinking-indicator-dots">
+          <span style={{ animationDelay: "0ms" }} />
+          <span style={{ animationDelay: "180ms" }} />
+          <span style={{ animationDelay: "360ms" }} />
+        </span>
+      </div>
+    );
+  }
+
+  // Done: closed time badge — no content, nothing to expand
+  if (thinkingTime && thinkingTime > 0) {
+    return (
+      <div className="iris-thinking-indicator iris-thinking-indicator-done">
+        <BrainCircuit size={12} className="iris-thinking-indicator-icon" />
+        <span>Thought for {thinkingTime}s</span>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+// --- Main Component ---
+
 interface GlobalChatMessagesProps {
   messages: Message[];
   messagesLoading: boolean;
@@ -42,7 +83,7 @@ export const GlobalChatMessages = ({
   streamingMessageId,
   streamedMessageText,
   isStreaming,
-  isSending,
+  _isSending,
   sendMessage,
   prompts,
   bottomRef,
@@ -62,25 +103,62 @@ export const GlobalChatMessages = ({
         messages.map((msg) => {
           const isActiveStream = msg.id === streamingMessageId;
           const displayText = isActiveStream ? streamedMessageText : msg.text;
+          const isThinking = (msg as any).isThinking ?? false;
+          const thinkingTime = (msg as any).thinkingTime as number | undefined;
+          const toolCalls = (msg as any).toolCalls as Array<{ tool: string }> | undefined;
 
           return (
             <div key={msg.id} className={`gc-msg gc-msg-${msg.role}`}>
               {msg.role === "assistant" ? (
                 <>
-                  <div className="gc-msg-bubble gc-msg-bubble-ai">
-                    <div className="gc-markdown max-w-full">
-                      {(isActiveStream && isStreaming) ? (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                          {displayText}
-                        </ReactMarkdown>
-                      ) : (
-                        <IrisMessageBody segments={msg.segments ?? [{ kind: "text", content: msg.text }]} />
-                      )} 
+                  {/* ── Pure waiting state: pill only, no bubble wrapper ── */}
+                  {isThinking && !displayText ? (
+                    <ThinkingWidget isThinking={true} />
+                  ) : (
+                    <div className="gc-msg-bubble gc-msg-bubble-ai">
+                      {/* Done badge above content */}
+                      {thinkingTime && (
+                        <ThinkingWidget isThinking={false} thinkingTime={thinkingTime} />
+                      )}
+
+                      {/* Tool activity indicator */}
+                      {toolCalls && toolCalls.length > 0 && (
+                        <details className="gc-tool-activity">
+                          <summary className="gc-tool-activity-summary">
+                            <span className="gc-tool-activity-icon">📄</span>
+                            <span>Read note</span>
+                          </summary>
+                          <ul className="gc-tool-activity-list">
+                            {toolCalls.map((tc, i) => (
+                              <li key={i} className="gc-tool-activity-item">
+                                <span className="gc-tool-activity-check">✓</span>
+                                {tc.tool === "get_note_content" ? "Fetched note content" : tc.tool}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+
+                      {/* ── Message content ── */}
+                      <div className="gc-markdown max-w-full">
+                        {(isActiveStream && isStreaming) ? (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[rehypeKatex]}
+                            components={markdownComponents}
+                          >
+                            {displayText}
+                          </ReactMarkdown>
+                        ) : (
+                          <IrisMessageBody segments={msg.segments ?? [{ kind: "text", content: msg.text }]} />
+                        )}
+                      </div>
+
+                      {isActiveStream && isStreaming && (
+                        <span className="gc-cursor" />
+                      )}
                     </div>
-                    {isActiveStream && isStreaming && (
-                      <span className="gc-cursor" />
-                    )}
-                  </div>
+                  )}
                 </>
               ) : (
                 <div className="gc-msg-bubble gc-msg-bubble-user">
@@ -92,23 +170,7 @@ export const GlobalChatMessages = ({
         })
       )}
 
-      {/* Sending indicator */}
-      {isSending && (
-        <div className="gc-msg gc-msg-assistant">
-          <div className="gc-msg-avatar">
-            <div className="iris-orb" style={{ width: '14px', height: '14px' }} />
-          </div>
-          <div className="gc-msg-bubble gc-msg-bubble-ai">
-            <div className="gc-thinking">
-              <span className="gc-loading-dot" style={{ animationDelay: "0ms" }} />
-              <span className="gc-loading-dot" style={{ animationDelay: "150ms" }} />
-              <span className="gc-loading-dot" style={{ animationDelay: "300ms" }} />
-            </div>
-          </div>
-        </div>
-      )}
       <div ref={bottomRef} />
     </div>
   );
 };
-

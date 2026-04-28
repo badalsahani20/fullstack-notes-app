@@ -4,12 +4,13 @@ import type { AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { useAuthStore } from "@/store/useAuthStore";
+import { parseIrisResponse } from "@/utils/parseIrisResponse";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
 import type { Note } from "@/store/useNoteStore";
 import { stripHtml } from "@/utils/stripHtml";
-import { useTypewriter } from "@/hooks/useTypewriter";
 
 const getSelection = (editor: Editor | null) => {
   if (!editor) return { text: "", range: null as SelectionRange };
@@ -73,12 +74,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
 
-  // Shared typewriter animation — skip the static welcome message
-  const { streamingMessageId, streamedMessageText, isStreaming } = useTypewriter(
-    messages,
-    new Set(["welcome"]),
-    () => setCopied(false),
-  );
+  // Direct streaming state — same pattern as useGlobalChatStore (no typewriter)
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [streamedMessageText, setStreamedMessageText] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
 
   const isNew = noteId === "new";
   const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
@@ -184,43 +183,123 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     }
 
     abortControllerRef.current = new AbortController();
+    const isDialogAction = ["summarize", "explain", "rewrite"].includes(action);
+    const targetRange = range || { from: editor?.state.selection.from || 0, to: editor?.state.selection.to || 0 };
 
     try {
       setLoadingAction(action);
-      const res = await api.post(
-        "/ai/assist",
-        { noteId, action, selectedText: selectedText || undefined, noteText: sourceText },
-        { signal: abortControllerRef.current.signal }
-      );
 
-      const data = res.data?.data ?? null;
+      if (isDialogAction) {
+        // ── Streaming path for dialog actions ───────────────────────────
+        const { accessToken } = useAuthStore.getState();
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/assist`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            noteId,
+            action,
+            selectedText: selectedText || undefined,
+            noteText: sourceText,
+            stream: true,
+          }),
+          signal: abortControllerRef.current.signal,
+        });
 
-      if (data?.suggestion) {
-        setResult({ ...data, action });
-        
-        // Capture the target range for later application (used by dialogs)
-        const targetRange = range || { from: editor?.state.selection.from || 0, to: editor?.state.selection.to || 0 };
-        setSelectionRange(targetRange);
+        if (!response.ok) throw new Error("AI action failed. Please try again.");
+        if (!response.body) throw new Error("No response body");
 
-        // Grammar and Continue are "inline" actions
-        const isInline = action === "grammar" || action === "continue";
+        const contentType = response.headers.get("content-type") || "";
 
-        if (isInline && editor) {
-          const isContinue = action === "continue";
-          const insertPos = isContinue ? targetRange.to : targetRange.from;
+        if (!contentType.includes("text/event-stream")) {
+          // ── Cached response path — backend returned JSON even for stream:true ──
+          const json = await response.json();
+          const suggestion = json?.data?.suggestion ?? "";
+          if (suggestion) {
+            setSelectionRange(targetRange);
+            setResult({
+              action,
+              suggestion,
+              errors: json?.data?.errors ?? [],
+              sourceType: selectedText ? "selection" : "note",
+              isStreaming: false,
+            });
+          } else {
+            toast.error("No suggestion returned.");
+          }
+        } else {
+          // ── Live SSE stream path ─────────────────────────────────────────
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let fullSuggestion = "";
+          let dialogOpened = false;
 
-          const chain = editor.chain().focus();
-          if (!isContinue) {
-            chain.deleteRange(targetRange);
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split("\n");
+
+            for (const line of lines) {
+              if (line.startsWith("data: ") && line !== "data: [DONE]") {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  const token = data.choices?.[0]?.delta?.content || "";
+                  if (!token) continue;
+                  fullSuggestion += token;
+
+                  if (!dialogOpened) {
+                    setSelectionRange(targetRange);
+                    dialogOpened = true;
+                  }
+
+                  setResult({
+                    action,
+                    suggestion: fullSuggestion,
+                    errors: [],
+                    sourceType: selectedText ? "selection" : "note",
+                    isStreaming: true,
+                  });
+                } catch { }
+              }
+            }
           }
 
-          chain
-            .insertContentAt(insertPos, `<span data-ai-ghost="true">${data.suggestion}</span>`)
-            .setTextSelection({ from: insertPos, to: insertPos + data.suggestion.length })
-            .run();
+          // Mark streaming done
+          setResult((prev) => prev ? { ...prev, isStreaming: false } : prev);
         }
+
       } else {
-        toast.error("No suggestion returned.");
+        // ── Blocking path for inline actions (grammar, continue) ─────────
+        const res = await api.post(
+          "/ai/assist",
+          { noteId, action, selectedText: selectedText || undefined, noteText: sourceText },
+          { signal: abortControllerRef.current.signal }
+        );
+
+        const data = res.data?.data ?? null;
+
+        if (data?.suggestion) {
+          setResult({ ...data, action });
+          setSelectionRange(targetRange);
+
+          const isInline = action === "grammar" || action === "continue";
+          if (isInline && editor) {
+            const isContinue = action === "continue";
+            const insertPos = isContinue ? targetRange.to : targetRange.from;
+            const chain = editor.chain().focus();
+            if (!isContinue) chain.deleteRange(targetRange);
+            chain
+              .insertContentAt(insertPos, `<span data-ai-ghost="true">${data.suggestion}</span>`)
+              .setTextSelection({ from: insertPos, to: insertPos + data.suggestion.length })
+              .run();
+          }
+        } else {
+          toast.error("No suggestion returned.");
+        }
       }
     } catch (error) {
       if (error && typeof error === "object" && "name" in error && error.name === "CanceledError") {
@@ -228,7 +307,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         return;
       }
       const axiosError = error as AxiosError<{ message?: string }>;
-      const message = axiosError?.response?.data?.message || "AI action failed. Please try again.";
+      const message = (error instanceof Error ? error.message : null)
+        || axiosError?.response?.data?.message
+        || "AI action failed. Please try again.";
       const status = axiosError?.response?.status;
 
       if (status === 429 || /quota|rate limit|too many requests/i.test(message)) {
@@ -269,7 +350,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
     // Default to "Image Context" if they just send an image without text
     const textToSend = trimmed || "Describe this image context.";
-    
+
     const userMessage: Message = { id: `${Date.now()}-chat-user`, role: "user", text: textToSend };
     const optimisticMessages = [...messagesRef.current, userMessage];
     messagesRef.current = optimisticMessages;
@@ -282,30 +363,121 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       abortControllerRef.current = new AbortController();
       setIsSendingChat(true);
 
-      const { history, message, noteContext, contextChanged } = buildChatHistory(textToSend);
-      const res = await api.post(
-        "/ai/chat",
-        { message, history, noteContext, contextChanged, imageBase64: sentImage },
-        { signal: abortControllerRef.current.signal }
+      const { history: chatHist, message } = buildChatHistory(textToSend);
+      const { accessToken } = useAuthStore.getState();
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          message,
+          history: chatHist,
+          noteId,           // controller fetches content server-side
+          imageBase64: sentImage,
+          stream: true,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) throw new Error("Failed to connect to AI");
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let lastUpdateTime = 0;
+      const THROTTLE_MS = 40;
+
+      // Add assistant message with isThinking:true — same as global chat store
+      const aiMsgId = `${Date.now()}-chat-assistant`;
+      const streamStartTime = Date.now();
+      const initialAssistantMsg: Message = {
+        id: aiMsgId,
+        role: "assistant",
+        text: "",
+        isThinking: true,
+      };
+      setMessages((prev) => [...prev, initialAssistantMsg]);
+      messagesRef.current = [...messagesRef.current, initialAssistantMsg];
+
+      // Activate streaming UI — same as global chat store
+      setStreamingMessageId(aiMsgId);
+      setStreamedMessageText("");
+      setIsStreaming(true);
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ") && line !== "data: [DONE]") {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              // ── Tool activity event from controller ─────────────────────
+              if (data.type === "tool_call" && data.tool) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === aiMsgId
+                      ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
+                      : m
+                  )
+                );
+                continue;
+              }
+
+              // ── Regular text token ──────────────────────────────────────
+              const content = data.choices?.[0]?.delta?.content || "";
+              if (!content) continue;
+              fullText += content;
+
+              const now = Date.now();
+              if (now - lastUpdateTime > THROTTLE_MS) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === aiMsgId && m.isThinking
+                      ? { ...m, isThinking: false }
+                      : m
+                  )
+                );
+                setStreamedMessageText(fullText);
+                lastUpdateTime = now;
+              }
+            } catch { }
+          }
+        }
+      }
+
+      // Stream done — finalise
+      const segments = parseIrisResponse(fullText);
+      const thinkingTime = Math.floor((Date.now() - streamStartTime) / 1000);
+
+      setStreamingMessageId(null);
+      setStreamedMessageText("");
+      setIsStreaming(false);
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === aiMsgId
+            ? { ...m, text: fullText, segments, isThinking: false, thinkingTime }
+            : m
+        )
+      );
+      messagesRef.current = messagesRef.current.map((m) =>
+        m.id === aiMsgId ? { ...m, text: fullText, segments, isThinking: false, thinkingTime } : m
       );
 
-      const reply = res.data?.data?.reply?.trim() || "No reply returned.";
-      const segments = Array.isArray(res.data?.data?.segments) ? res.data.data.segments : undefined;
-      const nextHistory = Array.isArray(res.data?.data?.history) ? res.data.data.history : history;
-      setChatHistory(nextHistory);
-
-      const assistantMessage: Message = {
-        id: `${Date.now()}-chat-assistant`,
-        role: "assistant",
-        text: reply,
-        segments,
-      };
+      setChatHistory((prev) => [...prev, { role: "user", content: textToSend }, { role: "assistant", content: fullText }]);
       setResult(null);
-      const persistedMessages = [...messagesRef.current, assistantMessage];
-      messagesRef.current = persistedMessages;
-      setMessages(persistedMessages);
 
-      // Persist to DB — cap at 50 messages to prevent BSON size bloat
+      // Persist to DB
+      const persistedMessages = messagesRef.current;
       const dbHistory = getPersistedHistoryFromMessages(persistedMessages);
       const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
       if (latestNote) {
@@ -364,10 +536,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   /** Replaces the selected text in the editor with the AI suggestion */
   const applySuggestionToSelection = () => {
     if (!editor || !result?.suggestion || !selectionRange) return;
-    
+
     const isDialogAction = ["summarize", "explain", "rewrite"].includes(result.action);
-    const content = isDialogAction 
-      ? result.suggestion 
+    const content = isDialogAction
+      ? result.suggestion
       : `<span data-ai-ghost="true">${result.suggestion}</span>`;
 
     editor.chain()

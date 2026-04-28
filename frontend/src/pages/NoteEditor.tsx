@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
-import { Bot, Sparkles, Loader2 } from "lucide-react";
+import { Bot, Wand2, Loader2 } from "lucide-react";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { usePanelStore } from "@/store/usePanelStore";
@@ -18,6 +18,13 @@ import { useAiChat } from "@/hooks/useAiChat";
 import EditorToolbar from "@/tools/EditorToolbar";
 import AiResultDialog from "@/components/ai/AiResultDialog";
 import { NoteEditorSkeleton } from "@/components/ui/noteEditorSkeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { actionMeta, type AiAction } from "@/components/ai/types";
 
 const preloadAiPanel = () => import("@/components/chat/ContextualAiPanel");
 
@@ -304,30 +311,51 @@ const NoteEditor = () => {
 
       {isMobile && !isAiPanelOpen ? (
         <div className="mobile-ai-fab-stack">
+          {/* Actions dropdown — replaces single Summarize button */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="mobile-ai-fab mobile-ai-fab-sm mobile-ai-fab-secondary disabled:opacity-80 disabled:cursor-not-allowed"
+                aria-label="AI Actions"
+                disabled={aiChat.loadingAction !== null}
+              >
+                {aiChat.loadingAction ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Wand2 size={14} />
+                )}
+                <span>{aiChat.loadingAction ? "Thinking..." : "Actions"}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              sideOffset={8}
+              className="assistant-actions-menu w-44 shadow-md z-[99999]"
+            >
+              {(Object.keys(actionMeta) as AiAction[]).map((action) => (
+                <DropdownMenuItem
+                  key={action}
+                  onClick={() => void aiChat.runAction(action)}
+                  className="assistant-actions-menu-item cursor-pointer text-sm py-1.5 transition-colors"
+                >
+                  {actionMeta[action].label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Ask AI button */}
           <button
             type="button"
-            className="mobile-ai-fab mobile-ai-fab-secondary disabled:opacity-80 disabled:cursor-not-allowed"
-            onClick={() => void aiChat.runAction("summarize")}
-            aria-label="Summarize note"
-            disabled={aiChat.loadingAction !== null}
-          >
-            {aiChat.loadingAction === "summarize" ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Sparkles size={16} />
-            )}
-            <span>{aiChat.loadingAction === "summarize" ? "Thinking..." : "Summarize"}</span>
-          </button>
-          <button
-            type="button"
-            className="mobile-ai-fab"
+            className="mobile-ai-fab mobile-ai-fab-sm"
             onClick={() => {
               void preloadAiPanel();
               setAiPanelOpen(true);
             }}
             aria-label="Open AI assistant"
           >
-            <Bot size={16} />
+            <Bot size={14} />
             <span>Ask AI</span>
           </button>
         </div>

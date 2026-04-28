@@ -19,6 +19,7 @@ export type AssistResult = {
   suggestion: string;
   errors: Array<{ start: number; end: number; original: string; suggestion: string | null }>;
   sourceType: "selection" | "note";
+  isStreaming?: boolean;
 };
 
 export type SelectionRange = { from: number; to: number } | null;
@@ -44,6 +45,9 @@ export type Message = {
   text: string;
   segments?: IrisSegment[];
   skipAnimation?: boolean;
+  isThinking?: boolean;
+  thinkingTime?: number;
+  toolCalls?: Array<{ tool: string }>;
 };
 
 export type ChatHistoryMessage = {

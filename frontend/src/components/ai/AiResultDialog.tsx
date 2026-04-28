@@ -6,6 +6,9 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 
 const markdownComponents = {
@@ -105,11 +108,15 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
           <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[var(--panel-bg)] selection:bg-[var(--accent-strong)]/30">
             <div className="gc-markdown text-[var(--text-strong)] max-w-full overflow-hidden">
                <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
                 components={markdownComponents}
                >
                  {result.suggestion}
                </ReactMarkdown>
+               {result.isStreaming && (
+                 <span className="gc-cursor" aria-hidden="true" />
+               )}
             </div>
           </div>
 
@@ -119,7 +126,8 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
                 variant="outline"
                 size="sm"
                 onClick={copyToClipboard}
-                className="gap-2 h-9 rounded-xl border-[var(--divider)] bg-[var(--surface-muted)] hover:bg-[var(--surface-ghost)] text-[var(--text-strong)]"
+                disabled={result.isStreaming}
+                className="gap-2 h-9 rounded-xl border-[var(--divider)] bg-[var(--surface-muted)] hover:bg-[var(--surface-ghost)] text-[var(--text-strong)] disabled:opacity-50"
               >
                 {copied ? <Check size={14} className="text-green-500" /> : <Clipboard size={14} />}
                 {copied ? "Copied" : "Copy result"}
@@ -141,8 +149,9 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
                   onApply();
                   onClose();
                 }}
+                disabled={result.isStreaming}
                 className={cn(
-                  "gap-2 h-9 rounded-xl px-4 font-semibold shadow-sm",
+                  "gap-2 h-9 rounded-xl px-4 font-semibold shadow-sm disabled:opacity-50",
                   result.action === "rewrite" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"
                 )}
               >
