@@ -1,5 +1,6 @@
+import { useState } from "react";
 import type { ReactNode, RefObject } from "react";
-import { X, ImageIcon, Square, ArrowUp } from "lucide-react";
+import { X, ImageIcon, Square, ArrowUp, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface GlobalChatComposeProps {
@@ -33,11 +34,13 @@ export const GlobalChatCompose = ({
   onStop,
   disclaimerText = "Iris can make mistakes. Double-check important info.",
 }: GlobalChatComposeProps) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5 MB");
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("File must be less than 15 MB");
       return;
     }
     const reader = new FileReader();
@@ -62,7 +65,13 @@ export const GlobalChatCompose = ({
         {attachedImage && (
           <div className="gc-img-preview-wrap">
             <div className="gc-img-preview">
-              <img src={attachedImage} alt="Attached" className="gc-img-thumb" />
+              {attachedImage.startsWith("data:application/pdf") ? (
+                <div className="flex items-center justify-center bg-[#2a2a2a] w-16 h-20 rounded-md">
+                  <span className="text-xs font-bold text-gray-300">PDF</span>
+                </div>
+              ) : (
+                <img src={attachedImage} alt="Attached" className="gc-img-thumb" />
+              )}
               <button className="gc-img-remove" onClick={() => setAttachedImage(null)}>
                 <X size={11} />
               </button>
@@ -92,15 +101,34 @@ export const GlobalChatCompose = ({
         />
 
         <div className="gc-compose-footer">
-          <button
-            type="button"
-            className={`gc-icon-btn ${imageDisabled ? "gc-icon-btn-disabled" : ""}`}
-            onClick={handleImageClick}
-            title={imageDisabled ? "Image unavailable" : "Attach image"}
-          >
-            <ImageIcon size={15} />
-          </button>
-          <input type="file" ref={fileRef} accept="image/*" className="hidden" onChange={handleFileChange} />
+          <div className="relative">
+            <button
+              type="button"
+              className="gc-icon-btn"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              title="Attach"
+            >
+              <Plus size={18} />
+            </button>
+            
+            {isMenuOpen && (
+              <div className="absolute bottom-full left-0 mb-2 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg p-1 shadow-xl flex flex-col gap-1 z-50 min-w-[100px]">
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-[#3f3f3f] text-[13px] text-gray-200 transition-colors ${imageDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  onClick={() => {
+                    handleImageClick();
+                    setIsMenuOpen(false);
+                  }}
+                  title={imageDisabled ? "Image unavailable" : "Attach image"}
+                >
+                  <ImageIcon size={14} />
+                  <span>Image / PDF</span>
+                </button>
+              </div>
+            )}
+          </div>
+          <input type="file" ref={fileRef} accept="image/*,.pdf" className="hidden" onChange={handleFileChange} />
 
           {isSending ? (
             <button

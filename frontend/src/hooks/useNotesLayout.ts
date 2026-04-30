@@ -27,7 +27,7 @@ export const useNotesLayout = () => {
 
   const showNotesPanel = isMobile
     ? !noteId && !showFoldersPanel && !isSearchRoute && !isProfileRoute && !isChatRoute
-    : !isNotesHidden;
+    : !isNotesHidden && !isChatRoute;
 
   const showMainPanel = isMobile
     ? Boolean(noteId) || isSearchRoute || isProfileRoute || isChatRoute

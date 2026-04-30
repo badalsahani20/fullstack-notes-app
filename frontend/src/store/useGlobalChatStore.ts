@@ -148,9 +148,11 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
+      let fullThought = "";
       let lastUpdateTime = 0;
       const THROTTLE_MS = 60;
       const startTime = Date.now();
+      let thinkingEndTime = 0;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -166,18 +168,30 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
               const delta = data.choices?.[0]?.delta;
               
               const content = delta?.content || "";
+              const reasoning = delta?.reasoning || "";
+              
+              if (content && fullText.length === 0) {
+                // First content token arrived — thinking is done
+                thinkingEndTime = Date.now();
+              }
+              
               fullText += content;
+              fullThought += reasoning;
 
               const now = Date.now();
               if (now - lastUpdateTime > THROTTLE_MS) {
+                const currentThinkingTime = thinkingEndTime 
+                  ? Math.floor((thinkingEndTime - startTime) / 1000) 
+                  : Math.floor((now - startTime) / 1000);
+
                 set((state) => ({
                   messages: state.messages.map((m) =>
                     m.id === aiMsgId ? { 
                       ...m, 
                       text: fullText,
-                      // isThinking drives the spinner — we never expose raw reasoning text
+                      thought: fullThought,
                       isThinking: fullText.length === 0,
-                      thinkingTime: Math.floor((Date.now() - startTime) / 1000)
+                      thinkingTime: currentThinkingTime
                     } : m
                   ),
                 }));
@@ -190,16 +204,19 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
       // 🎨 FINAL POLISH: Parse visualizations and clean up state
       const segments = parseIrisResponse(fullText);
-      const totalThinkingTime = Math.floor((Date.now() - startTime) / 1000);
+      const finalThinkingTime = thinkingEndTime 
+        ? Math.floor((thinkingEndTime - startTime) / 1000) 
+        : (fullThought ? Math.floor((Date.now() - startTime) / 1000) : 0);
+
       set((state) => ({
         isSending: false,
         messages: state.messages.map((m) =>
           m.id === aiMsgId ? { 
             ...m, 
             text: fullText,
-            // thought is intentionally omitted — raw reasoning is never surfaced to users
+            thought: fullThought,
             isThinking: false,
-            thinkingTime: totalThinkingTime,
+            thinkingTime: finalThinkingTime,
             segments,
             skipAnimation: true 
           } : m

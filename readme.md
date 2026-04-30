@@ -23,11 +23,12 @@ Iris AI routes requests dynamically across three providers based on payload type
 
 | Provider | Model | Use Case |
 |---|---|---|
-| Groq | Llama 3.3 70B | High-speed text chat (sub-second latency) |
-| NVIDIA | Gemma 2 9B | Vision / multimodal tasks (image analysis) |
+| OpenRouter | DeepSeek V4 | Primary "Brain" for text, complex reasoning, and logic |
+| OpenRouter | Qwen 3.5 Flash | Dedicated Vision model for image analysis and OCR |
+| Groq | Llama 3.3 70B | High-speed fallback and heavy document comprehension |
 | Google Gemini | 2.0 Flash | Complex content actions (rewrite, summarize, grammar) |
 
-Cascading fallbacks ensure near-zero AI downtime: Gemini → OpenRouter (LLaMA 3) on failure, NVIDIA Vision → Groq text-only on failure.
+Cascading fallbacks ensure near-zero AI downtime: DeepSeek → Groq (LLaMA 3) on failure, Qwen Vision → Gemini on failure.
 
 ### Production-Grade Authentication
 Beyond standard JWT — Notesify implements:
@@ -65,6 +66,8 @@ MongoDB full-text indexing provides high-relevance ranking via linguistic scores
 <img src="./assets/ai-chat.png" alt="Iris Global AI Chat" width="100%">
 
 - **Streaming responses** — real-time token-by-token streaming via `ReadableStream`
+- **Thinking UI** — real-time visualization of the AI's internal reasoning process via a dedicated thought-block widget
+- **PDF Extraction Pipeline** — seamlessly attach `.pdf` textbooks; parsed instantly on the backend (`pdf-parse`) and injected into the LLM context
 - **Context injection** — active note content injected into system prompt for context-aware responses
 
 ### Professional Editor (TipTap / ProseMirror)

@@ -20,18 +20,18 @@ const getSelection = (editor: Editor | null) => {
 };
 
 const getActiveNoteSection = (note: string, cursorPosition: number) => {
-  const windowSize = 500;
+  const windowSize = 4000;
   const start = Math.max(0, cursorPosition - windowSize);
   const end = Math.min(note.length, cursorPosition + windowSize);
   return note.slice(start, end);
 };
 
 const resolveNoteContext = (editor: Editor | null, noteText: string) => {
-  if (!editor) return noteText.slice(0, 800);
+  if (!editor) return {text: noteText.slice(0, 8000), hasSelection: false};
   const { text, range } = getSelection(editor);
-  if (range && text) return text;
+  if (range && text) return {text, hasSelection: true};
   const cursor = editor.state.selection.from;
-  return getActiveNoteSection(noteText, cursor);
+  return {text: getActiveNoteSection(noteText, cursor), hasSelection: false};
 };
 
 const getPersistedHistoryFromMessages = (messages: Message[]) =>
@@ -108,7 +108,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         role: m.role,
         text: m.content as string,
         segments: m.segments,
-        skipAnimation: true, // New flag
+        skipAnimation: true,
       }));
 
       const nextMessages = ((prev: Message[]) => {
@@ -162,7 +162,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     };
   }, [editor]);
 
-  // ── Actions ────────────────────────────────────────────────────────────────
 
   /** Cancels any in-flight API request */
   const stopRequest = () => {
@@ -327,8 +326,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   /** Builds the payload for a chat message, including the relevant note context */
   const buildChatHistory = (nextPrompt: string) => {
-    const noteContext = resolveNoteContext(editor, plainNoteText);
-    const normalizedContext = noteContext.trim().slice(0, 1500);
+    const { text: noteContext, hasSelection } = resolveNoteContext(editor, plainNoteText);
+    const normalizedContext = noteContext.trim().slice(0, 8000);
     const contextChanged = Boolean(normalizedContext && normalizedContext !== lastSentContextRef.current);
 
     if (contextChanged) {
@@ -340,7 +339,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     // Keeping this lean prevents hitting the TPM limit on models like llama-3.1-8b-instant.
     const trimmedHistory = chatHistory.slice(-6);
 
-    return { history: trimmedHistory, message: nextPrompt, noteContext: normalizedContext, contextChanged };
+    return { history: trimmedHistory, message: nextPrompt, noteContext: normalizedContext, hasSelection, contextChanged };
   };
 
   /** Sends the current chatInput as a message to the AI */
@@ -363,7 +362,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       abortControllerRef.current = new AbortController();
       setIsSendingChat(true);
 
-      const { history: chatHist, message } = buildChatHistory(textToSend);
+      const { history: chatHist, message, noteContext, hasSelection } = buildChatHistory(textToSend);
       const { accessToken } = useAuthStore.getState();
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
@@ -375,7 +374,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         body: JSON.stringify({
           message,
           history: chatHist,
-          noteId,           // controller fetches content server-side
+          noteId,
+          noteContext,
+          hasSelection,
           imageBase64: sentImage,
           stream: true,
         }),
@@ -388,8 +389,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
+      let fullThought = "";
       let lastUpdateTime = 0;
       const THROTTLE_MS = 40;
+      let thinkingEndTime = 0;
 
       // Add assistant message with isThinking:true — same as global chat store
       const aiMsgId = `${Date.now()}-chat-assistant`;
@@ -432,17 +435,30 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
                 continue;
               }
 
-              // ── Regular text token ──────────────────────────────────────
+              // ── Regular text & reasoning tokens ────────────────────────────────
               const content = data.choices?.[0]?.delta?.content || "";
-              if (!content) continue;
+              const reasoning = data.choices?.[0]?.delta?.reasoning || "";
+              
+              if (!content && !reasoning) continue;
+              
+              if (content && fullText.length === 0) {
+                // First content token arrived — thinking is done
+                thinkingEndTime = Date.now();
+              }
+
               fullText += content;
+              fullThought += reasoning;
 
               const now = Date.now();
               if (now - lastUpdateTime > THROTTLE_MS) {
+                const currentThinkingTime = thinkingEndTime 
+                  ? Math.floor((thinkingEndTime - streamStartTime) / 1000) 
+                  : Math.floor((now - streamStartTime) / 1000);
+
                 setMessages((prev) =>
                   prev.map((m) =>
-                    m.id === aiMsgId && m.isThinking
-                      ? { ...m, isThinking: false }
+                    m.id === aiMsgId
+                      ? { ...m, isThinking: fullText.length === 0, thought: fullThought, thinkingTime: currentThinkingTime }
                       : m
                   )
                 );
@@ -456,7 +472,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       // Stream done — finalise
       const segments = parseIrisResponse(fullText);
-      const thinkingTime = Math.floor((Date.now() - streamStartTime) / 1000);
+      const finalThinkingTime = thinkingEndTime 
+        ? Math.floor((thinkingEndTime - streamStartTime) / 1000) 
+        : (fullThought ? Math.floor((Date.now() - streamStartTime) / 1000) : 0);
 
       setStreamingMessageId(null);
       setStreamedMessageText("");
@@ -465,12 +483,12 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       setMessages((prev) =>
         prev.map((m) =>
           m.id === aiMsgId
-            ? { ...m, text: fullText, segments, isThinking: false, thinkingTime }
+            ? { ...m, text: fullText, thought: fullThought, segments, isThinking: false, thinkingTime: finalThinkingTime }
             : m
         )
       );
       messagesRef.current = messagesRef.current.map((m) =>
-        m.id === aiMsgId ? { ...m, text: fullText, segments, isThinking: false, thinkingTime } : m
+        m.id === aiMsgId ? { ...m, text: fullText, thought: fullThought, segments, isThinking: false, thinkingTime: finalThinkingTime } : m
       );
 
       setChatHistory((prev) => [...prev, { role: "user", content: textToSend }, { role: "assistant", content: fullText }]);

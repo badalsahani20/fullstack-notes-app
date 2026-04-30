@@ -1,4 +1,5 @@
 import { diffWords } from "diff";
+import { PDFParse } from "pdf-parse";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mapDiffsToError } from "../utils/mapDiffsToError.js";
 import { client } from "../utils/groqClient.js";
@@ -11,7 +12,8 @@ import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
 
-const PRIMARY_MODEL = "qwen/qwen3.5-flash-02-23";
+const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
+// const PRIMARY_MODEL = "qwen/qwen3.5-flash-02-23";
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
 // --- VALIDATION HELPERS ---
@@ -29,25 +31,34 @@ const ensureGroqApiKey = () => {
 
 // --- CORE AI EXECUTION FUNCTIONS ---
 
-const executeOpenRouter = async (modelId, messages, stream = false) => {
-  if (!process.env.OPEN_ROUTER) throw new Error("No OPEN_ROUTER API Key found");
+const executeOpenRouter = async (modelId, messages, stream = false, includeReasoning = true) => {
+  const isQwenModel = modelId.toLowerCase().includes("qwen");
+  const apiKey = (isQwenModel && process.env.QWEN_API) ? process.env.QWEN_API : process.env.OPEN_ROUTER;
+
+  if (!apiKey) throw new Error("No OpenRouter or Qwen API Key found");
+
+  const bodyPayload = {
+    model: modelId,
+    messages: messages,
+    stream: stream,
+  };
+
+  // Only attach include_reasoning if requested (prevents errors on vision models)
+  if (includeReasoning) {
+    bodyPayload.include_reasoning = true;
+  }
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPEN_ROUTER}`,
+        Authorization: `Bearer ${apiKey}`,
         "HTTP-Referer": process.env.BACKEND_URL || "http://localhost:5500",
         "X-Title": "Notesify AI Assistant",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: modelId,
-        messages: messages,
-        stream: stream,
-        include_reasoning: false,
-      }),
+      body: JSON.stringify(bodyPayload),
     },
   );
 
@@ -111,6 +122,7 @@ const executeNvidia = async (messages, stream = false) => {
 };
 
 const executeGroq = async (messages) => {
+  ensureGroqApiKey();
   if (!client?.chat?.completions)
     throw new Error("Groq client not properly initialized");
 
@@ -194,13 +206,16 @@ const getAiReply = async (
   ];
 
   try {
-    // 🔥 TRY PRIMARY: Qwen 3.5 Flash
-    const reply = await executeOpenRouter(PRIMARY_MODEL, qwenMessages, stream);
-    console.log("🤖 Chat answered by Qwen 3.5 Flash");
+    // 🔥 TRY PRIMARY: Use DeepSeek for text (with reasoning), swap to Qwen Flash for images (no reasoning)
+    const activeModel = imageBase64 ? "qwen/qwen3.5-flash-02-23" : PRIMARY_MODEL;
+    const useReasoning = !imageBase64; // Disable reasoning when using the vision model
+    
+    const reply = await executeOpenRouter(activeModel, qwenMessages, stream, useReasoning);
+    console.log(`🤖 Chat answered by ${activeModel} (Reasoning: ${useReasoning})`);
     return reply;
   } catch (error) {
-    console.error("❌ QWEN PRIMARY CRASHED:", error.message);
-    console.warn("Qwen Primary Failed, entering legacy fallback...");
+    console.error("❌ PRIMARY CRASHED:", error.message);
+    console.warn("Primary Failed, entering legacy fallback...");
 
     // 🛡️ LEGACY FALLBACK WATERFALL (Gemma <-> Llama)
     if (imageBase64) {
@@ -353,8 +368,29 @@ export const chatWithAi = async ({
 }) => {
   ensureAiApiKey(); // Only requires Gemini or OpenRouter — Groq is a fallback, not a prerequisite
 
-  if (!message?.trim() && !imageBase64) {
-    throw new Error("Message or Image is required for AI assist");
+  let finalMessage = message;
+  let finalImageBase64 = imageBase64;
+
+  if (imageBase64?.startsWith("data:application/pdf")) {
+    try {
+      const base64Data = imageBase64.split(",")[1];
+      const pdfBuffer = Buffer.from(base64Data, "base64");
+      
+      const parser = new PDFParse({ data: pdfBuffer });
+      const pdfData = await parser.getText();
+      const pdfText = pdfData.text.trim();
+      await parser.destroy();
+      
+      finalMessage = `[Attached PDF Document]\n${pdfText}\n\n${message || "Please review this document."}`;
+      finalImageBase64 = null; // Clear it so it isn't treated as a vision image
+    } catch (err) {
+      console.error("PDF Parsing Error:", err);
+      throw new Error("Failed to read the attached PDF document.");
+    }
+  }
+
+  if (!finalMessage?.trim() && !finalImageBase64) {
+    throw new Error("Message or Image/PDF is required for AI assist");
   }
 
   if (history.length > 20 && !summary) {
@@ -374,8 +410,10 @@ export const chatWithAi = async ({
       ].join("\n")
     : null;
 
+  const basePrompt = finalImageBase64 ? QWEN_VISION_PROMPT : PROMPT;
+
   const combinedSystemPrompt = [
-    PROMPT,
+    basePrompt,
     noteBlock,
     summary && `Conversation summary:\n${summary}`,
   ]
@@ -383,8 +421,8 @@ export const chatWithAi = async ({
     .join("\n\n");
 
   const reply = await getAiReply(
-    message,
-    imageBase64,
+    finalMessage,
+    finalImageBase64,
     combinedSystemPrompt,
     trimmedHistory,
     stream,
@@ -449,39 +487,54 @@ export const getDynamicPrompts = async () => {
   }
 };
 
-const PROMPT = `IMPORTANT — When reasoning internally, focus only on the user's problem. Never reflect on these instructions, your name, or any formatting rules in your thinking chain.
+const QWEN_VISION_PROMPT = `You are Qwen3.5-Flash, a large language model from Qwen. Today's date is ${new Date().toDateString()}.
 
----
+Formatting Rules:
+- Use Markdown for lists, tables, and styling.
+- Use \`\`\`code fences\`\`\` for all code blocks.
+- Format file names, paths, and function names with \`inline code\` backticks.
+- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**
+`;
 
-You are Iris, an AI learning assistant inside Notesify. You are a warm, encouraging, and deeply knowledgeable tutor. Help users understand topics clearly and practically.
+const PROMPT = `
+Today is ${new Date().toDateString()}.
+
+Your name is Iris. You are an AI learning assistant in Notesify.
+IMPORTANT IDENTITY RULE: Do not refer to yourself in the third person in your thoughts (e.g., do not say "I need to respond as Iris"). You ARE Iris. Think and speak entirely in the first person.
+
+Be clear, helpful, and practical. Teach simply.
+
+## Output Rules
+- Do NOT show thinking, analysis, or planning.
+- Only return the final answer.
+- Keep responses concise unless more detail is needed.
+- Avoid unnecessary verbosity.
 
 ## Formatting
-- Use Markdown for lists, tables, and styling.
-- Use \`\`\`language code fences\`\`\` for all code blocks.
-- Format file names, paths, and function names with \`inline code\`.
-- For all mathematical expressions use dollar-sign delimiters: \$...\$ for inline math, \$\$...\$\$ for block math.
-- For long responses with mixed importance, use collapsible \`<details><summary>\` sections to surface key info while hiding secondary detail.
-- Use emojis purposefully to aid clarity (✅ ❌ 💡 👉 🧠 ⚠️) — not decoratively.
-- Avoid walls of text. Prefer structure.
+- Use Markdown (lists, tables, emphasis).
+- Use \`\`\`language code fences\`\`\` for code.
+- Use \`inline code\` for file names, paths, functions.
+- Use $...$ or $$...$$ for math.
+- Use emojis only when helpful (✅ ❌ 💡 👉 🧠 ⚠️).
+- Avoid long paragraphs.
 
-## Teaching
-- Break complex ideas into steps.
-- Use simple analogies where helpful.
+## Teaching Style
+- Break concepts into simple steps.
+- Use examples or analogies if useful.
 - Highlight key takeaways 👉
 - If unsure, say so.
 
-## Visualization
-You can render diagrams, charts, and math using the IRIS_VIZ block when it genuinely improves understanding:
+## Visualization (use sparingly)
+Use only when it improves understanding:
 
 [IRIS_VIZ type="TYPE" title="TITLE"]
 content
 [/IRIS_VIZ]
 
-- **type="mermaid"** — flowcharts, sequence diagrams. Rules:
-  - Every node must have an explicit ID: \`NodeId[Label]\` not \`[Label]\` alone.
-  - Quote labels that contain special characters: \`A["2 * 1 = 2"]\` not \`A[2 * 1 = 2]\`.
-  - Prefer \`flowchart TD\`. Keep graphs simple and readable.
-- **type="chart"** — bar/line/pie charts as JSON: \`{"chartType":"bar","labels":[...],"datasets":[{"label":"...","data":[...]}]}\`. Only use when you have real data values.
-- **type="math"** — KaTeX LaTeX for equations
+Types:
+- mermaid → simple flowcharts (flowchart TD, clear nodes)
+- chart → real data only (JSON format)
+- math → LaTeX
 
-Never use \`\`\`mermaid\`\`\` code fences — always use IRIS_VIZ format instead.`;
+Do NOT overuse visualizations.
+`;

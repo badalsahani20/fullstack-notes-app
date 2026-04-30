@@ -244,7 +244,7 @@ export const aiAssistController = catchAsync(async (req, res) => {
 });
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, sessionId, stream } = req.body;
+  const { message, imageBase64, sessionId, stream, noteContext: reqNoteContext, hasSelection } = req.body;
   const noteId = req.body.noteId || null;
 
   if ((!message || !message.trim()) && !imageBase64) {
@@ -300,15 +300,24 @@ export const chatWithAiController = catchAsync(async (req, res) => {
   // 📝 Fetch note from DB when the message is note-related (broad keyword heuristic)
   let noteContext = "";
   let noteFetched = false;
-  if (!isGlobalChat && noteId && shouldFetchNote(message, history)) {
-    const note = await Notes.findOne({ _id: noteId, user: req.user._id }).lean();
-    if (note?.content) {
-      noteContext = `Title: ${note.title || "Untitled"}\n\n${stripHtml(note.content).slice(0, 8000)}`;
-      noteFetched = true;
-      console.log("📄 Note fetched for chat —", noteContext.length, "chars");
+  // Rule: Include context if user highlighted text OR if the message uses keywords
+  const shouldIncludeContext = !isGlobalChat && noteId && (hasSelection || shouldFetchNote(message, history));
+  if (shouldIncludeContext) {
+    if(reqNoteContext) {
+      // use frontend context
+      noteContext = hasSelection ? `[User specifically highlighted this text in their editor]:\n${reqNoteContext}`:
+      `[user's current editor context]:\n${reqNoteContext}`
+    }else {
+      const note = await Notes.findOne({ _id: noteId, user: req.user._id}).lean();
+      if(note?.content) {
+        noteContext = `Title: ${note.title || "Untitled"}\n\n${stripHtml(note.content).slice(0, 1500)}`;
+        noteFetched = true;
+      }else {
+        console.log("⏭️  Note fetch skipped — empty content");
+      }
     }
   } else if (!isGlobalChat && noteId) {
-    console.log("⏭️  Note fetch skipped — not note-related");
+    console.log("⏭️  Note context skipped — no selection and not note-related");
   }
 
   let finalReply = "";

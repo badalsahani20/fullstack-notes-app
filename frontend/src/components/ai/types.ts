@@ -47,6 +47,7 @@ export type Message = {
   skipAnimation?: boolean;
   isThinking?: boolean;
   thinkingTime?: number;
+  thought?: string;
   toolCalls?: Array<{ tool: string }>;
 };
 
