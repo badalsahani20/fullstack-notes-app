@@ -291,7 +291,7 @@ const NoteEditor = () => {
           </ResizablePanel>
           <ResizableHandle className="assistant-resize-handle" />
           <ResizablePanel
-            defaultSize="22rem"
+            defaultSize="30rem"
             minSize="20rem"
             maxSize="50rem"
             className="assistant-panel-shell h-full"

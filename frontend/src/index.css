@@ -1751,7 +1751,7 @@
   color: var(--muted-text);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Mobile Drawer (replaces bottom nav) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* --- Mobile Drawer (replaces bottom nav) --- */
 
 /* Tappable logo / hamburger trigger */
 .mobile-menu-trigger {
@@ -1835,7 +1835,7 @@
 .mobile-drawer-content {
   flex: 1;
   overflow-y: auto;
-  /* FoldersPanel renders its own <aside> Ã¢â‚¬â€ strip extra chrome */
+  /* FoldersPanel renders its own <aside> — strip extra chrome */
 }
 
 /* Make FoldersPanel's aside fill the drawer without extra border/background */
@@ -1879,7 +1879,7 @@
   transform: scale(0.97);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Drawer nav section (top links) Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ——— Drawer nav section (top links) ——— */
 .mobile-drawer-nav-section {
   padding: 0.65rem 0.75rem 0.5rem;
   display: flex;
@@ -1934,7 +1934,7 @@
   font-weight: 600;
 }
 
-/* â€”â€”â€” Iris AI card in drawer â€”â€”â€” */
+/* ——— Iris AI card in drawer ——— */
 .iris-orb-md {
   width: 24px;
   height: 24px;
@@ -3042,9 +3042,9 @@ span[data-ai-ghost] {
   }
 }
 
-/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+/* ═════════════════════════════════════════════════════════════════════════════
    GLOBAL CHAT PAGE  (Iris AI)
-   Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */
+   ═════════════════════════════════════════════════════════════════════════════ */
 
 .gc-shell {
   display: flex;
@@ -3054,7 +3054,7 @@ span[data-ai-ghost] {
   background: var(--panel-bg);
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Sidebar Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ─── Sidebar ─── */
 .gc-sidebar {
   width: 240px;
   display: flex;
@@ -3215,18 +3215,21 @@ span[data-ai-ghost] {
   font-weight: 500;
   letter-spacing: 0.01em;
   color: var(--muted-text);
+  animation: iris-indicator-breathe 2.2s ease-in-out infinite;
+  transition: all 0.3s ease;
 }
 
 .iris-thinking-indicator-done {
   border-color: var(--divider);
   background: transparent;
   opacity: 0.65;
+  animation: none;
 }
 
 .iris-thinking-indicator-icon {
   flex-shrink: 0;
   color: #818cf8;
-  animation: iris-breathe 2s ease-in-out infinite;
+  animation: iris-icon-breathe 2.2s ease-in-out infinite;
 }
 
 .iris-thinking-indicator-done .iris-thinking-indicator-icon {
@@ -3234,9 +3237,20 @@ span[data-ai-ghost] {
   opacity: 0.45;
 }
 
-@keyframes iris-breathe {
-  0%, 100% { opacity: 0.45; transform: scale(1);    }
-  50%       { opacity: 1;    transform: scale(1.15); }
+@keyframes iris-indicator-breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    border-color: color-mix(in srgb, #818cf8 30%, var(--divider));
+  }
+  50% {
+    box-shadow: 0 0 10px 2px rgba(99, 102, 241, 0.12);
+    border-color: color-mix(in srgb, #818cf8 50%, var(--divider));
+  }
+}
+
+@keyframes iris-icon-breathe {
+  0%, 100% { transform: scale(1);    }
+  50%       { transform: scale(1.1); }
 }
 
 .iris-thinking-indicator-dots {
@@ -3356,7 +3370,7 @@ span[data-ai-ghost] {
   }
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Main chat area Ã¢â€â‚¬Ã¢â€â‚¬ */
+/* ─── Main chat area ─── */
 .gc-main {
   flex: 1;
   display: flex;
@@ -3369,7 +3383,7 @@ span[data-ai-ghost] {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.9rem 1.25rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--divider);
   background: color-mix(in srgb, var(--panel-bg) 92%, transparent);
   backdrop-filter: blur(12px);
@@ -3437,6 +3451,8 @@ span[data-ai-ghost] {
   padding: 0.65rem 0.9rem;
   font-size: 0.875rem;
   line-height: 1.65;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 960px) {
@@ -3486,6 +3502,86 @@ span[data-ai-ghost] {
   color: #e2e8f0;
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Tool activity chips ── */
+.gc-tool-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.gc-tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-text);
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--divider);
+  width: fit-content;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .gc-tool-chip {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gc-tool-chip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6366f1;
+}
+
+.dark .gc-tool-chip-icon {
+  color: #818cf8;
+}
+
+/* Breathing glow while tool is active */
+.gc-tool-chip-active {
+  animation: tool-breathe 2s ease-in-out infinite;
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.05);
+  color: var(--text-strong);
+}
+
+.dark .gc-tool-chip-active {
+  border-color: rgba(129, 140, 248, 0.4);
+  background: rgba(129, 140, 248, 0.08);
+}
+
+@keyframes tool-breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px rgba(99, 102, 241, 0.15);
+    transform: scale(1.01);
+  }
+}
+
+/* Checkmark fade-in and pop */
+.gc-tool-chip-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+  opacity: 0;
+  transform: scale(0.5);
+  animation: chip-check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes chip-check-pop {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .gc-markdown {
@@ -3916,6 +4012,61 @@ span[data-ai-ghost] {
       black 15%,
       black 85%,
       transparent);
+}
+
+/* 🆕 New Features Notification Banner */
+.gc-features-notification {
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  max-width: 32rem;
+  width: 100%;
+}
+
+.dark .gc-features-notification {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.gc-features-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.gc-features-grid {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.gc-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-strong);
+}
+
+.gc-feature-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .gc-marquee-container {

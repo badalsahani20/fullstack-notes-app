@@ -8,6 +8,9 @@ import {
   runAiAssist,
   generateTitle,
   getDynamicPrompts,
+  performWebSearch,
+  crawlUrl,
+  detectTools,
 } from "../services/ai.service.js";
 import GlobalChatSession from "../models/globalChatSession.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
@@ -26,20 +29,67 @@ const shouldFetchNote = (message = "", history = []) => {
   const lower = message.toLowerCase();
   const noteKeywords = [
     // Direct references
-    "note", "this", "content", "text", "document",
+    "note",
+    "this",
+    "content",
+    "text",
+    "document",
     // Action verbs
-    "summarize", "summary", "explain", "rewrite", "improve",
-    "fix", "check", "review", "analyze", "analyse", "translate",
-    "continue", "expand", "shorten", "simplify", "edit", "update",
-    "help me", "help with", "work on", "look at",
+    "summarize",
+    "summary",
+    "explain",
+    "rewrite",
+    "improve",
+    "fix",
+    "check",
+    "review",
+    "analyze",
+    "analyse",
+    "translate",
+    "continue",
+    "expand",
+    "shorten",
+    "simplify",
+    "edit",
+    "update",
+    "help me",
+    "help with",
+    "work on",
+    "look at",
     // Structure references
-    "bullet", "point", "section", "paragraph", "heading",
-    "title", "step", "part", "line", "chapter",
+    "bullet",
+    "point",
+    "section",
+    "paragraph",
+    "heading",
+    "title",
+    "step",
+    "part",
+    "line",
+    "chapter",
     // Question patterns
-    "what does", "what is in", "tell me", "read", "above",
-    "wrote", "written", "about", "based on", "from my",
+    "what does",
+    "what is in",
+    "tell me",
+    "read",
+    "above",
+    "wrote",
+    "written",
+    "about",
+    "based on",
+    "from my",
   ];
   return noteKeywords.some((kw) => lower.includes(kw));
+};
+
+const mightNeedWeb = (msg) => {
+  const lower = msg.toLowerCase();
+  return (
+    /https?:\/\/[^\s]+/.test(msg) || // ✅ matches actual URLs
+    /\b(search|google|look up|find online|browse|web|internet|website|article|link|url)\b/.test(lower) || // ✅ explicit search intents
+    /\b(latest|recent|new|news|now|current|today|release|update|version|stock|price|weather)\b/.test(lower) || // Timely keywords
+    /\b(api|documentation|lib|package|framework|how to install)\b/.test(lower) // Technical gaps
+  );
 };
 
 const hashText = (text = "") =>
@@ -243,21 +293,17 @@ export const aiAssistController = catchAsync(async (req, res) => {
   });
 });
 
-export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, sessionId, stream, noteContext: reqNoteContext, hasSelection } = req.body;
+// Chat controller helpers
+
+/* Resolve or create the global chat session and load history */
+const resolveSession = async (req) => {
+  const { sessionId } = req.body;
   const noteId = req.body.noteId || null;
+  const isGlobalChat =
+    !noteId &&
+    typeof req.body.noteId === "undefined" &&
+    typeof req.body.noteContext === "undefined";
 
-  if ((!message || !message.trim()) && !imageBase64) {
-    return res.status(400).json({
-      success: false,
-      message: "Message or Image is required",
-    });
-  }
-
-  // Editor chat sends noteId; global chat omits it entirely
-  const isGlobalChat = !noteId && typeof req.body.noteId === "undefined" && typeof req.body.noteContext === "undefined";
-
-  // Load stored history from DB
   let session = null;
   let history = [];
 
@@ -267,13 +313,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
         _id: sessionId,
         user: req.user._id,
       });
-      if (!session) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Session not found" });
-      }
     }
-
     if (session) {
       history = session.messages.map((m) => ({
         role: m.role,
@@ -284,7 +324,6 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     history = Array.isArray(req.body.history) ? req.body.history : [];
   }
 
-  // 🆔 Generate session ID early for new chats
   let activeSessionId = sessionId;
   let activeSession = session;
 
@@ -297,90 +336,223 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     activeSession = newSession;
   }
 
-  // 📝 Fetch note from DB when the message is note-related (broad keyword heuristic)
+  return {
+    isGlobalChat,
+    noteId,
+    session,
+    history,
+    activeSessionId,
+    activeSession,
+  };
+};
+
+// Run tool detection (web search / URL crawl) and return context + tool name
+const resolveToolContext = async (message, res, isStreaming) => {
+  let toolContext = "";
+  let toolUsed = null;
+
+  if (!mightNeedWeb(message)) return { toolContext, toolUsed };
+
+  const toolDecision = await detectTools(message);
+
+  if (toolDecision.tool === "search_web") {
+    toolUsed = "search_web";
+    if (isStreaming)
+      res.write(
+        `data: ${JSON.stringify({ type: "tool_call", tool: "search_web" })}\n\n`,
+      );
+    const searchResults = await performWebSearch(toolDecision.query);
+    toolContext = `\n[Web search results for "${toolDecision.query}"]\n${searchResults}\n[/end of web search results]\n`;
+  } else if (toolDecision.tool === "crawl_url") {
+    toolUsed = "crawl_url";
+    if (isStreaming)
+      res.write(
+        `data: ${JSON.stringify({ type: "tool_call", tool: "crawl_url" })}\n\n`,
+      );
+    const pageContent = await crawlUrl(toolDecision.query);
+    toolContext = `\n[WEBPAGE CONTENT from ${toolDecision.query}]\n${pageContent.slice(0, 6000)}\n[END WEBPAGE]\n`;
+  }
+
+  return { toolContext, toolUsed };
+};
+
+// Fetch note context from the DB or frontend payload (skipped when a tool was used) 
+const resolveNoteContext = async (
+  req,
+  { isGlobalChat, noteId, history, toolUsed },
+) => {
+  const { noteContext: reqNoteContext, hasSelection, message } = req.body;
   let noteContext = "";
   let noteFetched = false;
-  // Rule: Include context if user highlighted text OR if the message uses keywords
-  const shouldIncludeContext = !isGlobalChat && noteId && (hasSelection || shouldFetchNote(message, history));
+
+  // Skip note fetch when a web tool already provided context
+  const shouldIncludeContext =
+    !toolUsed &&
+    !isGlobalChat &&
+    noteId &&
+    (hasSelection || shouldFetchNote(message, history));
+
   if (shouldIncludeContext) {
-    if(reqNoteContext) {
-      // use frontend context
-      noteContext = hasSelection ? `[User specifically highlighted this text in their editor]:\n${reqNoteContext}`:
-      `[user's current editor context]:\n${reqNoteContext}`
-    }else {
-      const note = await Notes.findOne({ _id: noteId, user: req.user._id}).lean();
-      if(note?.content) {
+    if (reqNoteContext) {
+      noteContext = hasSelection
+        ? `[User specifically highlighted this text in their editor]:\n${reqNoteContext}`
+        : `[user's current editor context]:\n${reqNoteContext}`;
+    } else {
+      const note = await Notes.findOne({
+        _id: noteId,
+        user: req.user._id,
+      }).lean();
+      if (note?.content) {
         noteContext = `Title: ${note.title || "Untitled"}\n\n${stripHtml(note.content).slice(0, 1500)}`;
         noteFetched = true;
-      }else {
-        console.log("⏭️  Note fetch skipped — empty content");
       }
     }
-  } else if (!isGlobalChat && noteId) {
-    console.log("⏭️  Note context skipped — no selection and not note-related");
   }
 
+  return { noteContext, noteFetched };
+};
+
+// Set up SSE headers and fire the keep-alive comment 
+const openSseConnection = (res, activeSessionId) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Expose-Headers", "X-Session-Id");
+  if (activeSessionId)
+    res.setHeader("X-Session-Id", activeSessionId.toString());
+  res.write(": keep-alive\n\n");
+};
+
+// Pipe OpenRouter SSE chunks to the client and accumulate the full reply 
+const streamAiResponse = async (result, res, noteFetched) => {
+  const decoder = new TextDecoder();
   let finalReply = "";
 
-  // ── Open SSE connection immediately so the browser isn't waiting blind ──────
-  if (stream) {
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.setHeader("Access-Control-Expose-Headers", "X-Session-Id");
-    if (activeSessionId)
-      res.setHeader("X-Session-Id", activeSessionId.toString());
-    // Keep-alive comment — tells the browser the connection is live while AI thinks
-    res.write(": keep-alive\n\n");
+  if (noteFetched) {
+    res.write(
+      `data: ${JSON.stringify({ type: "tool_call", tool: "get_note_content" })}\n\n`,
+    );
   }
 
-  // 🚀 Call the AI service (full fallback waterfall via chatWithAi)
+  for await (const chunk of result) {
+    const text = decoder.decode(chunk);
+    res.write(text);
+
+    const lines = text.split("\n");
+    for (const line of lines) {
+      if (line.startsWith("data: ")) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          finalReply += data.choices?.[0]?.delta?.content || "";
+        } catch {
+          /* partial JSON or [DONE] */
+        }
+      }
+    }
+  }
+
+  return finalReply;
+};
+
+// Save the completed turn to the global-chat session in MongoDB 
+const persistToDb = async (
+  message,
+  finalReply,
+  imageBase64,
+  activeSessionId,
+  activeSession,
+) => {
+  const safeUserContent = imageBase64
+    ? `[User attached an image] ${message}`.trim()
+    : message;
+
+  const sessionToUpdate =
+    activeSession || (await GlobalChatSession.findById(activeSessionId));
+  if (!sessionToUpdate) return;
+
+  const isFirstMessage = sessionToUpdate.messages.length === 0;
+  sessionToUpdate.messages.push(
+    { role: "user", content: safeUserContent },
+    { role: "assistant", content: finalReply },
+  );
+  await sessionToUpdate.save();
+
+  if (isFirstMessage) {
+    generateTitle(message)
+      .then((title) =>
+        GlobalChatSession.findByIdAndUpdate(activeSessionId, { title }).exec(),
+      )
+      .catch(() => {});
+  }
+};
+
+//  Main chat controller 
+
+export const chatWithAiController = catchAsync(async (req, res) => {
+  const { message, imageBase64, stream } = req.body;
+
+  if ((!message || !message.trim()) && !imageBase64) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Message or Image is required" });
+  }
+
+  // 1. Resolve session & history
+  const sessionData = await resolveSession(req);
+  const { isGlobalChat, history, activeSessionId, activeSession } = sessionData;
+
+  if (isGlobalChat && req.body.sessionId && !sessionData.session) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Session not found" });
+  }
+
+  // 2. Open SSE early so the browser isn't waiting blind
+  const isStreaming = !!stream;
+  if (isStreaming) openSseConnection(res, activeSessionId);
+
+  // 3. Tool detection (web search / URL crawl) — runs before note fetch
+  const { toolContext, toolUsed } = await resolveToolContext(
+    message,
+    res,
+    isStreaming,
+  );
+
+  // 4. Note context (skipped when a tool already provided context)
+  const { noteContext, noteFetched } = await resolveNoteContext(req, {
+    ...sessionData,
+    toolUsed,
+  });
+
+  // 5. Call the AI service
   let result;
   try {
     result = await chatWithAi({
       message,
       history,
       summary: req.body.summary || "",
-      noteContext,
+      noteContext: noteContext,
+      webContext: toolContext,
       imageBase64,
-      stream: !!stream,
+      stream: isStreaming,
     });
   } catch (aiError) {
     console.error("❌ All AI models failed:", aiError.message);
-    // SSE connection is already open — can't use the global error handler
-    if (stream) {
-      res.write(`data: ${JSON.stringify({ type: "error", message: "AI service unavailable" })}\n\n`);
+    if (isStreaming) {
+      res.write(
+        `data: ${JSON.stringify({ type: "error", message: "AI service unavailable" })}\n\n`,
+      );
       res.end();
     }
     return;
   }
 
-  if (stream) {
-    const decoder = new TextDecoder();
+  // 6. Stream or return the response
+  let finalReply = "";
 
+  if (isStreaming) {
     try {
-      // Emit tool activity event so the UI shows "📄 Read note"
-      if (noteFetched) {
-        res.write(`data: ${JSON.stringify({ type: "tool_call", tool: "get_note_content" })}\n\n`);
-      }
-
-      for await (const chunk of result) {
-        const text = decoder.decode(chunk);
-        res.write(text); // Pipe raw SSE chunks to frontend
-
-        // Accumulate clean text for DB persistence
-        const lines = text.split("\n");
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              finalReply += data.choices?.[0]?.delta?.content || "";
-            } catch (e) {
-              // Handle partial JSON or [DONE] tag
-            }
-          }
-        }
-      }
+      finalReply = await streamAiResponse(result, res, noteFetched);
     } catch (streamError) {
       console.error("Streaming error:", streamError.message);
     } finally {
@@ -390,38 +562,20 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     finalReply = result.reply;
   }
 
-  // 💾 Persist completion to DB
+  // 7. Persist to DB (global chat only)
   if (isGlobalChat && activeSessionId) {
-    const safeUserContent = imageBase64
-      ? `[User attached an image] ${message}`.trim()
-      : message;
-    const newMessages = [
-      { role: "user", content: safeUserContent },
-      { role: "assistant", content: finalReply },
-    ];
-
-    const sessionToUpdate =
-      activeSession || (await GlobalChatSession.findById(activeSessionId));
-    if (sessionToUpdate) {
-      const isFirstMessage = sessionToUpdate.messages.length === 0;
-      sessionToUpdate.messages.push(...newMessages);
-      await sessionToUpdate.save();
-
-      if (isFirstMessage) {
-        generateTitle(message)
-          .then((title) =>
-            GlobalChatSession.findByIdAndUpdate(activeSessionId, {
-              title,
-            }).exec(),
-          )
-          .catch(() => {});
-      }
-    }
+    await persistToDb(
+      message,
+      finalReply,
+      imageBase64,
+      activeSessionId,
+      activeSession,
+    );
   }
-  // If we streamed, we already ended the response. Exit.
-  if (stream) return;
 
-  // Otherwise, send final JSON for static calls
+  if (isStreaming) return;
+
+  // 8. Static JSON response
   res.status(200).json({
     success: true,
     data: {

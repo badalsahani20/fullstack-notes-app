@@ -12,7 +12,7 @@ export const useNotesLayout = () => {
   const isSearchRoute = location.pathname.startsWith("/search");
   const isProfileRoute = location.pathname.startsWith("/profile");
   const isChatRoute = location.pathname.startsWith("/chat");
-  const showGlobalHeader = !(isEditorFocusMode || (isMobile && Boolean(noteId)));
+  const showGlobalHeader = !(isEditorFocusMode || (isMobile && Boolean(noteId)) || isChatRoute);
 
   const animationKey = noteId ? `note-${noteId}` : "empty-state";
 

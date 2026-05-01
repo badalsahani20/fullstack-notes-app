@@ -3,11 +3,18 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import { BrainCircuit, ChevronRight } from "lucide-react";
+import { BrainCircuit, ChevronRight, FileText, Search, Globe, Check } from "lucide-react";
 import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
+
+// ── Tool label map ───────────────────────────────────────────────────────────
+const TOOL_META: Record<string, { icon: React.ReactNode; label: string }> = {
+  get_note_content: { icon: <FileText size={12} />, label: "Read note" },
+  search_web:       { icon: <Search size={12} />,   label: "Searched the web" },
+  crawl_url:        { icon: <Globe size={12} />,    label: "Read webpage" },
+};
 
 const markdownComponents = {
   code({ className, children, ...props }: any) {
@@ -139,32 +146,44 @@ export const GlobalChatMessages = ({
                     <ThinkingWidget isThinking={true} />
                   ) : (
                     <div className="gc-msg-bubble gc-msg-bubble-ai">
-                      {/* Done badge or Active thought above content */}
-                      {(thinkingTime || thought) && (
-                        <ThinkingWidget isThinking={isThinking} thinkingTime={thinkingTime} thought={thought} />
-                      )}
-
-                      {/* Tool activity indicator */}
+                      {/* 1. Tool activity chips (Top) */}
                       {toolCalls && toolCalls.length > 0 && (
-                        <details className="gc-tool-activity">
-                          <summary className="gc-tool-activity-summary">
-                            <span className="gc-tool-activity-icon">📄</span>
-                            <span>Read note</span>
-                          </summary>
-                          <ul className="gc-tool-activity-list">
-                            {toolCalls.map((tc, i) => (
-                              <li key={i} className="gc-tool-activity-item">
-                                <span className="gc-tool-activity-check">✓</span>
-                                {tc.tool === "get_note_content" ? "Fetched note content" : tc.tool}
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
+                        <div className="gc-tool-chips">
+                          {toolCalls.map((tc, i) => {
+                            const meta =
+                              TOOL_META[tc.tool] ??
+                              ({ icon: <Globe size={12} />, label: tc.tool } as any);
+                            const isDone = !isThinking || displayText.length > 0;
+                            return (
+                              <div
+                                key={i}
+                                className={`gc-tool-chip${isDone ? "" : " gc-tool-chip-active"}`}
+                              >
+                                <span className="gc-tool-chip-icon">{meta.icon}</span>
+                                <span>{meta.label}</span>
+                                {isDone && (
+                                  <span className="gc-tool-chip-check">
+                                    <Check size={10} strokeWidth={3} />
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       )}
 
-                      {/* ── Message content ── */}
+                      {/* 2. Done badge or Active thought (Middle) */}
+                      {(thinkingTime || thought) && (
+                        <ThinkingWidget
+                          isThinking={isThinking}
+                          thinkingTime={thinkingTime}
+                          thought={thought}
+                        />
+                      )}
+
+                      {/* 3. Message content (Bottom) */}
                       <div className="gc-markdown max-w-full">
-                        {(isActiveStream && isStreaming) ? (
+                        {isActiveStream && isStreaming ? (
                           <ReactMarkdown
                             remarkPlugins={[remarkGfm, remarkMath]}
                             rehypePlugins={[rehypeKatex]}
@@ -173,13 +192,13 @@ export const GlobalChatMessages = ({
                             {displayText}
                           </ReactMarkdown>
                         ) : (
-                          <IrisMessageBody segments={msg.segments ?? [{ kind: "text", content: msg.text }]} />
+                          <IrisMessageBody
+                            segments={msg.segments ?? [{ kind: "text", content: msg.text }]}
+                          />
                         )}
                       </div>
 
-                      {isActiveStream && isStreaming && (
-                        <span className="gc-cursor" />
-                      )}
+                      {isActiveStream && isStreaming && <span className="gc-cursor" />}
                     </div>
                   )}
                 </>

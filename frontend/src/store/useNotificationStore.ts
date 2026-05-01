@@ -30,6 +30,14 @@ export const timeAgo = (isoString: string): string => {
 // IDs must be unique and stable — never change an existing ID.
 const STATIC_NOTIFICATIONS: AppNotification[] = [
   {
+    id: "notif-agentic-web-v1",
+    title: "Iris is now Agentic 🌐",
+    message: "Iris can now autonomously search the web, crawl links, and analyze PDFs or images. Plus, logic visualization with Mermaid diagrams is now supported natively in chat.",
+    type: "ai",
+    isRead: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
     id: "notif-welcome-v1",
     title: "Welcome to Notesify, {{name}}!",
     message: "Welcome to your new workspace! Experience a completely reimagined note-taking workflow designed for speed, clarity, and beautiful aesthetics. We're glad to have you here!",

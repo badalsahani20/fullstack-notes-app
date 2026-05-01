@@ -13,7 +13,6 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
 
 const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
-// const PRIMARY_MODEL = "qwen/qwen3.5-flash-02-23";
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
 // --- VALIDATION HELPERS ---
@@ -31,9 +30,17 @@ const ensureGroqApiKey = () => {
 
 // --- CORE AI EXECUTION FUNCTIONS ---
 
-const executeOpenRouter = async (modelId, messages, stream = false, includeReasoning = true) => {
+const executeOpenRouter = async (
+  modelId,
+  messages,
+  stream = false,
+  includeReasoning = true,
+) => {
   const isQwenModel = modelId.toLowerCase().includes("qwen");
-  const apiKey = (isQwenModel && process.env.QWEN_API) ? process.env.QWEN_API : process.env.OPEN_ROUTER;
+  const apiKey =
+    isQwenModel && process.env.QWEN_API
+      ? process.env.QWEN_API
+      : process.env.OPEN_ROUTER;
 
   if (!apiKey) throw new Error("No OpenRouter or Qwen API Key found");
 
@@ -48,19 +55,16 @@ const executeOpenRouter = async (modelId, messages, stream = false, includeReaso
     bodyPayload.include_reasoning = true;
   }
 
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.BACKEND_URL || "http://localhost:5500",
-        "X-Title": "Notesify AI Assistant",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(bodyPayload),
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.BACKEND_URL || "http://localhost:5500",
+      "X-Title": "Notesify AI Assistant",
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify(bodyPayload),
+  });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -209,9 +213,16 @@ const getAiReply = async (
     // 🔥 TRY PRIMARY: Use DeepSeek for text (with reasoning), swap to Qwen Flash for images (no reasoning)
     const activeModel = imageBase64 ? "qwen/qwen3.5-flash-02-23" : PRIMARY_MODEL;
     const useReasoning = !imageBase64; // Disable reasoning when using the vision model
-    
-    const reply = await executeOpenRouter(activeModel, qwenMessages, stream, useReasoning);
-    console.log(`🤖 Chat answered by ${activeModel} (Reasoning: ${useReasoning})`);
+
+    const reply = await executeOpenRouter(
+      activeModel,
+      qwenMessages,
+      stream,
+      useReasoning,
+    );
+    console.log(
+      `🤖 Chat answered by ${activeModel} (Reasoning: ${useReasoning})`,
+    );
     return reply;
   } catch (error) {
     console.error("❌ PRIMARY CRASHED:", error.message);
@@ -305,6 +316,82 @@ export const checkGrammar = async (text) => {
   }
 };
 
+export const performWebSearch = async (query) => {
+  try {
+    if (!process.env.TAVILY_API) return "";
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        api_key: process.env.TAVILY_API,
+        query: query,
+        include_answer: true,
+        max_results: 3,
+      }),
+    });
+    const data = await response.json();
+    if (!data.results) return "No results found";
+    return data.results
+      .map((r) => `Title: ${r.title}\nContent: ${r.content}\nURL: ${r.url}`)
+      .join("\n\n");
+  } catch (error) {
+    console.error("Tavily Search Error:", error);
+    return "Failed to search the web";
+  }
+};
+
+export const crawlUrl = async (url) => {
+  try {
+    if (!process.env.JINA_API) return "";
+    const response = await fetch(`https://r.jina.ai/${url}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.JINA_API}`,
+        Accept: "application/json",
+      },
+    });
+
+    const data = await response.json();
+    return data.data?.content || data.content || "No content found.";
+  } catch (error) {
+    console.error("Jina Crawl Error", error);
+    return "Failed to crawl URL.";
+  }
+};
+
+export const detectTools = async (message) => {
+  try {
+    ensureGroqApiKey();
+    const response = await client.chat.completions.create({
+      model: "llama-3.1-8b-instant",
+      messages: [
+        {
+          role: "system",
+          content: `You are a "Skeptical Routing Agent". Your goal is to prevent hallucinations by deciding if the user's query requires fresh data.
+  
+Route to "search_web" if:
+1. The query is about current events, news, or things that happened recently.
+2. The query is about specific versions, releases, or documentation for technology.
+3. The query is a factual question where your training data (cutoff 2023) might be stale.
+4. The user explicitly asks for a search.
+
+Route to "crawl_url" if:
+1. The user provides a URL and asks to read, summarize, or analyze it.
+
+Otherwise, reply "none". Return ONLY valid JSON: { "tool": "search_web" | "crawl_url" | "none", "query": "search query or URL" }`,
+        },
+        { role: "user", content: message },
+      ],
+      response_format: { type: "json_object" },
+    });
+    return JSON.parse(response.choices[0].message.content);
+  } catch (error) {
+    console.error("Tool Detection Error:", error);
+    return { tool: "none" };
+  }
+};
+
 const actionPrompts = {
   summarize: (text) =>
     `Summarize the following note into concise markdown bullet points. Use hierarchical bullets if necessary. Keep important facts and action items. Return the markdown text only, no code blocks.\n\nNote:\n${text}`,
@@ -363,6 +450,7 @@ export const chatWithAi = async ({
   history = [],
   summary = "",
   noteContext = "",
+  webContext = "",
   imageBase64 = null,
   stream = false,
 }) => {
@@ -375,12 +463,12 @@ export const chatWithAi = async ({
     try {
       const base64Data = imageBase64.split(",")[1];
       const pdfBuffer = Buffer.from(base64Data, "base64");
-      
+
       const parser = new PDFParse({ data: pdfBuffer });
       const pdfData = await parser.getText();
       const pdfText = pdfData.text.trim();
       await parser.destroy();
-      
+
       finalMessage = `[Attached PDF Document]\n${pdfText}\n\n${message || "Please review this document."}`;
       finalImageBase64 = null; // Clear it so it isn't treated as a vision image
     } catch (err) {
@@ -399,14 +487,28 @@ export const chatWithAi = async ({
   }
 
   const trimmedHistory = history.slice(-6);
-  const safeContext = noteContext?.slice(0, 8000);
-  console.log("🧠 Context Size ", noteContext.length || 0, "chars");
+  const safeWebContext = webContext?.slice(0, 10000);
+  const safeNoteContext = noteContext?.slice(0, 8000);
+  console.log(
+    "🧠 Context: Web:",
+    webContext?.length || 0,
+    "Note:",
+    noteContext?.length || 0,
+  );
 
-  const noteBlock = safeContext
+  const webBlock = safeWebContext
     ? [
-        "IMPORTANT: The user's note content is already provided below.",
-        "Do NOT ask the user to share or paste their note — you already have it.",
-        `\n--- USER'S NOTE ---\n${safeContext}\n--- END OF NOTE ---`,
+        "IMPORTANT: The following are REAL-TIME WEB SEARCH RESULTS.",
+        "Prioritize this information for current events, tech updates, and factual queries.",
+        `\n--- WEB SEARCH RESULTS ---\n${safeWebContext}\n--- END WEB RESULTS ---`,
+      ].join("\n")
+    : null;
+
+  const noteBlock = safeNoteContext
+    ? [
+        "IMPORTANT: The following is the content of the user's current note.",
+        "Use this for context about what the user is working on.",
+        `\n--- USER'S NOTE ---\n${safeNoteContext}\n--- END OF NOTE ---`,
       ].join("\n")
     : null;
 
@@ -414,6 +516,7 @@ export const chatWithAi = async ({
 
   const combinedSystemPrompt = [
     basePrompt,
+    webBlock, // Web data first for fact priority
     noteBlock,
     summary && `Conversation summary:\n${summary}`,
   ]

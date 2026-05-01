@@ -1,42 +1,42 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Sparkles, Zap, Bot, ArrowRight } from "lucide-react";
+import { Share2, Bot, ArrowRight, Globe, Image } from "lucide-react";
 import { CURRENT_VERSION } from "@/hooks/useWhatsNew";
 
 // ─── Feature definitions ─────────────────────────────────────────────────────
 const FEATURES = [
   {
-    icon: Share2,
+    icon: Globe,
     iconClass: "bg-blue-500/10 text-blue-400",
-    label: "Secure Note Sharing",
+    label: "Agentic Web Intelligence",
     description:
-      "Generate obfuscated public links with optional expiry times and live view tracking.",
+      "Iris can now autonomously search the live web and crawl URLs to fetch real-time facts and documentation.",
     badge: "New",
-    badgeClass: "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20",
+    badgeClass: "text-blue-400 bg-blue-500/10 border border-blue-500/20",
   },
   {
-    icon: Sparkles,
+    icon: Image,
     iconClass: "bg-purple-500/10 text-purple-400",
-    label: "AI Inline Suggestions",
+    label: "Multimodal Perception",
     description:
-      "Select any text and let AI continue, rewrite, or improve it — accept or reject right inside the editor.",
+      "Upload images or PDFs directly into Iris. Analyze complex documents, diagrams, and photos with full vision support.",
     badge: "New",
-    badgeClass: "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20",
+    badgeClass: "text-purple-400 bg-purple-500/10 border border-purple-500/20",
+  },
+  {
+    icon: Share2,
+    iconClass: "bg-emerald-500/10 text-emerald-400",
+    label: "Logic Visualizer",
+    description:
+      "Iris now renders dynamic Mermaid diagrams for math, code structure, and complex workflows.",
+    badge: "New",
+    badgeClass: "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20",
   },
   {
     icon: Bot,
-    iconClass: "bg-emerald-500/10 text-emerald-400",
+    iconClass: "bg-amber-500/10 text-amber-400",
     label: "Iris AI — Persistent Sessions",
     description:
       "Your global AI chats are now remembered across sessions with full history.",
-    badge: "Improved",
-    badgeClass: "text-amber-400 bg-amber-500/10 border border-amber-500/20",
-  },
-  {
-    icon: Zap,
-    iconClass: "bg-amber-500/10 text-amber-400",
-    label: "Stealth Design Refresh",
-    description:
-      "Floating editor dock, email verification, mobile nav, and dozens of polish fixes.",
     badge: "Improved",
     badgeClass: "text-amber-400 bg-amber-500/10 border border-amber-500/20",
   },

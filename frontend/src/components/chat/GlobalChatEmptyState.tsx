@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Sparkles, Globe, FileImage, Share2 } from "lucide-react";
 
 // ─── Marquee Component (Interactive)
 const MarqueeRow = ({ prompts, direction = "left", onChipClick }: { prompts: string[], direction?: "left" | "right", onChipClick: (s: string) => void }) => {
@@ -63,6 +64,34 @@ export const GlobalChatEmptyState = ({ onChipClick, prompts }: { onChipClick: (t
     <p className="gc-empty-sub">
       Your AI learning companion. Ask questions, explore ideas, or dig into any topic — no note needed.
     </p>
+
+    {/* 🆕 New Features Banner */}
+    <div className="gc-features-notification">
+      <div className="gc-features-header">
+        <Sparkles size={14} className="text-amber-400" />
+        <span>What's new in Iris</span>
+      </div>
+      <div className="gc-features-grid">
+        <div className="gc-feature-item">
+          <div className="gc-feature-icon bg-blue-500/10 text-blue-400">
+            <Globe size={14} />
+          </div>
+          <span>Live Web Fetching</span>
+        </div>
+        <div className="gc-feature-item">
+          <div className="gc-feature-icon bg-purple-500/10 text-purple-400">
+            <FileImage size={14} />
+          </div>
+          <span>Images & PDFs</span>
+        </div>
+        <div className="gc-feature-item">
+          <div className="gc-feature-icon bg-emerald-500/10 text-emerald-400">
+            <Share2 size={14} />
+          </div>
+          <span>Dynamic Diagrams</span>
+        </div>
+      </div>
+    </div>
 
     <div className="gc-marquee-wrapper">
       <MarqueeRow prompts={prompts.students} onChipClick={onChipClick} />
