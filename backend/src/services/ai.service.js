@@ -187,8 +187,8 @@ const getAiReply = async (
       typeof h.content === "string" ? h.content : JSON.stringify(h.content),
   }));
 
-  // 1. Prepare message for Qwen (Multimodal Primary)
-  const qwenMessages = [
+  // 1. Prepare message list for the agentic flow
+  const messages = [
     { role: "system", content: systemPrompt },
     ...safeHistory,
     {
@@ -211,12 +211,14 @@ const getAiReply = async (
 
   try {
     // 🔥 TRY PRIMARY: Use DeepSeek for text (with reasoning), swap to Qwen Flash for images (no reasoning)
-    const activeModel = imageBase64 ? "qwen/qwen3.5-flash-02-23" : PRIMARY_MODEL;
+    const activeModel = imageBase64
+      ? "qwen/qwen3.5-flash-02-23"
+      : PRIMARY_MODEL;
     const useReasoning = !imageBase64; // Disable reasoning when using the vision model
 
     const reply = await executeOpenRouter(
       activeModel,
-      qwenMessages,
+      messages,
       stream,
       useReasoning,
     );
@@ -360,6 +362,32 @@ export const crawlUrl = async (url) => {
   }
 };
 
+export const mightNeedWeb = (message) => {
+  const triggers = [
+    "search",
+    "web",
+    "latest",
+    "news",
+    "recent",
+    "price",
+    "today",
+    "current",
+    "http",
+    "https",
+    "www.",
+    "documentation",
+    "release",
+    "version",
+    "$",
+    "€",
+    "price",
+    "rate",
+    "conversion",
+  ];
+  const msg = message.toLowerCase();
+  return triggers.some((t) => msg.includes(t));
+};
+
 export const detectTools = async (message) => {
   try {
     ensureGroqApiKey();
@@ -379,7 +407,7 @@ Route to "search_web" if:
 Route to "crawl_url" if:
 1. The user provides a URL and asks to read, summarize, or analyze it.
 
-Otherwise, reply "none". Return ONLY valid JSON: { "tool": "search_web" | "crawl_url" | "none", "query": "search query or URL" }`,
+Otherwise, reply "none". Return ONLY valid JSON: { "tool": "search_web" | "crawl_url" | "none", "query": "search query or URL", "reason": "concise explanation of why this tool is needed (source of truth)" }`,
         },
         { role: "user", content: message },
       ],

@@ -362,7 +362,7 @@ const resolveToolContext = async (message, res, isStreaming) => {
         `data: ${JSON.stringify({ type: "tool_call", tool: "search_web" })}\n\n`,
       );
     const searchResults = await performWebSearch(toolDecision.query);
-    toolContext = `\n[Web search results for "${toolDecision.query}"]\n${searchResults}\n[/end of web search results]\n`;
+    toolContext = `\n[WEB SEARCH RESULTS for "${toolDecision.query}"]\n${searchResults}\n[/end of web search results]\n`;
   } else if (toolDecision.tool === "crawl_url") {
     toolUsed = "crawl_url";
     if (isStreaming)
@@ -527,12 +527,29 @@ export const chatWithAiController = catchAsync(async (req, res) => {
   // 5. Call the AI service
   let result;
   try {
+    const finalSystemPrompt = `You are Iris, a high-performance Agentic AI Assistant. 
+CRITICAL: You have access to real-time information via the blocks below. Do NOT claim you cannot browse the web. 
+
+INSTRUCTIONS FOR DATA USE:
+1. If you use information from the [WEB SEARCH RESULTS] block, you MUST cite the source (e.g., "[Source: example.com]").
+2. Always include a short "Sources" section at the end of your response with clickable markdown links if external data was used.
+3. If the answer is not in the results, say:
+"I couldn't find this information in the search results."
+Do NOT use prior knowledge.
+4. use rounded values for precise data to avoid floating point errors.
+
+${toolContext ? `[WEB SEARCH RESULTS / EXTERNAL DATA]:\n${toolContext}\n` : ""}
+${noteContext ? `[EDITOR CONTEXT / NOTE DATA]:\n${noteContext}\n` : ""}
+
+Use the provided data to answer the user's query accurately.`;
+
     result = await chatWithAi({
       message,
       history,
       summary: req.body.summary || "",
       noteContext: noteContext,
       webContext: toolContext,
+      systemPrompt: finalSystemPrompt,
       imageBase64,
       stream: isStreaming,
     });

@@ -21,6 +21,16 @@ const markdownComponents = {
 
     return <MarkdownCodeBlock code={rawCode} language={language} />;
   },
+  a({ node, ...props }: any) {
+    return (
+      <a 
+        {...props} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="iris-link"
+      />
+    );
+  },
 };
 
 interface IrisMessageBodyProps {

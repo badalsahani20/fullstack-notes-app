@@ -4863,6 +4863,36 @@ span[data-ai-ghost] {
   overflow-x: hidden !important;
 }
 
+.iris-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--accent-strong);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  margin: 0 0.1rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, var(--accent-strong) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-strong) 15%, transparent);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  vertical-align: middle;
+}
+
+.iris-link:hover {
+  background: color-mix(in srgb, var(--accent-strong) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent-strong) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent-strong) 12%, transparent);
+  color: var(--text-strong);
+}
+
+.iris-link::after {
+  content: "↗";
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+
 .iris-viz-block {
   width: 100%;
   max-width: 820px;
@@ -4890,6 +4920,43 @@ span[data-ai-ghost] {
   background: transparent;
   text-align: left;
   cursor: zoom-in;
+  transition: transform 0.2s ease;
+}
+
+.iris-viz-surface:hover {
+  transform: scale(1.005);
+}
+
+.iris-viz-footer {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--divider);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.iris-viz-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-strong);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.iris-viz-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.iris-viz-btn svg {
+  color: var(--accent-strong);
 }
 
 .iris-viz-expand {

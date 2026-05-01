@@ -55,6 +55,15 @@ const IrisVisualBlock = ({ visualization: v }: IrisVisualBlockProps) => {
           {renderViz(false)}
         </Suspense>
       </button>
+      <div className="iris-viz-footer">
+        <button 
+          className="iris-viz-btn"
+          onClick={() => setIsExpanded(true)}
+        >
+          <Expand size={12} />
+          <span>View Full Diagram</span>
+        </button>
+      </div>
     </div>
     <Dialog open={isExpanded} onOpenChange={setIsExpanded}>
       <DialogContent
