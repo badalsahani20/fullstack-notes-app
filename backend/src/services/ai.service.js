@@ -509,9 +509,19 @@ export const chatWithAi = async ({
     throw new Error("Message or Image/PDF is required for AI assist");
   }
 
-  if (history.length > 20 && !summary) {
-    summary = await summarizeHistory(history);
-    history = history.slice(-5);
+  if (history.length > 20) {
+    try {
+      // Only summarize the middle part if it's huge, or just the whole thing if it's manageable
+      // But let's at least ensure we don't send 100+ messages to the summarizer
+      const summarizationInput = history.length > 40 ? history.slice(-40) : history;
+      summary = await summarizeHistory(summarizationInput);
+      history = history.slice(-5);
+      console.log("📝 New summary generated");
+    } catch (err) {
+      console.error("⚠️ Summarization failed, proceeding without new summary:", err.message);
+      // Don't crash the whole chat just because summarization failed
+      history = history.slice(-10); // Trim anyway to keep context window safe
+    }
   }
 
   const trimmedHistory = history.slice(-6);
@@ -562,17 +572,22 @@ export const chatWithAi = async ({
   if (stream) {
     // Fallback models (Groq, NVIDIA) return a plain string — not a ReadableStream.
     // Wrap it so the controller's `for await (chunk of result)` loop works uniformly.
+    let streamResponse = reply;
     if (typeof reply === "string") {
       const encoder = new TextEncoder();
       const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: reply } }] })}\n\ndata: [DONE]\n\n`;
-      return new ReadableStream({
+      streamResponse = new ReadableStream({
         start(controller) {
           controller.enqueue(encoder.encode(sseChunk));
           controller.close();
         },
       });
     }
-    return reply; // ReadableStream from OpenRouter — pipe as-is
+
+    return {
+      stream: streamResponse,
+      summary,
+    };
   }
 
   const segments = parseIrisResponse(reply);
@@ -581,6 +596,7 @@ export const chatWithAi = async ({
     toolUsed: null,
     reply,
     segments,
+    summary, // Return the summary (old or new)
     history: [
       ...trimmedHistory,
       { role: "user", content: message },

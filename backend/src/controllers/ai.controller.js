@@ -307,6 +307,7 @@ const resolveSession = async (req) => {
 
   let session = null;
   let history = [];
+  let summary = "";
 
   if (isGlobalChat) {
     if (sessionId) {
@@ -320,6 +321,7 @@ const resolveSession = async (req) => {
         role: m.role,
         content: m.content,
       }));
+      summary = session.summary || "";
     }
   } else {
     history = Array.isArray(req.body.history) ? req.body.history : [];
@@ -342,6 +344,7 @@ const resolveSession = async (req) => {
     noteId,
     session,
     history,
+    summary: summary || "",
     activeSessionId,
     activeSession,
   };
@@ -423,7 +426,7 @@ const openSseConnection = (res, activeSessionId) => {
 };
 
 // Pipe OpenRouter SSE chunks to the client and accumulate the full reply 
-const streamAiResponse = async (result, res, noteFetched) => {
+const streamAiResponse = async (stream, res, noteFetched) => {
   const decoder = new TextDecoder();
   let finalReply = "";
 
@@ -433,7 +436,7 @@ const streamAiResponse = async (result, res, noteFetched) => {
     );
   }
 
-  for await (const chunk of result) {
+  for await (const chunk of stream) {
     const text = decoder.decode(chunk);
     res.write(text);
 
@@ -460,6 +463,7 @@ const persistToDb = async (
   imageBase64,
   activeSessionId,
   activeSession,
+  summary = "",
 ) => {
   const safeUserContent = imageBase64
     ? `[User attached an image] ${message}`.trim()
@@ -474,6 +478,7 @@ const persistToDb = async (
     { role: "user", content: safeUserContent },
     { role: "assistant", content: finalReply },
   );
+  if (summary) sessionToUpdate.summary = summary;
   await sessionToUpdate.save();
 
   if (isFirstMessage) {
@@ -498,7 +503,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
 
   // 1. Resolve session & history
   const sessionData = await resolveSession(req);
-  const { isGlobalChat, history, activeSessionId, activeSession } = sessionData;
+  const { isGlobalChat, history, summary: sessionSummary, activeSessionId, activeSession } = sessionData;
 
   if (isGlobalChat && req.body.sessionId && !sessionData.session) {
     return res
@@ -545,7 +550,7 @@ Use the provided data to answer the user's query accurately.`;
     result = await chatWithAi({
       message,
       history,
-      summary: req.body.summary || "",
+      summary: sessionSummary || req.body.summary || "",
       noteContext: noteContext,
       webContext: toolContext,
       systemPrompt: finalSystemPrompt,
@@ -568,7 +573,7 @@ Use the provided data to answer the user's query accurately.`;
 
   if (isStreaming) {
     try {
-      finalReply = await streamAiResponse(result, res, noteFetched);
+      finalReply = await streamAiResponse(result.stream, res, noteFetched);
     } catch (streamError) {
       console.error("Streaming error:", streamError.message);
     } finally {
@@ -586,6 +591,7 @@ Use the provided data to answer the user's query accurately.`;
       imageBase64,
       activeSessionId,
       activeSession,
+      result.summary,
     );
   }
 

@@ -165,6 +165,11 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
           if (line.startsWith("data: ") && line !== "data: [DONE]") {
             try {
               const data = JSON.parse(line.slice(6));
+
+              if (data.type === "error") {
+                throw new Error(data.message || "AI service error");
+              }
+              
               const delta = data.choices?.[0]?.delta;
               
               const content = delta?.content || "";

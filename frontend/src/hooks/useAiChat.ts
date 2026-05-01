@@ -423,6 +423,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
             try {
               const data = JSON.parse(line.slice(6));
 
+              if (data.type === "error") {
+                throw new Error(data.message || "AI service error");
+              }
+
               // ── Tool activity event from controller ─────────────────────
               if (data.type === "tool_call" && data.tool) {
                 setMessages((prev) =>

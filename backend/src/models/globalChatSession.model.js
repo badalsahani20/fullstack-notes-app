@@ -33,6 +33,10 @@ const globalChatSessionSchema = new mongoose.Schema(
       type: [chatMessageSchema],
       default: [],
     },
+    summary: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
