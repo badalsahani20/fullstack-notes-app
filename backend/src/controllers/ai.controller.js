@@ -87,8 +87,9 @@ const mightNeedWeb = (msg) => {
   return (
     /https?:\/\/[^\s]+/.test(msg) || // ✅ matches actual URLs
     /\b(search|google|look up|find online|browse|web|internet|website|article|link|url)\b/.test(lower) || // ✅ explicit search intents
-    /\b(latest|recent|new|news|now|current|today|release|update|version|stock|price|weather)\b/.test(lower) || // Timely keywords
-    /\b(api|documentation|lib|package|framework|how to install)\b/.test(lower) // Technical gaps
+    /\b(latest|recent|new|news|now|current|today|release|update|version|stock|price|rate|conversion|weather)\b/.test(lower) || // Timely keywords
+    /\b(api|documentation|lib|package|framework|how to install)\b/.test(lower) || // Technical gaps
+    /[\$\€]/.test(msg) // Currency triggers
   );
 };
 
@@ -385,12 +386,10 @@ const resolveNoteContext = async (
   let noteContext = "";
   let noteFetched = false;
 
-  // Skip note fetch when a web tool already provided context
-  const shouldIncludeContext =
-    !toolUsed &&
-    !isGlobalChat &&
-    noteId &&
-    (hasSelection || shouldFetchNote(message, history));
+  // Only fetch note context if the message is actually about the note/editor context.
+  // We allow this even if a tool was used, so you can compare web data with note data.
+  const isNoteQuery = noteId && (hasSelection || shouldFetchNote(message, history));
+  const shouldIncludeContext = !!isNoteQuery;
 
   if (shouldIncludeContext) {
     if (reqNoteContext) {
