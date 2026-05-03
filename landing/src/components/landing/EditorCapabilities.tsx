@@ -1,5 +1,6 @@
 import { FadeIn } from '../ui/FadeIn';
 import { Code, Table, Type, Layout, Sparkles } from 'lucide-react';
+import editorPreview from '../../assets/editor-preview.png';
 
 export const EditorCapabilities = () => {
   const capabilities = [
@@ -79,7 +80,7 @@ export const EditorCapabilities = () => {
                 
                 <div className="relative rounded-xl overflow-hidden aspect-[16/10] bg-[#0a0a0a] border border-white/5">
                   <img 
-                    src="/src/assets/editor-preview.png" 
+                    src={editorPreview} 
                     alt="Notesify Editor Preview" 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.01] will-change-transform"
                   />
