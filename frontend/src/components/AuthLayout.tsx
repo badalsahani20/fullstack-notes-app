@@ -5,7 +5,6 @@ export default function AuthLayout() {
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-black p-4">
       {/* Dynamic Background Elements */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.15)_0%,transparent_70%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
       
       {/* Premium Moving Dark Theme Background Elements */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-100">

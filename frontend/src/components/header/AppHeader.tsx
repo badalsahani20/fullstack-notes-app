@@ -50,14 +50,14 @@ const AppHeader = ({ theme, onToggleTheme, onMenuOpen }: AppHeaderProps) => {
         aria-label={onMenuOpen ? "Open menu" : undefined}
       >
         <div className="relative">
-          <div className="absolute inset-0 rounded-lg bg-white/5 blur-md" />
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-black shadow-[0_0_15px_rgba(255,255,255,0.05)]">
+          <div className="absolute inset-0 bg-white/5 blur-md" />
+          <div className="relative w-8 h-8 overflow-hidden bg-black shadow-[0_0_15px_rgba(255,255,255,0.05)]">
             <img 
               src="/notesify-favicon.png" 
               alt="Notesify" 
               width={32} 
               height={32} 
-              className="w-full h-full object-cover scale-[1.15]" 
+              className="w-full h-full" 
             />
           </div>
         </div>

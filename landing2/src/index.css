@@ -1,0 +1,286 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Instrument Serif", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+body { 
+  font-family: var(--font-sans); 
+  background-color: #050505; 
+  color: #e7e5e4; /* stone-200 */
+}
+
+/* Custom Theme Utilities */
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+}
+
+.glass-card-hover:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2); /* indigo-500 */
+}
+
+.gradient-text {
+  background: linear-gradient(to right, #e0e7ff, #818cf8); /* indigo-100 to indigo-400 */
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #6366f1, #a855f7); /* indigo-500 to purple-500 */
+}
+
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Custom Interactive Icon Animations --- */
+
+/* Iris Morphing (Agentic AI) */
+@keyframes iris-morph {
+  0% { border-radius: 30% 70% 70% 30%; }
+  25% { border-radius: 60% 40% 30% 70%; }
+  50% { border-radius: 50% 50% 60% 40%; }
+  75% { border-radius: 30% 70% 50% 50%; }
+  100% { border-radius: 30% 70% 70% 30%; }
+}
+.iris-shape {
+  width: 48px;
+  height: 48px;
+  background: #aaa;
+  border-radius: 30%;
+  transition: all 0.5s ease;
+  animation: iris-morph 6s infinite ease-in-out;
+}
+.group:hover .iris-shape {
+  background: #00e0ff !important;
+  transform: rotate(180deg) scale(1.2);
+}
+
+/* Smart Routing Structure */
+@keyframes move-pulse {
+  0% { top: 5px; }
+  100% { top: 40px; }
+}
+@keyframes split-pulse {
+  0% { top: 5px; left: 50%; }
+  50% { top: 25px; left: 45%; }
+  100% { top: 40px; left: 60%; }
+}
+.router {
+  position: relative;
+}
+.path-line {
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: #444;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.branch-left, .branch-right {
+  position: absolute;
+  width: 2px;
+  height: 20px;
+  background: #444;
+  top: 25px;
+}
+.branch-left {
+  left: 40%;
+  transform: rotate(-30deg);
+}
+.branch-right {
+  left: 56%;
+  transform: rotate(30deg);
+}
+.pulse-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #00e0ff;
+  border-radius: 50%;
+  top: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: move-pulse 2s linear infinite;
+}
+.group:hover .pulse-dot {
+  animation: split-pulse 1.5s ease-in-out infinite;
+}
+
+/* AI Editor Structure */
+@keyframes editor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.editor-text {
+  font-family: monospace;
+  font-size: 11px;
+  color: #fff;
+  white-space: nowrap;
+}
+.prediction-ghost {
+  color: #00e0ff;
+  opacity: 0.3;
+  margin-left: 4px;
+  transition: 0.3s;
+}
+.blinking-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  background: #00e0ff;
+  margin-left: 2px;
+  animation: editor-blink 1s infinite;
+}
+
+/* Knowledge Network Structure */
+@keyframes intelligence-travel {
+  0%, 100% { top: 50%; left: 50%; }
+  15% { top: 20%; left: 75%; }
+  30% { top: 50%; left: 50%; }
+  45% { top: 80%; left: 25%; }
+  60% { top: 50%; left: 50%; }
+  75% { top: 30%; left: 20%; }
+  90% { top: 50%; left: 50%; }
+}
+@keyframes line-flash {
+  0%, 10% { opacity: 0; width: 0; }
+  15%, 25% { opacity: 0.6; width: 25px; }
+  30%, 100% { opacity: 0; width: 0; }
+}
+.network-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.node-point {
+  width: 4px;
+  height: 4px;
+  background: #444;
+  border-radius: 50%;
+  position: absolute;
+  transition: all 0.3s;
+}
+.node-point:nth-child(1){ top:50%; left:50%; background: #00e0ff; }
+.node-point:nth-child(2){ top:20%; left:75%; }
+.node-point:nth-child(3){ top:80%; left:25%; }
+.node-point:nth-child(4){ top:30%; left:20%; }
+.conn-line {
+  position: absolute;
+  height: 1px;
+  background: #00e0ff;
+  transform-origin: left;
+  opacity: 0;
+  width: 25px;
+}
+.pulse-intelligence {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #00e0ff;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  box-shadow: 0 0 10px #00e0ff;
+  animation: intelligence-travel 4s infinite ease-in-out;
+}
+.conn-line-1 { animation: line-flash 4s infinite; animation-delay: 0s; }
+.conn-line-2 { animation: line-flash 4s infinite; animation-delay: 1.2s; }
+.conn-line-3 { animation: line-flash 4s infinite; animation-delay: 2.4s; }
+.conn-line-1 { animation: line-flash 4s infinite; animation-delay: 0s; }
+.conn-line-2 { animation: line-flash 4s infinite; animation-delay: 1.2s; }
+.conn-line-3 { animation: line-flash 4s infinite; animation-delay: 2.4s; }
+
+/* AI Editor On-Demand Structure */
+@keyframes select-line {
+  0% { width: 0%; }
+  30% { width: 80%; }
+  100% { width: 80%; }
+}
+.selection-box {
+  width: 100%;
+  height: 24px;
+  background: rgba(0, 224, 255, 0.1);
+  border-left: 2px solid #00e0ff;
+  position: relative;
+  overflow: hidden;
+}
+.action-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: #00e0ff;
+  color: #050505;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 8px;
+  font-weight: bold;
+  opacity: 0;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+.group:hover .action-menu {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.selection-line {
+  height: 2px;
+  background: white;
+  width: 0%;
+  margin-bottom: 4px;
+  animation: select-line 4s infinite;
+}
+.selection-line-delayed {
+  width: 60%;
+  animation-delay: 0.5s;
+}
+
+/* Hero Morphing */
+@keyframes iris-hero-morph {
+  0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+  25% { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
+  50% { border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%; }
+  75% { border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%; }
+  100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+}
+.iris-hero-blob {
+  animation: iris-hero-morph 10s infinite ease-in-out;
+}
+
+/* Social Mini Morphing */
+@keyframes iris-mini-morph {
+  0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+  50% { border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%; }
+  100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+}
+.iris-mini-blob {
+  animation: iris-mini-morph 4s infinite ease-in-out;
+}

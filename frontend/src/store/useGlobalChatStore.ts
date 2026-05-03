@@ -17,6 +17,7 @@ export type ChatMessage = {
   thought?: string;
   isThinking?: boolean;
   thinkingTime?: number;
+  toolCalls?: { tool: string }[];
 };
 
 export type ChatSession = {
@@ -168,6 +169,18 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
               if (data.type === "error") {
                 throw new Error(data.message || "AI service error");
+              }
+
+              // ── Tool activity event from controller ─────────────────────
+              if (data.type === "tool_call" && data.tool) {
+                set((state) => ({
+                  messages: state.messages.map((m) =>
+                    m.id === aiMsgId
+                      ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
+                      : m
+                  ),
+                }));
+                continue;
               }
               
               const delta = data.choices?.[0]?.delta;
