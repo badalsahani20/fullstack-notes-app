@@ -63,7 +63,7 @@ export const AIExperience = () => {
               </p>
 
               <div className="mt-10 space-y-8">
-                {highlights.map((h, i) => (
+                {highlights.map((h) => (
                   <div key={h.title} className="flex items-start gap-5 group cursor-default">
                     <HighlightIcon title={h.title} />
                     <div>

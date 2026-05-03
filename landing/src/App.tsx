@@ -11,8 +11,6 @@ import { CTA } from './components/landing/CTA';
 import { Newsletter } from './components/landing/Newsletter';
 import { Footer } from './components/landing/Footer';
 
-import { Starfield } from './components/ui/Starfield';
-
 function App() {
   return (
     <div className="min-h-screen bg-[#050505] text-stone-200 selection:bg-indigo-500/30 font-sans overflow-x-hidden">

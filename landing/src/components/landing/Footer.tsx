@@ -1,4 +1,4 @@
-import { FileText, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { FaGithub, FaXTwitter } from 'react-icons/fa6';
 
 export const Footer = () => {
