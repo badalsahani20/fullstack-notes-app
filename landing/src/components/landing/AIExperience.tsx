@@ -2,46 +2,81 @@ import { FadeIn } from '../ui/FadeIn';
 import { EditorPreview } from './EditorPreview';
 
 const HighlightIcon = ({ title }: { title: string }) => {
-  const baseClasses = "shrink-0 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20 group-hover:bg-indigo-500/20 transition-all duration-300 group-hover:scale-110";
-
-  if (title === "Multi-provider AI") {
+  if (title === "Multimodal & Document Analysis") {
     return (
-      <div className={baseClasses}>
-        <svg className="h-5 w-5 text-indigo-500 overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" className="transition-all duration-500 group-hover:translate-y-[-2px]" />
-          <path d="M12 2L2 7l10 5 10-5-10-5z" className="transition-all duration-500 group-hover:translate-y-[-4px]" />
-        </svg>
+      <div className="relative h-12 w-12 shrink-0 group perspective-1000">
+        <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-indigo-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+          {/* Document Base */}
+          <div className="absolute w-5 h-6 bg-white/5 border border-white/10 rounded overflow-hidden transition-all duration-500 group-hover:-translate-x-2 group-hover:rotate-[-10deg]">
+            <div className="absolute top-1 left-1 right-2 h-[1.5px] bg-white/20 rounded-full" />
+            <div className="absolute top-2.5 left-1 right-1 h-[1.5px] bg-white/20 rounded-full" />
+            <div className="absolute top-4 left-1 right-3 h-[1.5px] bg-white/20 rounded-full" />
+          </div>
+          {/* Image/Orb (Multimodal) */}
+          <div className="absolute w-5 h-6 bg-indigo-500/10 border border-indigo-500/30 rounded overflow-hidden transition-all duration-500 translate-x-1.5 translate-y-1.5 group-hover:translate-x-2.5 group-hover:translate-y-2.5 group-hover:rotate-[10deg] group-hover:border-indigo-400/50 group-hover:bg-indigo-500/20">
+            <div className="absolute bottom-0 left-0 right-0 h-2.5 bg-indigo-500/30 rounded-t-full blur-[1px]" />
+            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-indigo-300 rounded-full shadow-[0_0_5px_rgba(165,180,252,0.8)]" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (title === "Streaming responses") {
+  if (title === "Transparent Reasoning") {
     return (
-      <div className={baseClasses}>
-        <svg className="h-5 w-5 text-indigo-500 overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-          <path d="M13 2L3 14h9l-1 8" className="opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:stroke-white" strokeDasharray="20" strokeDashoffset="20" />
-        </svg>
+      <div className="relative h-12 w-12 shrink-0 group perspective-1000">
+        <div className="absolute inset-0 bg-purple-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-purple-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+          {/* Outer Pulse Rings */}
+          <div className="absolute inset-2 border border-purple-500/30 rounded-full transition-all duration-700 group-hover:scale-[1.8] group-hover:opacity-0" />
+          <div className="absolute inset-2 border border-purple-500/30 rounded-full opacity-0 transition-all duration-700 delay-150 group-hover:scale-[1.8] group-hover:opacity-0" />
+          
+          {/* Central Brain/Core */}
+          <div className="relative w-4 h-4 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all duration-500 group-hover:scale-110 group-hover:shadow-[0_0_25px_rgba(168,85,247,0.8)] flex items-center justify-center z-10">
+            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+          </div>
+
+          {/* Neural Links */}
+          <div className="absolute top-1/2 left-1/2 w-8 h-[1.5px] bg-gradient-to-r from-transparent via-purple-400 to-transparent -translate-x-1/2 -translate-y-1/2 rotate-45 opacity-0 group-hover:opacity-100 transition-all duration-500 blur-[0.5px]" />
+          <div className="absolute top-1/2 left-1/2 w-8 h-[1.5px] bg-gradient-to-r from-transparent via-purple-400 to-transparent -translate-x-1/2 -translate-y-1/2 -rotate-45 opacity-0 group-hover:opacity-100 transition-all duration-500 delay-75 blur-[0.5px]" />
+        </div>
       </div>
     );
   }
 
+  // Inline Editor Integration
   return (
-    <div className={baseClasses}>
-      <svg className="h-5 w-5 text-indigo-500 overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1 0-4.88 2.5 2.5 0 0 1 0-4.88A2.5 2.5 0 0 1 9.5 2z" />
-        <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 0-4.88 2.5 2.5 0 0 0 0-4.88A2.5 2.5 0 0 0 14.5 2z" />
-        <circle cx="12" cy="12" r="1" className="opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-300" fill="currentColor" />
-      </svg>
+    <div className="relative h-12 w-12 shrink-0 group perspective-1000">
+      <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-blue-500/40 group-hover:blur-xl" />
+      <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex flex-col items-start justify-center p-2.5 overflow-hidden transition-transform duration-500 group-hover:scale-105">
+        {/* Base Text */}
+        <div className="w-4 h-1 bg-white/20 rounded-full mb-1.5 transition-colors duration-300 group-hover:bg-white/40" />
+        
+        {/* Active Line with Cursor & Ghost Text */}
+        <div className="flex items-center gap-1 w-full">
+          <div className="w-2 h-1 bg-white/40 rounded-full" />
+          <div className="w-[1.5px] h-3 bg-blue-400 shadow-[0_0_6px_rgba(96,165,250,0.9)] animate-pulse" />
+          
+          {/* Ghost text that slides out on hover */}
+          <div className="flex gap-0.5 overflow-hidden w-0 opacity-0 group-hover:w-full group-hover:opacity-100 transition-all duration-500 ease-out">
+            <div className="w-2 h-1 bg-blue-400/60 rounded-full shadow-[0_0_4px_rgba(96,165,250,0.5)]" />
+            <div className="w-3 h-1 bg-blue-400/60 rounded-full shadow-[0_0_4px_rgba(96,165,250,0.5)]" />
+          </div>
+        </div>
+        
+        {/* Bottom Text */}
+        <div className="w-5 h-1 bg-white/20 rounded-full mt-1.5 transition-colors duration-300 group-hover:bg-white/40" />
+      </div>
     </div>
   );
 };
 
 export const AIExperience = () => {
   const highlights = [
-    { title: "Multi-provider AI", desc: "Routes to the fastest, most reliable model — automatically." },
-    { title: "Streaming responses", desc: "Watch your narrative expand in real-time when invoked." },
-    { title: "On-Demand Intelligence", desc: "Iris stays silent until invited. Select text to refine or continue your thought." },
+    { title: "Multimodal & Document Analysis", desc: "Drag and drop 50-page PDF textbooks or complex diagrams. Iris parses them instantly and injects them into its context." },
+    { title: "Transparent Reasoning", desc: "Watch Iris think in real-time. Advanced reasoning models expose their internal logic before delivering the final answer." },
+    { title: "Inline Editor Integration", desc: "No more tab switching. Select text, click 'Improve', and review AI ghost-text suggestions directly in your note." },
   ];
 
   return (

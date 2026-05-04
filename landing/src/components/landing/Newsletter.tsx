@@ -1,7 +1,23 @@
+import { useState } from 'react';
 import { FadeIn } from '../ui/FadeIn';
-import { Send } from 'lucide-react';
+import { MessageSquare, Send } from 'lucide-react';
 
-export const Newsletter = () => {
+export const Feedback = () => {
+  const [feedback, setFeedback] = useState("");
+
+  const handleSendFeedback = () => {
+    if (!feedback.trim()) return;
+    const subject = encodeURIComponent("Notesify Feedback & Feature Request");
+    const body = encodeURIComponent(feedback);
+    const to = "badalsahani233@gmail.com";
+    
+    // Opens Gmail in a new tab with pre-filled fields
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
+    window.open(gmailUrl, "_blank");
+    
+    setFeedback("");
+  };
+
   return (
     <section className="relative py-24 z-20 border-t border-white/5 bg-[#050505]">
       <div className="container mx-auto px-6">
@@ -9,33 +25,43 @@ export const Newsletter = () => {
           {/* Subtle background glow */}
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-indigo-500/10 blur-3xl rounded-full"></div>
           
-          <div className="flex flex-col md:flex-row items-center gap-10">
+          <div className="flex flex-col md:flex-row gap-10">
             <div className="flex-1 text-center md:text-left">
               <FadeIn>
-                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">Stay in the loop.</h3>
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-stone-300 mb-4">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  We are listening
+                </div>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">Have feedback or a feature request?</h3>
                 <p className="text-stone-400">
-                  Get notified about new features, research updates, and the occasional writing tip. No spam, ever.
+                  Notesify is built for you. If you encounter a bug, have a brilliant idea, or just want to say hi, let us know directly.
                 </p>
               </FadeIn>
             </div>
             
-            <div className="w-full md:w-auto">
+            <div className="flex-1 w-full">
               <FadeIn delay={200}>
-                <div className="flex flex-col sm:flex-row items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 focus-within:border-indigo-500/50 transition-all">
-                  <input 
-                    type="email" 
-                    placeholder="Your email address" 
-                    className="w-full bg-transparent px-4 py-3 text-sm text-white placeholder-stone-500 outline-none"
+                <div className="flex flex-col gap-3">
+                  <textarea 
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Tell us what's on your mind..." 
+                    rows={4}
+                    className="w-full bg-white/5 rounded-2xl border border-white/10 focus:border-indigo-500/50 transition-all px-4 py-3 text-sm text-white placeholder-stone-500 outline-none resize-none"
                   />
-                  <button className="group relative w-full sm:w-auto bg-white text-black hover:bg-stone-200 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300">
+                  <button 
+                    onClick={handleSendFeedback}
+                    disabled={!feedback.trim()}
+                    className="group relative w-full sm:w-auto self-end bg-white text-black hover:bg-stone-200 disabled:bg-white/50 disabled:cursor-not-allowed px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300"
+                  >
                     <span className="flex items-center justify-center gap-2">
-                      Subscribe
+                      Send to Developer
                       <Send className="size-3.5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                     </span>
                   </button>
                 </div>
-                <p className="mt-3 text-[10px] text-center md:text-left text-stone-600">
-                  By subscribing, you agree to our privacy policy.
+                <p className="mt-4 text-[10px] text-right text-stone-500">
+                  This will safely open Gmail in a new tab.
                 </p>
               </FadeIn>
             </div>

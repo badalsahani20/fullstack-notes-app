@@ -33,7 +33,8 @@ export const Hero = () => {
 
         <FadeIn delay={500}>
           <p className="text-lg sm:text-xl text-stone-400 max-w-2xl mx-auto mb-10">
-            A calm place to write — with intelligence when you need it. <br className="hidden sm:block" />
+            Your thoughts, organized. Iris steps in only when you need it — <br className="hidden sm:block" />
+  and stays out of the way when you don't.
           </p>
         </FadeIn>
 
@@ -60,10 +61,10 @@ export const Hero = () => {
               href="https://app.notesify.in"
               className="group inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-bold bg-white/5 hover:bg-white/10 transition-all duration-300 text-white border border-white/10 hover:border-white/20 w-full sm:w-auto"
             >
-              Live Demo
+              Open App
             </a>
           </div>
-          <p className="mt-6 text-xs text-stone-500 font-medium">Free forever · No credit card · Join 2,400+ writers</p>
+          <p className="mt-6 text-xs text-stone-300 font-medium">Free during public preview · No credit card · Early access</p>
         </FadeIn>
       </div>
 

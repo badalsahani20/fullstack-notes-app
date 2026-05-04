@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --font-serif: "Instrument Serif", serif;
@@ -10,6 +11,37 @@ body {
   font-family: var(--font-sans); 
   background-color: #050505; 
   color: #e7e5e4; /* stone-200 */
+}
+
+/* Custom Global Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1); 
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1); 
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2); 
+}
+
+/* Specific sleek scrollbar for Iris Demo component */
+.iris-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.iris-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.iris-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2); /* indigo-500/20 */
+  border-radius: 10px;
+}
+.iris-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4); 
 }
 
 /* Custom Theme Utilities */

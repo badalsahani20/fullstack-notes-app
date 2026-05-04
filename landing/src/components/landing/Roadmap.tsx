@@ -1,4 +1,4 @@
-import { Users, GitBranch, MessagesSquare } from 'lucide-react';
+import { Users, MessagesSquare, Brain } from 'lucide-react';
 import { FadeIn } from '../ui/FadeIn';
 
 export const Roadmap = () => {
@@ -9,14 +9,14 @@ export const Roadmap = () => {
       desc: "Work alongside your team in the same note — like Google Docs, but faster and more focused.",
     },
     {
-      icon: GitBranch,
-      title: "Multi-user live editing",
-      desc: "Smart conflict handling means edits never collide, even with dozens of cursors moving at once.",
-    },
-    {
       icon: MessagesSquare,
       title: "Inline comments & threads",
       desc: "Discuss ideas exactly where they live — no more context switching to chat apps.",
+    },
+    {
+      icon: Brain,
+      title: "Active Learning Tools",
+      desc: "Native AI-generated quizzes, puzzles, and spaced-repetition flashcards directly inside your workspace.",
     },
   ];
 

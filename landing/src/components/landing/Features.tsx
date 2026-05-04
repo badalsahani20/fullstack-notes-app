@@ -1,80 +1,114 @@
 import { FadeIn } from '../ui/FadeIn';
 
-const FeatureIcon = ({ title, accent }: { title: string; accent: string }) => {
-  const baseClasses = `relative inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${accent} shadow-glow mb-5 transition-all duration-300 group-hover:scale-110`;
-
-  if (title === "Agentic AI (Iris)") {
+const FeatureIcon = ({ title }: { title: string }) => {
+  if (title === "An Assistant That Researches") {
     return (
-      <div className="relative mb-5 group">
-        <div className="iris-shape"></div>
-      </div>
-    );
-  }
-
-  if (title === "Smart Routing Engine") {
-    return (
-      <div className="relative mb-5 group">
-        <div className="router w-12 h-12 relative">
-          <div className="path-line"></div>
-          <div className="branch-left"></div>
-          <div className="branch-right"></div>
-          <div className="pulse-dot"></div>
+      <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+        <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-indigo-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+           <div className="iris-shape scale-75 origin-center group-hover:scale-90 transition-all duration-500 shadow-glow" />
         </div>
       </div>
     );
   }
 
-  if (title === "Real-Time Knowledge Access") {
+  if (title === "The Right Tool For The Job") {
     return (
-      <div className="relative mb-5 group h-12 w-12 overflow-visible">
-        <div className="network-container">
-          <div className="node-point"></div>
-          <div className="node-point"></div>
-          <div className="node-point"></div>
-          <div className="node-point"></div>
-          <div className="conn-line conn-line-1"></div>
-          <div className="conn-line conn-line-2"></div>
-          <div className="conn-line conn-line-3"></div>
-          <div className="pulse-intelligence"></div>
+      <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+        <div className="absolute inset-0 bg-purple-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-purple-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+          {/* Paths */}
+          <div className="absolute left-2 top-1/2 w-3 h-[1.5px] bg-white/20 -translate-y-1/2" />
+          <div className="absolute left-5 top-3 w-[1.5px] h-3 bg-white/20 rotate-45 origin-bottom-left" />
+          <div className="absolute left-5 bottom-3 w-[1.5px] h-3 bg-white/20 -rotate-45 origin-top-left" />
+          
+          {/* Destination Nodes */}
+          <div className="absolute right-2 top-2.5 w-2 h-2 rounded-full border border-white/20 transition-all duration-300" />
+          <div className="absolute right-2 bottom-2.5 w-2 h-2 rounded-full border border-white/20 transition-all duration-300" />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-white/20 transition-all duration-300 group-hover:border-purple-400 group-hover:bg-purple-500/50 group-hover:shadow-[0_0_10px_rgba(168,85,247,0.8)]" />
+
+          {/* Active Path glowing line */}
+          <div className="absolute left-2 top-1/2 w-6 h-[1.5px] bg-purple-400 -translate-y-1/2 shadow-[0_0_5px_rgba(168,85,247,0.8)] opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-[-100%] group-hover:translate-x-0" />
         </div>
       </div>
     );
   }
 
-  if (title === "AI-Native Editor") {
+  if (title === "Never Leave Your Editor") {
     return (
-      <div className="relative mb-5 group h-12 flex items-center overflow-hidden">
-        <div className="editor-text px-3 py-2 rounded-lg bg-white/5 border border-white/10 w-full">
-          <div className="selection-box">
-             <div className="selection-line"></div>
-             <div className="selection-line selection-line-delayed"></div>
-             <div className="action-menu">ASK IRIS</div>
+      <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+        <div className="absolute inset-0 bg-blue-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-blue-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+          {/* Main Editor window */}
+          <div className="absolute inset-2 border border-white/10 rounded overflow-hidden transition-all duration-500 group-hover:pr-3">
+             <div className="w-full h-1 bg-white/5 border-b border-white/10" />
+             <div className="p-1 space-y-1">
+               <div className="w-full h-[1.5px] bg-white/20 rounded-full" />
+               <div className="w-4/5 h-[1.5px] bg-white/20 rounded-full" />
+             </div>
+             {/* Slide-out side panel (Iris) */}
+             <div className="absolute right-0 top-1 bottom-0 w-3 bg-blue-500/10 border-l border-blue-500/30 translate-x-full group-hover:translate-x-0 transition-transform duration-500 ease-out flex items-center justify-center">
+               <div className="w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_4px_rgba(96,165,250,0.8)] animate-pulse" />
+             </div>
           </div>
         </div>
       </div>
     );
   }
 
-  if (title === "Production-Grade Sharing") {
+  if (title === "Write Together, Not Alone") {
     return (
-      <div className={baseClasses}>
-        <svg className="h-6 w-6 text-white overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="18" cy="5" r="3" />
-          <circle cx="6" cy="12" r="3" />
-          <circle cx="18" cy="19" r="3" />
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" className="transition-all duration-300 group-hover:stroke-dashoffset-0" strokeDasharray="10" strokeDashoffset="10" />
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" className="transition-all duration-300 group-hover:stroke-dashoffset-0" strokeDasharray="10" strokeDashoffset="10" />
-        </svg>
+      <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+        <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-indigo-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+          {/* Magic Wand / Sparkle */}
+          <svg className="absolute w-4 h-4 text-indigo-400 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all duration-500 -translate-y-1 group-hover:-translate-y-2 group-hover:translate-x-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" className="origin-center animate-[spin_3s_linear_infinite]" />
+          </svg>
+          
+          {/* Paragraph Lines changing color */}
+          <div className="flex flex-col gap-1 w-6 transition-all duration-500 group-hover:translate-y-1 group-hover:-translate-x-1">
+            <div className="h-[2px] w-full bg-white/30 rounded-full transition-colors duration-500 group-hover:bg-indigo-400/80 group-hover:shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
+            <div className="h-[2px] w-5/6 bg-white/30 rounded-full transition-colors duration-500 delay-75 group-hover:bg-indigo-400/80 group-hover:shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
+            <div className="h-[2px] w-4/6 bg-white/30 rounded-full transition-colors duration-500 delay-150 group-hover:bg-indigo-400/80 group-hover:shadow-[0_0_5px_rgba(129,140,248,0.5)]" />
+          </div>
+        </div>
       </div>
     );
   }
 
+  if (title === "Share With Confidence") {
+    return (
+      <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+        <div className="absolute inset-0 bg-rose-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-rose-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+           {/* Link Base */}
+           <svg className="w-5 h-5 text-white/40 transition-all duration-500 group-hover:-translate-x-1 group-hover:opacity-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+           </svg>
+           {/* Lock snaps into place */}
+           <svg className="absolute w-5 h-5 text-rose-400 scale-50 opacity-0 transition-all duration-500 group-hover:scale-100 group-hover:opacity-100 group-hover:shadow-[0_0_10px_rgba(244,63,94,0.5)] rounded-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+             <path d="M7 11V7a5 5 0 0 1 10 0v4" className="group-hover:stroke-rose-300" />
+           </svg>
+           {/* Ripple wave */}
+           <div className="absolute inset-0 rounded-full border border-rose-400/50 scale-0 opacity-0 group-hover:animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+        </div>
+      </div>
+    );
+  }
+
+  // Grows With Your Thoughts
   return (
-    <div className={baseClasses}>
-      <svg className="h-6 w-6 text-white overflow-visible" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-        <path d="M12 11v6m-3-3h6" className="transition-all duration-300 group-hover:rotate-90 origin-center" />
-      </svg>
+    <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+      <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-indigo-500/40 group-hover:blur-xl" />
+      <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+        {/* Iso Stack Layers */}
+        <div className="absolute w-6 h-6 border border-indigo-400/20 rounded bg-indigo-500/5 transition-all duration-500 group-hover:translate-y-[-6px] group-hover:-translate-x-1 group-hover:rotate-12 group-hover:border-indigo-400/80 group-hover:shadow-[0_0_10px_rgba(129,140,248,0.5)] z-30" />
+        <div className="absolute w-6 h-6 border border-indigo-400/20 rounded bg-indigo-500/5 transition-all duration-500 group-hover:translate-y-[0px] group-hover:rotate-6 group-hover:border-indigo-400/50 z-20" />
+        <div className="absolute w-6 h-6 border border-indigo-400/20 rounded bg-indigo-500/5 transition-all duration-500 group-hover:translate-y-[6px] group-hover:translate-x-1 group-hover:border-indigo-400/30 z-10" />
+      </div>
     </div>
   );
 };
@@ -82,34 +116,28 @@ const FeatureIcon = ({ title, accent }: { title: string; accent: string }) => {
 export const Features = () => {
   const features = [
     {
-      title: "Agentic AI (Iris)",
-      desc: "Not just a chatbot — Iris decides when it needs fresh data, searches the web, and answers with real context instead of guessing.",
-      accent: "from-indigo-500 to-purple-500",
+      title: "An Assistant That Researches",
+      desc: "Iris doesn't guess. It browses the live web to find the exact, up-to-date information you need before answering.",
     },
     {
-      title: "Smart Routing Engine",
-      desc: "A built-in 'Skeptical Router' decides whether to use AI, fetch live data, or stay local — optimizing both speed and cost.",
-      accent: "from-purple-500 to-indigo-500",
+      title: "The Right Tool For The Job",
+      desc: "Whether you need a quick grammar fix or deep logical reasoning, Iris instantly selects the most capable AI model behind the scenes.",
     },
     {
-      title: "Real-Time Knowledge Access",
-      desc: "Ask about anything — Iris can browse documentation, crawl URLs, and bring back clean, usable answers instantly.",
-      accent: "from-indigo-400 to-blue-500",
+      title: "Never Leave Your Editor",
+      desc: "Don't break your flow. Drop a link or ask a question, and Iris will summarize the answers right next to your notes.",
     },
     {
-      title: "AI-Native Editor",
-      desc: "A focused space for your thoughts. Invoke Iris only when you need it — select text to refine, expand, or continue your narrative.",
-      accent: "from-blue-500 to-indigo-500",
+      title: "Write Together, Not Alone",
+      desc: "Select a rough paragraph and let Iris polish it. Review suggestions as inline 'ghost text' and accept them with a single click.",
     },
     {
-      title: "Production-Grade Sharing",
-      desc: "Secure, cached, and scalable note sharing with self-expiring links and instant global access.",
-      accent: "from-indigo-500 to-rose-500",
+      title: "Share With Confidence",
+      desc: "Generate clean, beautiful links to share your work. Add password protection or let them expire automatically when you're done.",
     },
     {
-      title: "Scales With Your Thinking",
-      desc: "From quick notes to deep knowledge systems — folders, search, and structure that grow with you.",
-      accent: "from-purple-500 to-indigo-500",
+      title: "Grows With Your Thoughts",
+      desc: "Start with a simple note, build a complex knowledge system. Folders, tags, and lightning-fast search keep you organized.",
     },
   ];
 
@@ -134,7 +162,7 @@ export const Features = () => {
           {features.map((f, i) => (
             <FadeIn key={f.title} delay={i * 100}>
               <div className="glass-card glass-card-hover p-8 group h-full flex flex-col transition-all duration-500 hover:translate-y-[-4px]">
-                <FeatureIcon title={f.title} accent={f.accent} />
+                <FeatureIcon title={f.title} />
                 <h3 className="text-xl font-bold mb-3 text-white transition-colors group-hover:text-indigo-400">{f.title}</h3>
                 <p className="text-sm text-stone-400 leading-relaxed font-medium">{f.desc}</p>
               </div>

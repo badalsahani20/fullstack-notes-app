@@ -29,7 +29,7 @@ export const CTA = () => {
               </span>
             </a>
             <p className="text-xs text-stone-500">
-              Free forever · No credit card · Sign in with Google
+              On public preview · No payment required · <br /> Sign in with Google
             </p>
           </div>
         </FadeIn>
