@@ -1,5 +1,5 @@
 import { Mail } from 'lucide-react';
-import { FaGithub, FaXTwitter } from 'react-icons/fa6';
+import { FaGithub, FaInstagram, FaLinkedin } from 'react-icons/fa6';
 
 export const Footer = () => {
   return (
@@ -15,13 +15,16 @@ export const Footer = () => {
               The AI-powered note-taking app for people who think fast and write often.
             </p>
             <div className="mt-6 flex items-center gap-3">
-              <a href="#" aria-label="GitHub" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
+              <a href="https://github.com/badalsahani20" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
                 <FaGithub className="h-4 w-4" />
               </a>
-              <a href="#" aria-label="Twitter" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
-                <FaXTwitter className="h-4 w-4" />
+              <a href="https://in.linkedin.com/in/badalsahani20" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
+                <FaLinkedin className="h-4 w-4" />
               </a>
-              <a href="#" aria-label="Email" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
+              <a href="https://instagram.com/d4rth.anv" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
+                <FaInstagram className="h-4 w-4" />
+              </a>
+              <a href="mailto:badalsahani233@gmail.com" aria-label="Email" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
                 <Mail className="h-4 w-4" />
               </a>
             </div>
