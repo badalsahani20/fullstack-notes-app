@@ -106,7 +106,6 @@ const StudyPanel = ({ noteId, chatHistory, onClose }: StudyPanelProps) => {
             attempts={attempts}
             isGenerating={isGeneratingQuiz}
             onGenerate={handleGenerateQuiz}
-            onRegenerate={() => void generateQuiz()}
             onSaveAttempt={(score, total) => void saveAttempt(score, total)}
           />
         )}

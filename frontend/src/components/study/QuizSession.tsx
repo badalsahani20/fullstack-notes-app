@@ -9,7 +9,6 @@ interface QuizSessionProps {
   attempts: QuizAttempt[];
   isGenerating: boolean;
   onGenerate: (count: number, types: QuizType[]) => void;
-  onRegenerate: () => void;
   onSaveAttempt: (score: number, total: number) => void;
 }
 
@@ -158,7 +157,6 @@ const QuizSession = ({
   attempts,
   isGenerating,
   onGenerate,
-  onRegenerate,
   onSaveAttempt,
 }: QuizSessionProps) => {
   // ── Config state ─────────────────────────────────────────────────────────
