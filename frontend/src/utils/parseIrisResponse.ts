@@ -2,52 +2,102 @@ import type { IrisSegment } from "@/store/useGlobalChatStore";
 
 /**
  * Parses raw AI response text into structured segments.
- * Detects IRIS_VIZ blocks for visualizations (Mermaid, Charts, Math).
+ *
+ * Supported block types:
+ *
+ * ── IRIS_VIZ (attribute format):
+ *   [IRIS_VIZ type="mermaid" title="My Title"]...data...[/IRIS_VIZ]
+ *   [IRIS_VIZ:mermaid:My Title]...data...[/IRIS_VIZ]   (legacy colon format)
+ *
+ * ── IRIS_ASK (clarify or MCQ):
+ *   [IRIS_ASK prompt="Question?"]
+ *   A) Option 1
+ *   B) Option 2
+ *   [/IRIS_ASK]
+ *
+ *   [IRIS_ASK type="clarify" prompt="Question?" options="Yes,No,Maybe"][/IRIS_ASK]
+ *
+ * Multiple IRIS_ASK blocks are parsed in order and rendered sequentially
+ * by IrisMessageBody (one revealed after the previous is answered).
  */
 export const parseIrisResponse = (text: string): IrisSegment[] => {
-  const segments: IrisSegment[] = [];
-  
-  // Supports both formats the model may emit:
-  //   New (attribute): [IRIS_VIZ type="mermaid" title="My Title"]...content...[/IRIS_VIZ]
-  //   Old (colon):     [IRIS_VIZ:mermaid:My Title]...content...[/IRIS_VIZ]
+  // Collect all blocks with their text positions so we can sort and interleave
+  const blocks: Array<{ start: number; end: number; segment: IrisSegment }> = [];
+
+  // ── IRIS_VIZ ────────────────────────────────────────────────────────────────
   const vizRegex =
-    /\[IRIS_VIZ(?:\s+type=["']?(mermaid|chart|math)["']?\s+title=["']?([^"'\]]*)["']?|:(mermaid|chart|math):([^\]])*)\]([\s\S]*?)\[\/IRIS_VIZ\]/gi;
-  
-  let lastIndex = 0;
-  let match;
+    /\[IRIS_VIZ(?:\s+type=["']?(mermaid|chart|math)["']?\s+title=["']?([^"'\]]*)["']?|:(mermaid|chart|math):([^\]]*))\]([\s\S]*?)\[\/IRIS_VIZ\]/gi;
 
-  while ((match = vizRegex.exec(text)) !== null) {
-    // Group layout: [1]=type(attr), [2]=title(attr), [3]=type(colon), [4]=title(colon), [5]=data
-    const type  = (match[1] || match[3] || "").toLowerCase() as "mermaid" | "chart" | "math";
-    const title = (match[2] || match[4] || "").trim();
-    const data  = match[5];
+  let m: RegExpExecArray | null;
+  while ((m = vizRegex.exec(text)) !== null) {
+    const type  = (m[1] || m[3] || "").toLowerCase() as "mermaid" | "chart" | "math";
+    const title = (m[2] || m[4] || "").trim();
+    const data  = m[5] ?? "";
 
-    // 1. Add preceding text segment if it exists
-    const precedingText = text.slice(lastIndex, match.index).trim();
-    if (precedingText) {
-      segments.push({ kind: "text", content: precedingText });
-    }
-
-    // 2. Add the visualization segment
-    if (type && data !== undefined) {
-      segments.push({
-        kind: "viz",
-        type,
-        title: title || "Visualization",
-        data: data.trim(),
+    if (type) {
+      blocks.push({
+        start: m.index,
+        end: vizRegex.lastIndex,
+        segment: { kind: "viz", type, title: title || "Visualization", data: data.trim() },
       });
     }
-
-    lastIndex = vizRegex.lastIndex;
   }
 
-  // 3. Add remaining text segment if it exists
-  const remainingText = text.slice(lastIndex).trim();
-  if (remainingText || segments.length === 0) {
-    segments.push({
-      kind: "text",
-      content: remainingText || text,
-    });
+  // ── IRIS_ASK ─────────────────────────────────────────────────────────────────
+  // Captures everything between [IRIS_ASK ...] and [/IRIS_ASK] as the body.
+  // Attributes are parsed from the tag's attribute string separately.
+  const askRegex = /\[IRIS_ASK([^\]]*)\]([\s\S]*?)\[\/IRIS_ASK\]/gi;
+
+  while ((m = askRegex.exec(text)) !== null) {
+    const attrStr = m[1] ?? "";
+    const body    = (m[2] ?? "").trim();
+
+    // ── Extract question text ──────────────────────────────────────────────
+    // Prefer `prompt=` attribute, fall back to `question=`, then raw body
+    const promptAttr = attrStr.match(/(?:prompt|question)=["']([^"']*)["']/);
+    const question   = (promptAttr?.[1] ?? body.split("\n")[0] ?? "").trim();
+
+    // ── Extract options ────────────────────────────────────────────────────
+    // Priority 1: body lines matching  A) / B) / A. / 1) etc.
+    const bodyOptionLines = body.match(/^[A-Da-d1-4][).]\s*.+/gm);
+    const bodyOptions = bodyOptionLines
+      ? bodyOptionLines.map((l) => l.replace(/^[A-Da-d1-4][).]\s*/, "").trim()).filter(Boolean)
+      : [];
+
+    // Priority 2: options="A,B,C" attribute
+    const optAttr    = attrStr.match(/options=["']([^"']*)["']/);
+    const attrOptions = optAttr
+      ? optAttr[1].split(",").map((o) => o.trim()).filter(Boolean)
+      : [];
+
+    const options = bodyOptions.length > 0 ? bodyOptions : attrOptions;
+
+    if (question) {
+      blocks.push({
+        start: m.index,
+        end: askRegex.lastIndex,
+        segment: { kind: "ask", question, options },
+      });
+    }
+  }
+
+  // ── Merge blocks with surrounding text ────────────────────────────────────
+  // Sorts blocks based on their position in the original text
+  blocks.sort((a, b) => a.start - b.start);
+
+  const segments: IrisSegment[] = [];
+  let lastIndex = 0;
+
+  for (const block of blocks) {
+    const preceding = text.slice(lastIndex, block.start).trim();
+    if (preceding) segments.push({ kind: "text", content: preceding });
+    segments.push(block.segment);
+    lastIndex = block.end;
+  }
+
+  const remaining = text.slice(lastIndex).trim();
+  if (remaining || segments.length === 0) {
+    segments.push({ kind: "text", content: remaining || text });
   }
 
   return segments;

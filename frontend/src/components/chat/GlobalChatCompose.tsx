@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { ReactNode, RefObject } from "react";
 import { X, ImageIcon, Square, ArrowUp, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +35,13 @@ export const GlobalChatCompose = ({
   disclaimerText = "Iris can make mistakes. Double-check important info.",
 }: GlobalChatComposeProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
+    }
+  }, [input, textareaRef]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,11 +99,6 @@ export const GlobalChatCompose = ({
               e.preventDefault();
               handleSend();
             }
-          }}
-          onInput={(e) => {
-            const el = e.currentTarget;
-            el.style.height = "auto";
-            el.style.height = Math.min(el.scrollHeight, 160) + "px";
           }}
         />
 

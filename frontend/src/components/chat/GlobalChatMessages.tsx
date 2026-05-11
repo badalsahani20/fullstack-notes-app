@@ -194,6 +194,7 @@ export const GlobalChatMessages = ({
                         ) : (
                           <IrisMessageBody
                             segments={msg.segments ?? [{ kind: "text", content: msg.text }]}
+                            onAnswer={sendMessage}
                           />
                         )}
                       </div>

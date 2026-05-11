@@ -1129,8 +1129,8 @@
   border: 1px solid var(--divider);
   border-radius: 999px;
   background: var(--surface-muted);
-  padding: 0.5rem 0.8rem;
-  font-size: 0.82rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted-text);
   transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
@@ -5565,3 +5565,876 @@ html:not(.dark) .dock-btn-active {
   font-weight: 700;
   font-size: 0.8rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STUDY MODE — Flashcards & Quiz
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ─────────────────────────────────────────────────────────────── */
+:root {
+  --study-card-bg:      #ffffff;
+  --study-card-border:  #e9ecef;
+  --study-card-shadow:  0 4px 24px rgba(0, 0, 0, 0.06);
+  --study-accent:       hsl(258, 75%, 62%);   /* violet-purple */
+  --study-accent-soft:  hsl(258, 75%, 62%, 0.12);
+  --study-correct:      hsl(142, 65%, 42%);
+  --study-wrong:        hsl(0, 68%, 52%);
+  --study-easy:         hsl(142, 60%, 40%);
+  --study-medium:       hsl(38, 90%, 48%);
+  --study-hard:         hsl(0, 68%, 52%);
+}
+
+.dark {
+  --study-card-bg:      hsl(230, 14%, 12%);
+  --study-card-border:  hsl(230, 14%, 20%);
+  --study-card-shadow:  0 4px 32px rgba(0, 0, 0, 0.35);
+  --study-accent:       hsl(258, 80%, 68%);
+  --study-accent-soft:  hsl(258, 80%, 68%, 0.14);
+  --study-correct:      hsl(142, 60%, 46%);
+  --study-wrong:        hsl(0, 68%, 58%);
+  --study-easy:         hsl(142, 55%, 44%);
+  --study-medium:       hsl(38, 85%, 52%);
+  --study-hard:         hsl(0, 65%, 56%);
+}
+
+/* ── Study Panel Shell ──────────────────────────────────────────────────── */
+.study-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--divider);
+  overflow: hidden;
+}
+
+.study-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.1rem 0.75rem;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.study-panel-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.study-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.6rem;
+  color: var(--muted-text);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.study-panel-close:hover {
+  background: var(--surface-ghost);
+  color: var(--text-strong);
+}
+
+/* ── Tab switcher (Flashcards | Quiz) ───────────────────────────────────── */
+.study-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.study-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.study-tab:hover {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+.study-tab-active {
+  background: var(--study-accent-soft);
+  color: var(--study-accent);
+}
+
+/* ── Scrollable content area ────────────────────────────────────────────── */
+.study-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+/* ── Generate / action buttons ──────────────────────────────────────────── */
+.study-generate-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  height: 2.4rem;
+  border-radius: 0.75rem;
+  background: var(--study-accent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+  flex-shrink: 0;
+}
+
+.study-generate-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--study-accent) 35%, transparent);
+}
+
+.study-generate-btn:active {
+  transform: scale(0.97);
+}
+
+.study-generate-btn:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.study-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--muted-text);
+}
+
+.study-empty-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  opacity: 0.6;
+}
+
+.study-empty-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.study-empty-desc {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  max-width: 18rem;
+}
+
+/* ── Skeleton loader (pulsing card placeholder) ──────────────────────────── */
+.study-skeleton {
+  border-radius: 1rem;
+  background: var(--surface-muted);
+  animation: study-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes study-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   FLASHCARD DECK
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.flashcard-counter {
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+/* 3D flip container */
+.flashcard-scene {
+  perspective: 1000px;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  cursor: pointer;
+  flex-shrink: 0;
+  min-height: 10rem;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flashcard-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 1.1rem;
+  border: 1px solid var(--study-card-border);
+  background: var(--study-card-bg);
+  box-shadow: var(--study-card-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  gap: 0.4rem;
+}
+
+
+.flashcard-face-back {
+  transform: rotateY(180deg);
+  background: color-mix(in srgb, var(--study-accent) 6%, var(--study-card-bg));
+  border-color: color-mix(in srgb, var(--study-accent) 20%, var(--study-card-border));
+}
+
+.flashcard-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+  opacity: 0.7;
+}
+
+.flashcard-face-back .flashcard-label {
+  color: var(--study-accent);
+  opacity: 1;
+}
+
+/* Scrollable zone — short content centers, long content scrolls from top */
+.flashcard-text-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+}
+
+.flashcard-text {
+  margin: auto;          /* centers vertically when content is shorter than container */
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-strong);
+  text-align: center;
+  width: 100%;
+}
+
+.flashcard-hint {
+  font-size: 0.72rem;
+  color: var(--muted-text);
+  opacity: 0.6;
+  margin-top: 0.25rem;
+}
+
+/* ── Difficulty badge ────────────────────────────────────────────────────── */
+.flashcard-difficulty {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.flashcard-difficulty-easy {
+  background: color-mix(in srgb, var(--study-easy) 14%, transparent);
+  color: var(--study-easy);
+}
+
+.flashcard-difficulty-medium {
+  background: color-mix(in srgb, var(--study-medium) 14%, transparent);
+  color: var(--study-medium);
+}
+
+.flashcard-difficulty-hard {
+  background: color-mix(in srgb, var(--study-hard) 14%, transparent);
+  color: var(--study-hard);
+}
+
+/* ── Navigation row ─────────────────────────────────────────────────────── */
+.flashcard-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.flashcard-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--divider);
+  color: var(--muted-text);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.flashcard-nav-btn:hover:not(:disabled) {
+  background: var(--surface-ghost);
+  color: var(--text-strong);
+  border-color: var(--text-strong);
+}
+
+.flashcard-nav-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.flashcard-known-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.85rem;
+  height: 2.2rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--divider);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.flashcard-known-btn:hover {
+  background: color-mix(in srgb, var(--study-correct) 10%, transparent);
+  color: var(--study-correct);
+  border-color: color-mix(in srgb, var(--study-correct) 30%, transparent);
+}
+
+.flashcard-known-btn-active {
+  background: color-mix(in srgb, var(--study-correct) 12%, transparent);
+  color: var(--study-correct);
+  border-color: color-mix(in srgb, var(--study-correct) 30%, transparent);
+}
+
+/* ── Progress bar (known cards) ─────────────────────────────────────────── */
+.flashcard-progress {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.flashcard-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--study-correct);
+  transition: width 0.3s ease;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   QUIZ SESSION
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Config screen ───────────────────────────────────────────────────────── */
+.quiz-config {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.quiz-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.quiz-config-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-text);
+}
+
+.quiz-count-pills {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.quiz-count-pill {
+  flex: 1;
+  height: 2rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--divider);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.quiz-count-pill:hover {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+.quiz-count-pill-active {
+  background: var(--study-accent-soft);
+  color: var(--study-accent);
+  border-color: color-mix(in srgb, var(--study-accent) 30%, transparent);
+}
+
+.quiz-type-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.quiz-type-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--divider);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted-text);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.quiz-type-toggle:hover {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+.quiz-type-toggle-active {
+  background: var(--study-accent-soft);
+  color: var(--study-accent);
+  border-color: color-mix(in srgb, var(--study-accent) 25%, transparent);
+}
+
+/* ── Active quiz — question card ─────────────────────────────────────────── */
+.quiz-progress-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.quiz-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--study-accent);
+  transition: width 0.35s ease;
+}
+
+.quiz-question-card {
+  border-radius: 1rem;
+  border: 1px solid var(--study-card-border);
+  background: var(--study-card-bg);
+  box-shadow: var(--study-card-shadow);
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.quiz-question-type-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--study-accent);
+}
+
+.quiz-question-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-strong);
+}
+
+/* MCQ options */
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.quiz-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--divider);
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--text-strong);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.quiz-option:hover {
+  background: var(--surface-muted);
+  border-color: var(--study-accent);
+}
+
+.quiz-option-selected {
+  background: var(--study-accent-soft);
+  border-color: color-mix(in srgb, var(--study-accent) 40%, transparent);
+  color: var(--study-accent);
+}
+
+.quiz-option-correct {
+  background: color-mix(in srgb, var(--study-correct) 10%, transparent);
+  border-color: color-mix(in srgb, var(--study-correct) 35%, transparent);
+  color: var(--study-correct);
+}
+
+.quiz-option-wrong {
+  background: color-mix(in srgb, var(--study-wrong) 10%, transparent);
+  border-color: color-mix(in srgb, var(--study-wrong) 35%, transparent);
+  color: var(--study-wrong);
+}
+
+/* True / False buttons */
+.quiz-tf-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.quiz-tf-btn {
+  flex: 1;
+  height: 2.4rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--divider);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted-text);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.quiz-tf-btn:hover {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+.quiz-tf-btn-selected {
+  background: var(--study-accent-soft);
+  color: var(--study-accent);
+  border-color: color-mix(in srgb, var(--study-accent) 30%, transparent);
+}
+
+/* Short answer input */
+.quiz-short-input {
+  width: 100%;
+  min-height: 4rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--divider);
+  background: var(--surface-muted);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-strong);
+  resize: vertical;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.quiz-short-input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--study-accent) 50%, var(--divider));
+}
+
+/* Explanation reveal */
+.quiz-explanation {
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--study-accent) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--study-accent) 18%, transparent);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-strong);
+}
+
+.quiz-explanation-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--study-accent);
+  margin-bottom: 0.25rem;
+}
+
+/* ── Results screen ──────────────────────────────────────────────────────── */
+.quiz-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+  text-align: center;
+}
+
+.quiz-score-ring {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  border: 4px solid var(--surface-muted);
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.quiz-score-ring-fill {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: var(--study-accent);
+  border-right-color: var(--study-accent);
+}
+
+.quiz-score-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-strong);
+  letter-spacing: -0.03em;
+}
+
+.quiz-score-label {
+  font-size: 0.75rem;
+  color: var(--muted-text);
+  font-weight: 500;
+}
+
+.quiz-results-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.quiz-results-desc {
+  font-size: 0.8rem;
+  color: var(--muted-text);
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IRIS ASK DIALOG — Claude-style clarification card
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.iris-ask-dialog {
+  margin: 0.6rem 0;
+  border-radius: 0.85rem;
+  border: 1px solid var(--divider);
+  background: var(--panel-bg);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.iris-ask-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.5rem;
+}
+
+.iris-ask-dialog-question {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  line-height: 1.4;
+}
+
+.iris-ask-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  color: var(--muted-text);
+  flex-shrink: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.iris-ask-dialog-close:hover {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+/* ── Numbered option rows ────────────────────────────────────────────────── */
+.iris-ask-dialog-options {
+  display: flex;
+  flex-direction: column;
+}
+
+.iris-ask-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  text-align: left;
+  border-top: 1px solid var(--divider);
+  font-size: 0.85rem;
+  color: var(--text-strong);
+  transition: background 0.1s ease;
+  cursor: pointer;
+}
+
+.iris-ask-dialog-row:hover,
+.iris-ask-dialog-row-active {
+  background: var(--surface-muted);
+}
+
+.iris-ask-dialog-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--divider);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted-text);
+  flex-shrink: 0;
+  background: var(--surface-bg);
+}
+
+.iris-ask-dialog-row-active .iris-ask-dialog-num {
+  border-color: color-mix(in srgb, var(--study-accent) 50%, var(--divider));
+  color: var(--study-accent);
+}
+
+.iris-ask-dialog-opt-text {
+  flex: 1;
+}
+
+.iris-ask-enter-icon {
+  color: var(--muted-text);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+/* ── "Something else" free-text row ─────────────────────────────────────── */
+.iris-ask-dialog-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid var(--divider);
+  background: transparent;
+  transition: background 0.1s ease;
+}
+
+.iris-ask-dialog-input-row.iris-ask-dialog-row-active {
+  background: var(--surface-muted);
+}
+
+.iris-ask-dialog-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.83rem;
+  color: var(--text-strong);
+  font-family: inherit;
+  min-width: 0;
+}
+
+.iris-ask-dialog-input::placeholder {
+  color: var(--muted-text);
+  opacity: 0.6;
+}
+
+.iris-ask-dialog-skip {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted-text);
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--divider);
+  transition: background 0.12s ease, color 0.12s ease;
+  flex-shrink: 0;
+}
+
+.iris-ask-dialog-skip:hover {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+/* ── Keyboard hint ───────────────────────────────────────────────────────── */
+.iris-ask-dialog-hint {
+  padding: 0.35rem 1rem 0.45rem;
+  font-size: 0.7rem;
+  color: var(--muted-text);
+  opacity: 0.55;
+  border-top: 1px solid var(--divider);
+  letter-spacing: 0.01em;
+}
+
+/* ── Answered / collapsed bar ────────────────────────────────────────────── */
+.iris-ask-replied-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0;
+  font-size: 0.78rem;
+  color: var(--muted-text);
+}
+
+.iris-ask-replied-label {
+  font-weight: 500;
+}
+
+.iris-ask-replied-value {
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

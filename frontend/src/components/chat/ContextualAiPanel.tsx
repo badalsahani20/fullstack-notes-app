@@ -114,7 +114,7 @@ const ContextualAiPanel = ({
         streamedMessageText={streamedMessageText}
         isStreaming={isStreaming}
         isSending={isSendingChat}
-        sendMessage={() => {}}
+        sendMessage={(text) => void sendChatMessage(text)}
         prompts={prompts}
         bottomRef={bottomRef}
         fullWidthAssistant

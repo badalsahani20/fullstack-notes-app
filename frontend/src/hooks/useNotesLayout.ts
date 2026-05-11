@@ -7,7 +7,7 @@ export const useNotesLayout = () => {
   const { noteId, folderId } = useParams();
   const focusParam = new URLSearchParams(location.search).get("focus");
   const isEditorFocusMode = Boolean(noteId) && (focusParam === "1" || focusParam === "2");
-  const isNotesHidden = focusParam === "2";
+  const isNotesHidden = Boolean(noteId) && focusParam === "2";
   const isMobile = useMediaQuery("(max-width: 960px)");
   const isSearchRoute = location.pathname.startsWith("/search");
   const isProfileRoute = location.pathname.startsWith("/profile");

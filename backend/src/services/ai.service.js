@@ -12,7 +12,8 @@ import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
 
-const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
+export const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
+
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
 // --- VALIDATION HELPERS ---
@@ -30,7 +31,7 @@ const ensureGroqApiKey = () => {
 
 // --- CORE AI EXECUTION FUNCTIONS ---
 
-const executeOpenRouter = async (
+export const executeOpenRouter = async (
   modelId,
   messages,
   stream = false,
@@ -77,9 +78,22 @@ const executeOpenRouter = async (
   if (stream) return response.body;
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
+
+  // OpenRouter sometimes returns 200 OK but embeds the error in the body.
+  // Detect both the error object format and the "model output error" string pattern.
+  const choice = data.choices?.[0];
+  const content = choice?.message?.content;
+
+  if (data.error) {
+    throw new Error(`OpenRouter model error: ${data.error.message ?? JSON.stringify(data.error)}`);
+  }
 
   if (!content) throw new Error(`OpenRouter (${modelId}) returned no content`);
+
+  // Detect inline error strings the model embeds in its output
+  if (typeof content === "string" && content.startsWith("Error") && content.includes("model output error")) {
+    throw new Error(`Model output error (${modelId}): ${content.slice(0, 300)}`);
+  }
 
   return content;
 };
@@ -365,6 +379,8 @@ export const crawlUrl = async (url) => {
 export const mightNeedWeb = (message) => {
   const triggers = [
     "search",
+    "current weather",
+    "weather",
     "web",
     "latest",
     "news",
@@ -396,18 +412,30 @@ export const detectTools = async (message) => {
       messages: [
         {
           role: "system",
-          content: `You are a "Skeptical Routing Agent". Your goal is to prevent hallucinations by deciding if the user's query requires fresh data.
-  
-Route to "search_web" if:
-1. The query is about current events, news, or things that happened recently.
-2. The query is about specific versions, releases, or documentation for technology.
-3. The query is a factual question where your training data (cutoff 2023) might be stale.
-4. The user explicitly asks for a search.
+          content: `You are a routing agent.
 
-Route to "crawl_url" if:
-1. The user provides a URL and asks to read, summarize, or analyze it.
+Decide whether the query needs:
+- "search_web"
+- "crawl_url"
+- "none"
 
-Otherwise, reply "none". Return ONLY valid JSON: { "tool": "search_web" | "crawl_url" | "none", "query": "search query or URL", "reason": "concise explanation of why this tool is needed (source of truth)" }`,
+Use "search_web" for:
+- recent/current/live information
+- news, weather, prices, elections, sports
+- releases, versions, documentation updates
+- anything after 2023
+
+Use "crawl_url" if the user provides a URL and wants it analyzed or summarized.
+
+Otherwise use "none".
+
+Return ONLY JSON:
+
+{
+  "tool": "search_web" | "crawl_url" | "none",
+  "query": "",
+  "reason": ""
+}`,
         },
         { role: "user", content: message },
       ],
@@ -550,7 +578,14 @@ export const chatWithAi = async ({
       ].join("\n")
     : null;
 
-  const basePrompt = finalImageBase64 ? QWEN_VISION_PROMPT : PROMPT;
+  const basePrompt = finalImageBase64
+    ? QWEN_VISION_PROMPT
+    : buildIrisPrompt({
+        message: finalMessage,
+        hasNote: !!safeNoteContext,
+        hasWeb:  !!safeWebContext,
+        isVision: false,
+      });
 
   const combinedSystemPrompt = [
     basePrompt,
@@ -634,54 +669,59 @@ export const getDynamicPrompts = async () => {
   }
 };
 
-const QWEN_VISION_PROMPT = `You are Qwen3.5-Flash, a large language model from Qwen. Today's date is ${new Date().toDateString()}.
 
-Formatting Rules:
-- Use Markdown for lists, tables, and styling.
-- Use \`\`\`code fences\`\`\` for all code blocks.
-- Format file names, paths, and function names with \`inline code\` backticks.
-- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**
-`;
+// ─── PROMPT SECTIONS (each is a self-contained string) ───────────────────────
+// Base: always included. ~130 tokens.
+const P_CORE = `You are Iris, Notesify's AI learning assistant. Today: ${new Date().toDateString()}.
+Speak in first person. Be clear and concise. Return final answers only — no planning or meta-commentary.
+Formatting: Markdown, \`\`\`code fences\`\`\`, \`inline code\`, $math$ / $$math$$ delimiters. No long paragraphs.
+In your thinking, focus only on the subject matter — do not narrate formatting decisions or response structure.`;
 
-const PROMPT = `
-Today is ${new Date().toDateString()}.
+// Teaching: add when note context or study-related message. ~40 tokens.
+const P_TEACHING = `Teaching: break concepts into steps, use examples, highlight key takeaways 👉, admit uncertainty.`;
 
-Your name is Iris. You are an AI learning assistant in Notesify.
-IMPORTANT IDENTITY RULE: Do not refer to yourself in the third person in your thoughts (e.g., do not say "I need to respond as Iris"). You ARE Iris. Think and speak entirely in the first person.
+// VIZ: add when message suggests diagrams, flowcharts, or formulas. ~70 tokens.
+const P_VIZ = `Visualizations (use sparingly, only when it genuinely helps):
+[IRIS_VIZ type="mermaid|chart|math" title="Title"]content[/IRIS_VIZ]
+mermaid=flowcharts, chart=JSON data, math=LaTeX. Do NOT overuse.`;
 
-Be clear, helpful, and practical. Teach simply.
+// CLARIFY: always add when teaching — lets Iris ask one focused question before explaining. ~35 tokens.
+const P_CLARIFY = `If the request is broad or ambiguous, ask ONE clarifying question first using:
+[IRIS_ASK prompt="Your question?"]
+A) Option A
+B) Option B
+C) Option C
+[/IRIS_ASK]
+Only do this when it genuinely helps. Skip for simple/clear requests.`;
 
-## Output Rules
-- Do NOT show thinking, analysis, or planning.
-- Only return the final answer.
-- Keep responses concise unless more detail is needed.
-- Avoid unnecessary verbosity.
+// QUIZ: add only when user explicitly asks to be tested. ~70 tokens.
+const P_QUIZ = `For quizzes, use chained [IRIS_ASK] blocks (one per question, revealed sequentially):
+[IRIS_ASK prompt="Question?"]
+A) option
+B) option
+C) option
+D) option
+[/IRIS_ASK]
+Follow each answered question with brief feedback, then the next block.`;
 
-## Formatting
-- Use Markdown (lists, tables, emphasis).
-- Use \`\`\`language code fences\`\`\` for code.
-- Use \`inline code\` for file names, paths, functions.
-- Use $...$ or $$...$$ for math.
-- Use emojis only when helpful (✅ ❌ 💡 👉 🧠 ⚠️).
-- Avoid long paragraphs.
+// ─── DYNAMIC PROMPT BUILDER ───────────────────────────────────────────────────
+const buildIrisPrompt = ({ message = "", hasNote = false, hasWeb = false, isVision = false }) => {
+  const msg = message.toLowerCase();
 
-## Teaching Style
-- Break concepts into simple steps.
-- Use examples or analogies if useful.
-- Highlight key takeaways 👉
-- If unsure, say so.
+  const wantsQuiz  = /quiz|ask me|test me|mcq/.test(msg);
+  const wantsViz   = /diagram|flowchart|chart|graph|formula|equation|visuali/.test(msg) || hasNote;
+  const wantsTeach = hasNote || hasWeb || /explain|teach|how does|what is|summarize|learn|understand/.test(msg);
 
-## Visualization (use sparingly)
-Use only when it improves understanding:
+  const parts = [P_CORE];
+  if (wantsTeach) parts.push(P_TEACHING, P_CLARIFY); // teaching context → clarify is available
+  if (wantsViz)   parts.push(P_VIZ);
+  if (wantsQuiz)  parts.push(P_QUIZ);                // explicit quiz request → full quiz format
 
-[IRIS_VIZ type="TYPE" title="TITLE"]
-content
-[/IRIS_VIZ]
+  return parts.join("\n\n");
+};
 
-Types:
-- mermaid → simple flowcharts (flowchart TD, clear nodes)
-- chart → real data only (JSON format)
-- math → LaTeX
 
-Do NOT overuse visualizations.
-`;
+// Legacy constant kept for the vision model path (short, no tool instructions needed)
+const QWEN_VISION_PROMPT = `You are Iris, Notesify's AI assistant. Today: ${new Date().toDateString()}.
+Use Markdown, \`\`\`code fences\`\`\`, $math$ delimiters. Be concise and accurate.`;
+

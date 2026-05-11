@@ -13,6 +13,8 @@ import passport from "./config/passport.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import publicRoute from "./src/routes/public.route.js";
+import studyRoute from "./src/routes/study.route.js";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +39,8 @@ app.use("/api/notes", notesRoute);
 app.use("/api/folders", folderRoute);
 app.use("/api/ai", aiRoute);
 app.use("/api/trash", trashRoute);
+app.use("/api/study", studyRoute);
+
 // Keep-alive route for monitoring and preventing sleep
 app.get("/api/keep-alive", (req, res) => {
     res.status(200).json({ status: "alive" });
@@ -56,8 +60,17 @@ app.listen(PORT, () => {
 app.use((err, req, res, next) => {
     console.error("GLOBAL ERROR: ", err.message);
 
+    // If a streaming (SSE) response was already started, we cannot set headers or
+    // call res.json() — that's what causes ERR_HTTP_HEADERS_SENT.
+    // Destroy the socket to close the connection cleanly and bail out.
+    if (res.headersSent) {
+        console.error("  → headers already sent (likely mid-stream); destroying socket.");
+        req.socket?.destroy();
+        return;
+    }
+
     res.status(err.statusCode || 500).json({
         success: false,
         message: err.message || "Internal Server Error"
     });
-})
+});

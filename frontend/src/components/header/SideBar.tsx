@@ -23,6 +23,9 @@ const ActivityBar = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const toggleNotesPanel = (e: React.MouseEvent) => {
+    // Only toggle focus mode if we are actually viewing a note
+    if (!noteId) return;
+    
     const params = new URLSearchParams(location.search);
     const focus = params.get("focus");
     // If in focus mode, toggle between focus=1 (notes visible) and focus=2 (notes hidden)

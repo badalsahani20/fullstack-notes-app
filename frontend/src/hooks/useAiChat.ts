@@ -343,9 +343,11 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   };
 
   /** Sends the current chatInput as a message to the AI */
-  const sendChatMessage = async () => {
-    const trimmed = chatInput.trim();
-    if ((!trimmed && !attachedImage) || isSendingChat) return;
+  const sendChatMessage = async (overrideText?: string) => {
+    if (isSendingChat) return;
+    const textToProcess = overrideText !== undefined ? overrideText : chatInput;
+    const trimmed = textToProcess.trim();
+    if (!trimmed && !attachedImage) return;
 
     // Default to "Image Context" if they just send an image without text
     const textToSend = trimmed || "Describe this image context.";
@@ -354,7 +356,12 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     const optimisticMessages = [...messagesRef.current, userMessage];
     messagesRef.current = optimisticMessages;
     setMessages(optimisticMessages);
-    setChatInput("");
+    
+    // Only clear input if we were actually reading from it
+    if (overrideText === undefined) {
+      setChatInput("");
+    }
+    
     const sentImage = attachedImage;
     setAttachedImage(null);
 
@@ -613,5 +620,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     loadHistory,
     startNewChat,
     setResult,
+    chatHistory,
   };
 };

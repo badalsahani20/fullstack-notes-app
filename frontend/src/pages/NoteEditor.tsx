@@ -10,6 +10,8 @@ import { usePanelStore } from "@/store/usePanelStore";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/editor/TipTap";
 const ContextualAiPanel = lazy(() => import("@/components/chat/ContextualAiPanel"));
+const StudyPanel = lazy(() => import("@/components/study/StudyPanel"));
+
 import EmptyEditorState from "@/components/editor/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -73,7 +75,9 @@ const NoteEditor = () => {
   const folder = folders.find((item) => item._id === (note?.folder || folderId));
   const folderLabel = folder?.name ?? (note?.folder && note?._id !== "new" ? "Loading folder..." : "All Notes");
   const { isAiPanelOpen, setAiPanelOpen } = usePanelStore();
+  const [isStudyPanelOpen, setStudyPanelOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 960px)");
+
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   useEffect(() => {
@@ -243,7 +247,21 @@ const NoteEditor = () => {
           onAskAi={() => setAiPanelOpen(!isAiPanelOpen)}
           onAskAiHover={() => void preloadAiPanel()}
           isAiOpen={isAiPanelOpen}
+          onStudy={() => {
+            const nextOpen = !isStudyPanelOpen;
+            setStudyPanelOpen(nextOpen);
+            
+            const params = new URLSearchParams(location.search);
+            if (nextOpen) {
+              params.set("focus", "2");
+            } else {
+              params.delete("focus");
+            }
+            navigate(`${location.pathname}?${params.toString()}`, { replace: true });
+          }}
+          isStudyOpen={isStudyPanelOpen}
           isMobile={isMobile}
+
           isSaving={isSavingNote}
         />
 
@@ -286,14 +304,34 @@ const NoteEditor = () => {
         </>
       ) : isAiPanelOpen ? (
         <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
+          {/* Study panel — left side */}
+          {isStudyPanelOpen && (
+            <>
+              <ResizablePanel
+                defaultSize="25%"
+                minSize="20%"
+                maxSize="40%"
+                className="h-full"
+              >
+                <Suspense fallback={<div className="study-skeleton h-full" />}>
+                  <StudyPanel
+                    noteId={noteId || ""}
+                    chatHistory={aiChat.chatHistory ?? []}
+                    onClose={() => setStudyPanelOpen(false)}
+                  />
+                </Suspense>
+              </ResizablePanel>
+              <ResizableHandle className="assistant-resize-handle" />
+            </>
+          )}
           <ResizablePanel minSize="0" className="min-w-0 h-full">
             {editorPane}
           </ResizablePanel>
           <ResizableHandle className="assistant-resize-handle" />
           <ResizablePanel
-            defaultSize="30rem"
-            minSize="20rem"
-            maxSize="50rem"
+            defaultSize="35%"
+            minSize="25%"
+            maxSize="55%"
             className="assistant-panel-shell h-full"
           >
             <Suspense fallback={<AiPanelSkeleton />}>
@@ -303,6 +341,28 @@ const NoteEditor = () => {
                 onClose={() => setAiPanelOpen(false)}
               />
             </Suspense>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+
+      ) : isStudyPanelOpen ? (
+        <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
+          <ResizablePanel
+            defaultSize="35%"
+            minSize="25%" 
+            maxSize="60%"
+            className="h-full"
+          >
+            <Suspense fallback={<div className="study-skeleton h-full" />}>
+              <StudyPanel
+                noteId={noteId || ""}
+                chatHistory={aiChat.chatHistory ?? []}
+                onClose={() => setStudyPanelOpen(false)}
+              />
+            </Suspense>
+          </ResizablePanel>
+          <ResizableHandle className="assistant-resize-handle" />
+          <ResizablePanel minSize="0" className="min-w-0 h-full">
+            {editorPane}
           </ResizablePanel>
         </ResizablePanelGroup>
       ) : (

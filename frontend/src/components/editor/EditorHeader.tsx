@@ -1,6 +1,7 @@
 import React from "react";
 import type { Editor } from "@tiptap/react";
-import { Archive, Star, Bot, ChevronLeft, Share2, MoreHorizontal } from "lucide-react";
+import { Archive, Star, Bot, BookOpen, ChevronLeft, Share2, MoreHorizontal } from "lucide-react";
+
 import { motion } from "framer-motion";
 import { EditorStats } from "./EditorStats";
 import { ShareModal } from "./ShareModal";
@@ -30,9 +31,12 @@ type EditorHeaderProps = {
   onAskAi?: () => void;
   onAskAiHover?: () => void;
   isAiOpen?: boolean;
+  onStudy?: () => void;
+  isStudyOpen?: boolean;
   isMobile?: boolean;
   isSaving?: boolean;
 };
+
 
 /**
  * Top header of the note editor page.
@@ -52,9 +56,12 @@ const EditorHeader = ({
   onAskAi,
   onAskAiHover,
   isAiOpen,
+  onStudy,
+  isStudyOpen,
   isMobile,
   isSaving,
 }: EditorHeaderProps) => {
+
   const [isShareOpen, setIsShareOpen] = React.useState(false);
 
   return (
@@ -130,17 +137,36 @@ const EditorHeader = ({
             </button>
           </div>
 
+          {/* Study button — desktop only */}
+          {!isMobile && (
+            <button
+              type="button"
+              onClick={onStudy}
+              className={`ignite-button h-7 !px-3 text-[0.8rem] ${
+                isStudyOpen
+                  ? "nav-action-btn-active !bg-[var(--study-accent-soft)] !text-[var(--study-accent)] !border-[color-mix(in_srgb,var(--study-accent)_25%,transparent)]"
+                  : ""
+              }`}
+              aria-label="Toggle Study Mode"
+              id="study-mode-btn"
+            >
+              <BookOpen size={14} />
+              <span className="hidden sm:inline">Study</span>
+            </button>
+          )}
+
           {/* AI button — always visible */}
           {!isMobile && (
+
             <button
               type="button"
               onClick={onAskAi}
               onMouseEnter={onAskAiHover}
               onFocus={onAskAiHover}
-              className={`ignite-button h-8 !px-4 ${isAiOpen ? "nav-action-btn-active" : ""}`}
+              className={`ignite-button h-7 !px-3 text-[0.8rem] ${isAiOpen ? "nav-action-btn-active" : ""}`}
               aria-label="Toggle AI Assistant"
             >
-              <Bot size={15} />
+              <Bot size={14} />
               <span className="hidden sm:inline">Ask AI</span>
             </button>
           )}

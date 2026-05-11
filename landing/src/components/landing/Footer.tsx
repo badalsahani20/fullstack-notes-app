@@ -44,8 +44,9 @@ export const Footer = () => {
             <h4 className="text-sm font-semibold mb-4 text-white">Tech Stack</h4>
             <ul className="space-y-3 text-sm text-stone-400 font-mono">
               <li>React 18</li>
+              <li>Express.js</li>
               <li>Node.js</li>
-              <li>MongoDB</li>
+              <li>MongoDB Atlas</li>
               <li>Upstash Redis</li>
             </ul>
           </div>

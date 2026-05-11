@@ -37,7 +37,14 @@ export interface textSegment {
   content: string;
 }
 
-export type IrisSegment = textSegment | VizSegment;
+export interface AskSegment {
+  id?: string;
+  kind: "ask";
+  question: string;
+  options: string[];  // may be empty — free-text answer is still allowed
+}
+
+export type IrisSegment = textSegment | VizSegment | AskSegment;
 
 export type Message = {
   id: string;

@@ -2,11 +2,10 @@ import { create } from "zustand";
 import api from "@/lib/api";
 import { parseIrisResponse } from "../utils/parseIrisResponse";
 
+import type { IrisSegment } from "@/components/ai/types";
 
-
-export type IrisSegment = 
-  | {id?: string; kind: "text"; content: string}
-  | {id?: string; kind: "viz"; type: "mermaid" | "chart" | "math"; title: string; data: string };
+// Re-export so existing imports from this store path keep working
+export type { IrisSegment };
 
 export type ChatMessage = {
   id: string;
@@ -80,7 +79,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
         id: crypto.randomUUID(),
         role: m.role as "user" | "assistant",
         text: m.content,
-        segments: m.segments,
+        segments: m.segments || (m.role === "assistant" ? parseIrisResponse(m.content) : undefined),
         skipAnimation: true,
       }));
       set({ messages: mapped });
