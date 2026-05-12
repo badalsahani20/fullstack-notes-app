@@ -1,8 +1,11 @@
 name: Keep Render Service Alive
 
 on:
+  push:
+    branches:
+      - main
   schedule:
-    - cron: '*/14 * * * *' # Runs every 10 minutes
+    - cron: '*/14 * * * *' # Runs every 14 minutes
   workflow_dispatch: # Allows manual trigger from GitHub UI
 
 jobs:
