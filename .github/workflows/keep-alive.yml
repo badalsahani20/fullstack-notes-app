@@ -1,0 +1,14 @@
+name: Keep Render Service Alive
+
+on:
+  schedule:
+    - cron: '*/14 * * * *' # Runs every 10 minutes
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Keep-Alive Route
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" https://fullstack-notes-app-xluo.onrender.com/api/keep-alive
