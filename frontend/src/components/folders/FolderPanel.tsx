@@ -70,9 +70,9 @@ const TopLink = ({
       }}
       className={`sidebar-link-row cursor-pointer ${active ? "sidebar-link-row-active" : ""}`}
     >
-      <span className="sidebar-link-main">
+      <span className="sidebar-link-main" title={label}>
         <Icon size={17} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
-        <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{label}</span>
+        <span className={`sidebar-link-label truncate ${active ? "sidebar-link-label-active" : ""}`}>{label}</span>
       </span>
       <span className="sidebar-count-pill">{count}</span>
     </button>
@@ -137,7 +137,7 @@ const FolderRow = ({
             {expanded ? <ChevronDown size={15} className="text-[var(--muted-text)]" /> : <ChevronRight size={15} className="text-[var(--muted-text)]" />}
           </span>
           <Icon size={17} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
-          <span className={`sidebar-link-label truncate ${active ? "sidebar-link-label-active" : ""}`}>{folder.name}</span>
+          <span title={folder.name} className={`sidebar-link-label truncate ${active ? "sidebar-link-label-active" : ""}`}>{folder.name}</span>
         </span>
         <span className="sidebar-count-pill">{count}</span>
       </button>
@@ -191,9 +191,9 @@ const NoteChildRow = ({
 }) => {
   return (
     <button type="button" onClick={onClick} className={`sidebar-note-child ${active ? "sidebar-note-child-active" : ""}`}>
-      <span className="sidebar-link-main">
+      <span className="sidebar-link-main" title={title || "Untitled Note"}>
         <FileText size={16} className={`sidebar-link-icon ${active ? "sidebar-link-icon-active" : ""}`} />
-        <span className={`sidebar-link-label ${active ? "sidebar-link-label-active" : ""}`}>{title || "Untitled Note"}</span>
+        <span className={`sidebar-link-label truncate ${active ? "sidebar-link-label-active" : ""}`}>{title || "Untitled Note"}</span>
       </span>
     </button>
   );
