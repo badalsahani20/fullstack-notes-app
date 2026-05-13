@@ -326,12 +326,30 @@ const QuizSession = ({
     return (
       <div className="quiz-results">
         {/* Score ring */}
-        <div className="quiz-score-ring">
-          <div
-            className="quiz-score-ring-fill"
-            style={{ transform: `rotate(${(pct / 100) * 360}deg)` }}
-          />
-          <div>
+        <div className="relative w-24 h-24 flex items-center justify-center mb-2">
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              stroke="var(--surface-muted)"
+              strokeWidth="8"
+              fill="none"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="44"
+              stroke="var(--study-accent)"
+              strokeWidth="8"
+              fill="none"
+              strokeDasharray="276.46"
+              strokeDashoffset={276.46 - (276.46 * pct) / 100}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-out"
+            />
+          </svg>
+          <div className="z-10">
             <div className="quiz-score-value">{pct}%</div>
           </div>
         </div>

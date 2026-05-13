@@ -1,7 +1,6 @@
 import { Star, Users } from 'lucide-react';
 
 export const SocialProof = () => {
-  const press = ["Product Hunt", "Indie Hackers", "Hacker News", "Foundr", "Medium"];
   
   return (
     <section className="relative py-12 z-20">
@@ -26,11 +25,11 @@ export const SocialProof = () => {
 
             <div className="group flex items-center gap-2 text-sm text-stone-300 cursor-default">
               <div className="relative">
-                <Users className="h-4 w-4 text-indigo-500 transition-all duration-300 group-hover:scale-110" />
-                <div className="absolute inset-0 bg-indigo-500/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Users className="h-4 w-4 text-emerald-500 transition-all duration-300 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-emerald-500/20 blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
-              <span className="font-medium text-white transition-colors group-hover:text-indigo-400">2,400+</span>
-              <span className="text-stone-400">writers on the waitlist</span>
+              <span className="font-medium text-white transition-colors group-hover:text-emerald-400">First 500+</span>
+              <span className="text-stone-400">Early Adopters</span>
             </div>
 
             <div className="hidden sm:block h-5 w-px bg-white/20" />
@@ -43,22 +42,17 @@ export const SocialProof = () => {
                 </div>
                 <div className="absolute inset-0 bg-indigo-500/30 blur-lg rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
-              <span className="text-stone-400 transition-colors group-hover:text-indigo-400">Powered by Iris AI</span>
+              <span className="text-stone-400 transition-colors group-hover:text-indigo-400 font-medium">DeepSeek-v4 Powered</span>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-2">
-            <span className="text-[10px] tracking-widest text-stone-500 uppercase">
-              As featured on
-            </span>
-            {press.map((p) => (
-              <span
-                key={p}
-                className="text-sm font-semibold text-stone-400 hover:text-white transition-colors cursor-default"
-              >
-                {p}
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+              <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] tracking-widest text-emerald-400 uppercase font-bold">
+                Alpha Access Live
               </span>
-            ))}
+            </div>
           </div>
         </div>
       </div>

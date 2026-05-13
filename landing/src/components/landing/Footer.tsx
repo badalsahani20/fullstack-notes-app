@@ -12,7 +12,7 @@ export const Footer = () => {
               <span className="font-semibold tracking-tight text-lg text-white">Notesify</span>
             </a>
             <p className="mt-4 text-sm text-stone-400 max-w-sm">
-              The AI-powered note-taking app for people who think fast and write often.
+              The high-performance workspace for focused writing and active learning.
             </p>
             <div className="mt-6 flex items-center gap-3">
               <a href="https://github.com/badalsahani20" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-stone-400 hover:text-white hover:border-indigo-500/50 transition-colors">
@@ -33,9 +33,42 @@ export const Footer = () => {
           <div>
             <h4 className="text-sm font-semibold mb-4 text-white">Product</h4>
             <ul className="space-y-3 text-sm text-stone-400">
-              <li><a href="#features" className="hover:text-indigo-400 transition-colors">Features</a></li>
-              <li><a href="#ai" className="hover:text-indigo-400 transition-colors">AI Experience</a></li>
-              <li><a href="#roadmap" className="hover:text-indigo-400 transition-colors">Roadmap</a></li>
+              <li>
+                <a 
+                  href="#features" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="hover:text-indigo-400 transition-colors"
+                >
+                  Features
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#ai" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('ai')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="hover:text-indigo-400 transition-colors"
+                >
+                  AI Experience
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#roadmap" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('roadmap')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="hover:text-indigo-400 transition-colors"
+                >
+                  Roadmap
+                </a>
+              </li>
               <li><a href="#" className="hover:text-indigo-400 transition-colors">Performance</a></li>
             </ul>
           </div>

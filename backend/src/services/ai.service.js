@@ -10,13 +10,13 @@ import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 
 // --- CONFIGURATION ---
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemma-3-27b-it" });
+const model = genAI.getGenerativeModel({ model: "gemma-4-26b-a4b-it" });
 
 export const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
 
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
-// --- VALIDATION HELPERS ---
+// --- VALIDATION HELPERS --- 
 const ensureAiApiKey = () => {
   if (!process.env.GEMINI_API_KEY && !process.env.OPEN_ROUTER) {
     throw new Error(`Both GEMINI and OPENROUTER api keys are missing`);
@@ -255,6 +255,7 @@ const getAiReply = async (
             content: [
               {
                 type: "text",
+                
                 text: `[System Directive: Describe image and answer prompt]\n\nUser prompt: ${message}`,
               },
               {
@@ -466,7 +467,12 @@ export const runAiAssist = async ({ action, text, stream = false }) => {
 
   if (action === "grammar") {
     const result = await checkGrammar(text);
-    return result;
+    return {
+      action: "grammar",
+      suggestion: result.corrected,
+      original: result.original,
+      errors: result.errors,
+    };
   }
 
   const promptBuilder = actionPrompts[action];

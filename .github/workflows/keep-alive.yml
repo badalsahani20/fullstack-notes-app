@@ -11,7 +11,7 @@ on:
 jobs:
   ping-server:
     runs-on: ubuntu-latest
-    steps:
+    steps: 
       - name: Ping Keep-Alive Route
         run: |
           curl -s -o /dev/null -w "%{http_code}" https://fullstack-notes-app-xluo.onrender.com/api/keep-alive

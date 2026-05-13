@@ -53,6 +53,15 @@ const userSchema = new mongoose.Schema({
     },
     verificationToken: { type: String, select: false},
     verificationTokenExpires: { type: Date, select: false},
+    preferences: {
+        theme: { type: String, enum: ["light", "dark", "system"], default: "system"},
+        editorFontSize: { type: Number, default: 18, min: 12, max: 28 },
+        focusMode: { type: Boolean, default: false },
+    },
+    aiUsage: {
+        dailyCount: { type: Number, default: 0},
+        lastResetAt: { type: Date, default: Date.now }
+    }
 } , {timestamps: true});
 
 userSchema.index(

@@ -27,11 +27,11 @@ const getActiveNoteSection = (note: string, cursorPosition: number) => {
 };
 
 const resolveNoteContext = (editor: Editor | null, noteText: string) => {
-  if (!editor) return {text: noteText.slice(0, 8000), hasSelection: false};
+  if (!editor) return { text: noteText.slice(0, 8000), hasSelection: false };
   const { text, range } = getSelection(editor);
-  if (range && text) return {text, hasSelection: true};
+  if (range && text) return { text, hasSelection: true };
   const cursor = editor.state.selection.from;
-  return {text: getActiveNoteSection(noteText, cursor), hasSelection: false};
+  return { text: getActiveNoteSection(noteText, cursor), hasSelection: false };
 };
 
 const getPersistedHistoryFromMessages = (messages: Message[]) =>
@@ -207,7 +207,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           signal: abortControllerRef.current.signal,
         });
 
-        if (!response.ok) throw new Error("AI action failed. Please try again.");
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || "AI action failed. Please try again.");
+        }
         if (!response.body) throw new Error("No response body");
 
         const contentType = response.headers.get("content-type") || "";
@@ -246,6 +249,11 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
               if (line.startsWith("data: ") && line !== "data: [DONE]") {
                 try {
                   const data = JSON.parse(line.slice(6));
+
+                  if (data.type === "error" || data.error) {
+                    throw new Error(data.message || data.error?.message || "AI service error");
+                  }
+
                   const token = data.choices?.[0]?.delta?.content || "";
                   if (!token) continue;
                   fullSuggestion += token;
@@ -312,8 +320,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       const status = axiosError?.response?.status;
 
       if (status === 429 || /quota|rate limit|too many requests/i.test(message)) {
-        toast.error("AI Daily Limit Reached", {
-          description: "You've hit the free tier limit for AI requests. Please try again later.",
+        toast.error("AI Credits Exhausted", {
+          description: "You've reached today's limit for quick AI actions. Unlock higher limits with Premium.",
           duration: 5000,
         });
       } else {
@@ -356,12 +364,12 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     const optimisticMessages = [...messagesRef.current, userMessage];
     messagesRef.current = optimisticMessages;
     setMessages(optimisticMessages);
-    
+
     // Only clear input if we were actually reading from it
     if (overrideText === undefined) {
       setChatInput("");
     }
-    
+
     const sentImage = attachedImage;
     setAttachedImage(null);
 
@@ -449,9 +457,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
               // ── Regular text & reasoning tokens ────────────────────────────────
               const content = data.choices?.[0]?.delta?.content || "";
               const reasoning = data.choices?.[0]?.delta?.reasoning || "";
-              
+
               if (!content && !reasoning) continue;
-              
+
               if (content && fullText.length === 0) {
                 // First content token arrived — thinking is done
                 thinkingEndTime = Date.now();
@@ -462,8 +470,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
               const now = Date.now();
               if (now - lastUpdateTime > THROTTLE_MS) {
-                const currentThinkingTime = thinkingEndTime 
-                  ? Math.floor((thinkingEndTime - streamStartTime) / 1000) 
+                const currentThinkingTime = thinkingEndTime
+                  ? Math.floor((thinkingEndTime - streamStartTime) / 1000)
                   : Math.floor((now - streamStartTime) / 1000);
 
                 setMessages((prev) =>
@@ -483,8 +491,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       // Stream done — finalise
       const segments = parseIrisResponse(fullText);
-      const finalThinkingTime = thinkingEndTime 
-        ? Math.floor((thinkingEndTime - streamStartTime) / 1000) 
+      const finalThinkingTime = thinkingEndTime
+        ? Math.floor((thinkingEndTime - streamStartTime) / 1000)
         : (fullThought ? Math.floor((Date.now() - streamStartTime) / 1000) : 0);
 
       setStreamingMessageId(null);
@@ -530,8 +538,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       const status = axiosError?.response?.status;
 
       if (status === 429 || /quota|rate limit|too many requests/i.test(message)) {
-        toast.error("AI Daily Limit Reached", {
-          description: "You've hit the free tier limit for AI requests. Please try again later.",
+        toast.error("AI Limit Reached", {
+          description: "Please upgrade to Premium to keep using AI features without limits.",
           duration: 5000,
         });
       }

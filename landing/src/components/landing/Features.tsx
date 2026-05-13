@@ -77,6 +77,21 @@ const FeatureIcon = ({ title }: { title: string }) => {
     );
   }
 
+  if (title === "AI Learning Tools") {
+    return (
+      <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
+        <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-md transition-all duration-500 group-hover:bg-emerald-500/40 group-hover:blur-xl" />
+        <div className="relative h-full w-full rounded-xl bg-white/[0.02] backdrop-blur-sm border border-white/10 flex items-center justify-center overflow-hidden transition-transform duration-500 group-hover:scale-105">
+           <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+             <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-1.54-2.44 2.5 2.5 0 0 1 2-2.45V4.5A2.5 2.5 0 0 1 9.5 2z" />
+             <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 1.54-2.44 2.5 2.5 0 0 0-2-2.45V4.5A2.5 2.5 0 0 0 14.5 2z" />
+           </svg>
+           <div className="absolute inset-0 bg-emerald-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   if (title === "Share With Confidence") {
     return (
       <div className="relative mb-5 group h-12 w-12 shrink-0 perspective-1000">
@@ -120,6 +135,10 @@ export const Features = () => {
       desc: "Iris doesn't guess. It browses the live web to find the exact, up-to-date information you need before answering.",
     },
     {
+      title: "AI Learning Tools",
+      desc: "Turn any note into an interactive quiz or a deck of spaced-repetition flashcards instantly. Learn faster, not longer. (New!)",
+    },
+    {
       title: "The Right Tool For The Job",
       desc: "Whether you need a quick grammar fix or deep logical reasoning, Iris instantly selects the most capable AI model behind the scenes.",
     },
@@ -134,10 +153,6 @@ export const Features = () => {
     {
       title: "Share With Confidence",
       desc: "Generate clean, beautiful links to share your work. Add password protection or let them expire automatically when you're done.",
-    },
-    {
-      title: "Grows With Your Thoughts",
-      desc: "Start with a simple note, build a complex knowledge system. Folders, tags, and lightning-fast search keep you organized.",
     },
   ];
 

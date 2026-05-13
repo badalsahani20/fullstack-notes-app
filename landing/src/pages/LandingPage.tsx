@@ -20,11 +20,7 @@ export const LandingPage = () => {
       <main className="relative z-10">
         <Hero />
         <SocialProof />
-        <Manifesto />
-        <Features />
-        <AIExperience />
-        <EditorCapabilities />
-        
+
         {/* --- Iris Preview Section --- */}
         <section className="relative py-24 bg-[#050505]/50 border-t border-white/5">
           <div className="container mx-auto px-6 max-w-4xl">
@@ -40,6 +36,11 @@ export const LandingPage = () => {
             <IrisLiveDemo />
           </div>
         </section>
+
+        <Manifesto />
+        <Features />
+        <AIExperience />
+        <EditorCapabilities />
 
         <Roadmap />
         <FAQ />

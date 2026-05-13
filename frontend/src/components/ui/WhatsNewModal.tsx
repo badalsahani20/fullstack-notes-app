@@ -5,6 +5,15 @@ import { CURRENT_VERSION } from "@/hooks/useWhatsNew";
 // ─── Feature definitions ─────────────────────────────────────────────────────
 const FEATURES = [
   {
+    icon: Bot,
+    iconClass: "bg-emerald-500/10 text-emerald-400",
+    label: "AI Study Tools",
+    description:
+      "Master any subject instantly. Turn your notes into interactive quizzes and spaced-repetition flashcards with one click.",
+    badge: "LIVE",
+    badgeClass: "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20",
+  },
+  {
     icon: Globe,
     iconClass: "bg-blue-500/10 text-blue-400",
     label: "Agentic Web Intelligence",
@@ -24,21 +33,12 @@ const FEATURES = [
   },
   {
     icon: Share2,
-    iconClass: "bg-emerald-500/10 text-emerald-400",
+    iconClass: "bg-indigo-500/10 text-indigo-400",
     label: "Logic Visualizer",
     description:
       "Iris now renders dynamic Mermaid diagrams for math, code structure, and complex workflows.",
-    badge: "New",
-    badgeClass: "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20",
-  },
-  {
-    icon: Bot,
-    iconClass: "bg-amber-500/10 text-amber-400",
-    label: "Iris AI — Persistent Sessions",
-    description:
-      "Your global AI chats are now remembered across sessions with full history.",
     badge: "Improved",
-    badgeClass: "text-amber-400 bg-amber-500/10 border border-amber-500/20",
+    badgeClass: "text-indigo-400 bg-indigo-500/10 border border-indigo-500/20",
   },
 ];
 
@@ -90,7 +90,7 @@ export const WhatsNewModal = ({ isOpen, onDismiss }: WhatsNewModalProps) => {
                       ✦ What's New
                     </span>
                     <span className="text-[11px] text-white/20 font-medium">
-                      v{CURRENT_VERSION} · Apr 2026
+                      v{CURRENT_VERSION} · May 2026
                     </span>
                   </div>
 

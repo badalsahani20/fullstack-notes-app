@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import User from "../models/user.model.js";
 import Notes from "../models/notes.model.js";
 import AiAssistCache from "../models/aiAssistCache.model.js";
 import catchAsync from "../utils/catchAsync.js";
@@ -15,6 +16,7 @@ import {
 import GlobalChatSession from "../models/globalChatSession.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
 import { parseIrisResponse } from "../utils/parseIrisResponse.js";
+import getEffectiveDailyLimit from "../utils/getEffectiveDailyLimit.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
@@ -127,6 +129,18 @@ export const aiAssistController = catchAsync(async (req, res) => {
       .json({ success: false, message: "noteId and action are required" });
   }
 
+  // RATE LIMIT CHECK
+
+  const rateLimitResult = await checkAndIncrementRateLimit(req.user._id);
+  if (!rateLimitResult.allowed) {
+    return res
+      .status(429)
+      .json({
+        success: false,
+        message: `Daily AI usage limit reached. Used ${rateLimitResult.used} of ${rateLimitResult.limit} today.`,
+      });
+  }
+
   // 1. Resolve Note and Source Text
   let note = null;
   if (noteId !== "new") {
@@ -213,8 +227,16 @@ export const aiAssistController = catchAsync(async (req, res) => {
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
               try {
                 const data = JSON.parse(line.slice(6));
+                
+                if (data.type === "error" || data.error) {
+                  const errorMsg = data.message || data.error?.message || "AI model error";
+                  throw new Error(errorMsg);
+                }
+
                 finalSuggestion += data.choices?.[0]?.delta?.content || "";
-              } catch (e) {}
+              } catch (e) {
+                if (e.message) throw e;
+              }
             }
           }
         }
@@ -247,6 +269,7 @@ export const aiAssistController = catchAsync(async (req, res) => {
       );
     } catch (err) {
       console.error("AI Assist Stream Error:", err.message);
+      res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`);
     } finally {
       res.end();
     }
@@ -664,3 +687,55 @@ export const getDynamicPromptsController = catchAsync(async (req, res) => {
     data: prompts,
   });
 });
+
+async function incrementDailyCount(userId) {
+  const now = new Date();
+  // Midnight of today in server's local time
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  // Atomic update: if lastResetAt is before today OR doesn't exist, reset to 1.
+  const resetUpdate = await User.findOneAndUpdate(
+    { 
+      _id: userId, 
+      $or: [
+        { "aiUsage.lastResetAt": { $lt: startOfToday } },
+        { "aiUsage.lastResetAt": { $exists: false } },
+        { aiUsage: { $exists: false } }
+      ]
+    },
+    { $set: { "aiUsage.dailyCount": 1, "aiUsage.lastResetAt": now } }
+  );
+
+  // If the above didn't match anything, it means lastResetAt is today. Just increment.
+  if (!resetUpdate) {
+    await User.findOneAndUpdate(
+      { _id: userId },
+      { $inc: { "aiUsage.dailyCount": 1 } }
+    );
+  }
+}
+
+async function checkAndIncrementRateLimit(userId) {
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+
+  // Fetch only the fields we need — don't load the whole user document
+  const user = await User.findById(userId).select("aiUsage");
+  if (!user) return { allowed: false, reason: "User not found" };
+
+  const limit = getEffectiveDailyLimit(user);
+
+  // If their last reset was yesterday (or earlier), or missing, their effective count is 0
+  const isNewDay = !user.aiUsage?.lastResetAt || user.aiUsage.lastResetAt < startOfToday;
+  const effectiveCount = isNewDay ? 0 : (user.aiUsage?.dailyCount || 0);
+
+  if (effectiveCount >= limit) {
+    return { allowed: false, used: effectiveCount, limit };
+  }
+
+  // Under the limit — record this usage
+  await incrementDailyCount(userId);
+  return { allowed: true, used: effectiveCount + 1, limit };
+}

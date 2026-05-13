@@ -13,7 +13,7 @@ export const CTA = () => {
             Stop losing your <span className="gradient-text">half-thoughts.</span>
           </h2>
           <p className="mt-5 text-stone-400 text-base sm:text-lg max-w-xl mx-auto">
-            Open Notesify, write the first line, and let Iris carry it the rest of the way.
+            Transform your scattered thoughts into structured knowledge. Master any topic with AI-powered active learning tools.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4">
             <a 

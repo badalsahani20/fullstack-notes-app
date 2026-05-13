@@ -3,7 +3,7 @@ import connectDB from "./config/db.js";
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
-import userRoute from "./src/routes/auth.route.js";
+import authRoute from "./src/routes/auth.route.js";
 import notesRoute from "./src/routes/notes.route.js";
 import folderRoute from "./src/routes/folder.route.js";
 import aiRoute from "./src/routes/aiRoute.js"
@@ -14,6 +14,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import publicRoute from "./src/routes/public.route.js";
 import studyRoute from "./src/routes/study.route.js";
+import userRoute from "./src/routes/user.route.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -34,12 +35,13 @@ app.use(cors({
 connectDB();
 app.use("/api/public", publicRoute);
 app.use(passport.initialize());
-app.use("/api/users", userRoute);
+app.use("/api/users", authRoute);
 app.use("/api/notes", notesRoute);
 app.use("/api/folders", folderRoute);
 app.use("/api/ai", aiRoute);
 app.use("/api/trash", trashRoute);
 app.use("/api/study", studyRoute);
+app.use("/api/user", userRoute);
 
 // Keep-alive route for monitoring and preventing sleep
 app.get("/api/keep-alive", (req, res) => {

@@ -10,6 +10,8 @@ import express from "express";
     router.post("/register", registerUser);
     router.post("/login", loginUser);
     router.post("/exchange-code", exchangeCode);
+    router.post("/forgot-password", forgotPassword);
+    router.post("/reset-password/:token", resetPassword);
 
     router.get("/verify-email/:token", verifyEmail);
     router.post("/refresh", refreshToken);
@@ -18,10 +20,8 @@ import express from "express";
     router.get("/showcase", getShowcaseUsers);
 
     //protected routes
-    router.post("/logout", logoutUser);
+    router.post("/logout", authMiddleware, logoutUser);
     router.get("/me", authMiddleware, getMe);
-    router.post("/forgot-password", forgotPassword);
-    router.post("/reset-password/:token", resetPassword);
 
     //For testing purpose
     router.get("/", authMiddleware, verifiedMiddleware, getAllUsers);
