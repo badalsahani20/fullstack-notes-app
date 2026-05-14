@@ -1637,6 +1637,52 @@
   box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.2);
 }
 
+/* ── GlobalChatCompose inside the contextual AI sidebar ── */
+.assistant-rail .gc-compose-wrap {
+  padding: 0.5rem 0.7rem 0.65rem;
+}
+
+.assistant-rail .gc-compose {
+  max-width: 100%;
+  border-radius: 1.1rem;
+}
+
+.assistant-rail .gc-compose:has(.gc-img-preview-wrap) {
+  border-radius: 1.1rem;
+}
+
+.assistant-rail .gc-textarea {
+  font-size: 0.84rem;
+  min-height: 2rem;
+  padding: 0.6rem 0.75rem 0;
+}
+
+.assistant-rail .gc-disclaimer {
+  display: none;
+}
+
+.assistant-rail .gc-img-preview-wrap {
+  padding: 0.5rem 0.6rem 0;
+}
+
+.assistant-rail .note-ai-context-bar {
+  padding: 0.55rem 0.7rem 0.2rem;
+}
+
+.assistant-rail .gc-compose-footer {
+  padding: 0.3rem 0.45rem 0.4rem;
+}
+
+.assistant-rail .gc-send-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.assistant-rail .gc-icon-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
 .assistant-actions-menu {
   border: 1px solid var(--divider);
 
