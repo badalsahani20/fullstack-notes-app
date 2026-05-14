@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 import { useDefaultLayout } from "react-resizable-panels";
+import { usePanelStore } from "@/store/usePanelStore";
 
 import MobileCreateButton from "./header/MobileCreateButton";
 
@@ -33,6 +34,7 @@ const AppLayout = ({
   const foldersPanelRef = useRef<PanelImperativeHandle | null>(null);
   const notesPanelRef = useRef<PanelImperativeHandle | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const closeFolderPanel = usePanelStore((state) => state.closeFolderPanel);
 
   const { defaultLayout, onLayoutChanged } = useDefaultLayout({ id: "notesify-layout-v1" });
 
@@ -76,6 +78,25 @@ const AppLayout = ({
     const fp = foldersPanelRef.current;
     if (fp && showFoldersPanel && fp.isCollapsed()) fp.expand();
   }); // no deps — intentional
+
+  useEffect(() => {
+    if (isMobile || !showFoldersPanel) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target?.closest(".folders-drawer-desktop") ||
+        target?.closest(".nav-action-btn")
+      ) {
+        return;
+      }
+
+      closeFolderPanel();
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [closeFolderPanel, isMobile, showFoldersPanel]);
 
   return (
     <div className="app-shell">

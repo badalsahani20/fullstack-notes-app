@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import api from "@/lib/api";
 import { parseIrisResponse } from "../utils/parseIrisResponse";
+import { uploadImage } from "@/utils/uploadImage";
 
 import type { IrisSegment } from "@/components/ai/types";
 
@@ -11,6 +12,7 @@ export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  imageUrl?: string;
   segments?: IrisSegment[];
   skipAnimation?: boolean;
   thought?: string;
@@ -75,13 +77,22 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
     set({ messagesLoading: true, activeSessionId: sessionId, messages: [] });
     try {
       const { data } = await api.get(`/ai/chat/session/${sessionId}`);
-      const mapped: ChatMessage[] = data.data.messages.map((m: { role: string; content: string; segments?: IrisSegment[] }) => ({
-        id: crypto.randomUUID(),
-        role: m.role as "user" | "assistant",
-        text: m.content,
-        segments: m.segments || (m.role === "assistant" ? parseIrisResponse(m.content) : undefined),
-        skipAnimation: true,
-      }));
+      const mapped: ChatMessage[] = data.data.messages.map((m: { role: string; content: string; segments?: IrisSegment[] }) => {
+        const imageMatch = m.content.match(/^\[Attached Image\]\((https?:\/\/[^)]+)\)\s*/i);
+        const imageUrl = imageMatch?.[1];
+        const text = imageUrl
+          ? m.content.replace(imageMatch[0], "").trim()
+          : m.content;
+
+        return {
+          id: crypto.randomUUID(),
+          role: m.role as "user" | "assistant",
+          text,
+          imageUrl,
+          segments: m.segments || (m.role === "assistant" ? parseIrisResponse(m.content) : undefined),
+          skipAnimation: true,
+        };
+      });
       set({ messages: mapped });
     } catch {
       set({ messages: [] });
@@ -96,12 +107,28 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
   sendMessage: async (text: string, image?: string | null) => {
     const { activeSessionId, messages } = get();
+    const requestSessionId = activeSessionId;
+    let imageForApi = image || null;
+    let imageUrl: string | undefined;
+
+    if (image?.startsWith("data:image/")) {
+      const response = await fetch(image);
+      const blob = await response.blob();
+      const file = new File([blob], "chat-image.png", {
+        type: blob.type || "image/png",
+      });
+      imageForApi = await uploadImage(file);
+      imageUrl = imageForApi || undefined;
+    } else if (image?.startsWith("http://") || image?.startsWith("https://")) {
+      imageUrl = image;
+    }
 
     // 1. Optimistically add user message
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      text: image ? `[Image attached] ${text}` : text,
+      text,
+      imageUrl,
     };
 
     // 2. Add empty assistant message for streaming
@@ -133,7 +160,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
         body: JSON.stringify({
           message: text,
           sessionId: activeSessionId,
-          imageBase64: image || undefined,
+          imageBase64: imageForApi || undefined,
           stream: true,
         }),
       });
@@ -143,7 +170,22 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
       // 🆔 Catch early sessionId from header
       const newSessionId = response.headers.get("X-Session-Id");
-      if (newSessionId) set({ activeSessionId: newSessionId });
+      const effectiveSessionId = newSessionId || requestSessionId;
+      if (newSessionId) {
+        set((state) => ({
+          activeSessionId: newSessionId,
+          sessions: state.sessions.some((session) => session._id === newSessionId)
+            ? state.sessions
+            : [
+                {
+                  _id: newSessionId,
+                  title: text.slice(0, 48) || "New Chat",
+                  updatedAt: new Date().toISOString(),
+                },
+                ...state.sessions,
+              ],
+        }));
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -227,6 +269,13 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
       set((state) => ({
         isSending: false,
+        sessions: effectiveSessionId
+          ? state.sessions.map((session) =>
+              session._id === effectiveSessionId
+                ? { ...session, updatedAt: new Date().toISOString() }
+                : session
+            )
+          : state.sessions,
         messages: state.messages.map((m) =>
           m.id === aiMsgId ? { 
             ...m, 
@@ -240,8 +289,15 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
         ),
       }));
 
-      // Refresh sidebar sessions
-      get().fetchSessions();
+      const userTurnCount = get().messages.filter((message) => message.role === "user").length;
+
+      // The backend waits until the third user turn before generating a title,
+      // so only do the quiet refresh once a real title is likely to exist.
+      if (effectiveSessionId && userTurnCount >= 3) {
+        window.setTimeout(() => {
+          get().fetchSessions();
+        }, 2500);
+      }
 
     } catch (err: any) {
       set((state) => ({

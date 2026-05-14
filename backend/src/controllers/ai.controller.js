@@ -101,6 +101,23 @@ const hashText = (text = "") =>
     .update(normalizeForHash(text), "utf8")
     .digest("hex");
 
+const cleanSessionTitle = (title = "") => {
+  const cleaned = title
+    .replace(/^title\s*:\s*/i, "")
+    .replace(/^["'`*_#\s]+|["'`*_#\s]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (
+    !cleaned ||
+    /generate|descriptive|return only|no quotes|input content|task:/i.test(cleaned)
+  ) {
+    return "New Chat";
+  }
+
+  return cleaned.slice(0, 54);
+};
+
 export const checkGrammarController = catchAsync(async (req, res) => {
   const { noteId } = req.params;
 
@@ -452,6 +469,7 @@ const openSseConnection = (res, activeSessionId) => {
 const streamAiResponse = async (stream, res, noteFetched) => {
   const decoder = new TextDecoder();
   let finalReply = "";
+  let buffer = "";
 
   if (noteFetched) {
     res.write(
@@ -460,15 +478,27 @@ const streamAiResponse = async (stream, res, noteFetched) => {
   }
 
   for await (const chunk of stream) {
-    const text = decoder.decode(chunk);
+    const text = decoder.decode(chunk, { stream: true });
     res.write(text);
 
-    const lines = text.split("\n");
+    buffer += text;
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
     for (const line of lines) {
       if (line.startsWith("data: ")) {
+        const payload = line.slice(6).trim();
+        if (!payload || payload === "[DONE]") continue;
+
         try {
-          const data = JSON.parse(line.slice(6));
-          finalReply += data.choices?.[0]?.delta?.content || "";
+          const data = JSON.parse(payload);
+          const choice = data.choices?.[0];
+          finalReply +=
+            choice?.delta?.content ||
+            choice?.message?.content ||
+            data.content ||
+            data.text ||
+            "";
         } catch {
           /* partial JSON or [DONE] */
         }
@@ -488,15 +518,22 @@ const persistToDb = async (
   activeSession,
   summary = "",
 ) => {
+  const isImageUrl =
+    typeof imageBase64 === "string" &&
+    /^https?:\/\//i.test(imageBase64);
   const safeUserContent = imageBase64
-    ? `[Attached Image]\n${message}`.trim()
+    ? `${isImageUrl ? `[Attached Image](${imageBase64})` : "[Attached Image]"}\n${message}`.trim()
     : message;
 
   const sessionToUpdate =
     activeSession || (await GlobalChatSession.findById(activeSessionId));
   if (!sessionToUpdate) return;
 
-  const isFirstMessage = sessionToUpdate.messages.length === 0;
+  if (!finalReply?.trim()) {
+    console.warn("Skipping chat persistence because assistant reply was empty.");
+    return;
+  }
+
   sessionToUpdate.messages.push(
     { role: "user", content: safeUserContent },
     { role: "assistant", content: finalReply },
@@ -504,8 +541,17 @@ const persistToDb = async (
   if (summary) sessionToUpdate.summary = summary;
   await sessionToUpdate.save();
 
-  if (isFirstMessage) {
-    generateTitle(message)
+  const shouldGenerateTitle =
+    (!sessionToUpdate.title || sessionToUpdate.title === "New Chat") &&
+    sessionToUpdate.messages.filter((msg) => msg.role === "user").length >= 3;
+
+  if (shouldGenerateTitle) {
+    const titleContext = sessionToUpdate.messages
+      .slice(0, 6)
+      .map((msg) => `${msg.role}: ${msg.content}`)
+      .join("\n\n");
+
+    generateTitle(titleContext)
       .then((title) =>
         GlobalChatSession.findByIdAndUpdate(activeSessionId, { title }).exec(),
       )
@@ -667,7 +713,7 @@ export const getChatSessionController = catchAsync(async (req, res) => {
             ? parseIrisResponse(message.content)
             : undefined,
       })),
-      title: session.title,
+      title: cleanSessionTitle(session.title),
     },
   });
 });
@@ -682,7 +728,12 @@ export const getAllSessionsController = catchAsync(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    data: { sessions },
+    data: {
+      sessions: sessions.map((session) => ({
+        ...session,
+        title: cleanSessionTitle(session.title),
+      })),
+    },
   });
 });
 

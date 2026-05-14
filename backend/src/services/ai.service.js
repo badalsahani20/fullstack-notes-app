@@ -16,9 +16,20 @@ export const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
 
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
+const getEnv = (...names) => {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return "";
+};
+
+const getOpenRouterApiKey = () =>
+  getEnv("OPEN_ROUTER", "OPENROUTER_API_KEY", "OPENROUTER_API");
+
 // --- VALIDATION HELPERS ---
 const ensureAiApiKey = () => {
-  if (!process.env.GEMINI_API_KEY && !process.env.OPEN_ROUTER) {
+  if (!process.env.GEMINI_API_KEY && !getOpenRouterApiKey()) {
     throw new Error(`Both GEMINI and OPENROUTER api keys are missing`);
   }
 };
@@ -41,7 +52,7 @@ export const executeOpenRouter = async (
   const apiKey =
     isQwenModel && process.env.QWEN_API
       ? process.env.QWEN_API
-      : process.env.OPEN_ROUTER;
+      : getOpenRouterApiKey();
 
   if (!apiKey) throw new Error("No OpenRouter or Qwen API Key found");
 
@@ -51,10 +62,13 @@ export const executeOpenRouter = async (
     stream: stream,
   };
 
-  // Explicitly set include_reasoning. 
-  // We force it to FALSE for Qwen to prevent token burn on vision tasks.
-  // Other models (like DeepSeek) will use the requested reasoning flag.
-  bodyPayload.include_reasoning = isQwenModel ? false : !!includeReasoning;
+  // OpenRouter can emit reasoning by default for thinking models. Qwen is the
+  // vision path here, so explicitly disable reasoning to avoid token burn.
+  if (isQwenModel) {
+    bodyPayload.reasoning = { effort: "none", exclude: true };
+  } else if (includeReasoning) {
+    bodyPayload.reasoning = { effort: "medium", exclude: false };
+  }
 
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -123,7 +137,7 @@ const executeNvidia = async (messages, stream = false) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemma-3-27b-it",
+        model: "google/gemma-3n-e4b-it",
         messages: messages,
         stream: stream,
         max_tokens: 1024,
@@ -180,12 +194,12 @@ const generateContentWithFallback = async (prompt, stream = false) => {
       }
     } catch (error) {
       console.warn("Gemini Error, falling back to OpenRouter:", error.message);
-      if (!process.env.OPEN_ROUTER) throw error;
+      if (!getOpenRouterApiKey()) throw error;
     }
   }
 
   // Fallback to OpenRouter using direct fetch
-  if (process.env.OPEN_ROUTER) {
+  if (getOpenRouterApiKey()) {
     return await executeOpenRouter(
       "meta-llama/llama-3.1-8b-instruct",
       [{ role: "user", content: prompt }],
@@ -224,7 +238,9 @@ const getAiReply = async (
             {
               type: "image_url",
               image_url: {
-                url: imageBase64.startsWith("data:")
+                url: imageBase64.startsWith("data:") ||
+                  imageBase64.startsWith("http://") ||
+                  imageBase64.startsWith("https://")
                   ? imageBase64
                   : `data:image/jpeg;base64,${imageBase64}`,
               },
@@ -236,7 +252,9 @@ const getAiReply = async (
 
   try {
     // 🔥 TRY PRIMARY: Use DeepSeek for text (with reasoning), swap to Qwen Flash for images (no reasoning)
-    const isVisualConvo = imageBase64 || history.some((h) => h.content.includes("[Attached Image]"));
+    const isVisualConvo =
+      imageBase64 ||
+      history.some((h) => h.content.includes("[Attached Image]"));
     const activeModel = isVisualConvo
       ? "qwen/qwen3.5-flash-02-23"
       : PRIMARY_MODEL;
@@ -273,7 +291,9 @@ const getAiReply = async (
               {
                 type: "image_url",
                 image_url: {
-                  url: imageBase64.startsWith("data:")
+                  url: imageBase64.startsWith("data:") ||
+                    imageBase64.startsWith("http://") ||
+                    imageBase64.startsWith("https://")
                     ? imageBase64
                     : `data:image/jpeg;base64,${imageBase64}`,
                 },
@@ -281,7 +301,7 @@ const getAiReply = async (
             ],
           },
         ];
-        console.log("📷 Falling back to NVIDIA Vision (Llama 3.1 70B)...");
+        console.log("📷 Falling back to NVIDIA Vision (Gemma 3n-e4b-it)...");
         return await executeNvidia(nvidiaMessages, stream);
       } catch (err) {
         console.warn(
@@ -387,8 +407,7 @@ export const crawlUrl = async (url) => {
     console.error("Jina Crawl Error", error);
     return "Failed to crawl URL.";
   }
-};  
-
+};
 
 export const mightNeedWeb = (message) => {
   const triggers = [
@@ -628,7 +647,7 @@ export const chatWithAi = async ({
         `\n---
         PDF TEXT:
         ${safePdfContext}
-        \n--- END OF PDF`
+        \n--- END OF PDF`,
       ].join("\n")
     : null;
 
@@ -649,7 +668,7 @@ export const chatWithAi = async ({
   const combinedSystemPrompt = [
     basePrompt,
     systemPrompt, // Additional instructions from the controller (like web search citations)
-    webBlock, 
+    webBlock,
     noteBlock,
     pdfBlock,
     summary && `Conversation summary:\n${summary}`,
@@ -696,19 +715,54 @@ export const chatWithAi = async ({
     pdfContext, // Include the extracted text so the frontend can "remember" it
     history: [
       ...trimmedHistory,
-      { role: "user", content: finalImageBase64 ? `[Attached Image]\n${message}` : finalMessage },
+      {
+        role: "user",
+        content: finalImageBase64
+          ? `[Attached Image]\n${message}`
+          : finalMessage,
+      },
       { role: "assistant", content: reply },
     ],
   };
 };
 
 export const generateTitle = async (text) => {
-  const prompt = `Generate a short, descriptive 4-6 word title for the following content.
-Return only the title. No quotes, no punctuation at the end, no explanations.
-Content:
-${text.slice(0, 500)}`;
+  const source = text?.trim() || "New chat";
+  const fallbackTitle = source
+    .replace(/\s+/g, " ")
+    .replace(/^["'`*_#\s]+|["'`*_#\s]+$/g, "")
+    .slice(0, 54)
+    .trim();
 
-  return await generateContentWithFallback(prompt);
+  const rawTitle = await executeOpenRouter(
+    PRIMARY_MODEL,
+    [
+      {
+        role: "system",
+        content:
+          "Generate a short chat title. Return only 3-6 words. No quotes. No markdown. Do not include the words task, content, input, title, generate, descriptive, or explanation.",
+      },
+      { role: "user", content: source.slice(0, 500) },
+    ],
+    false,
+    false,
+  );
+
+  const title = rawTitle
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/^title\s*:\s*/i, "")
+    .replace(/^["'`*_#\s]+|["'`*_#\s]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (
+    !title ||
+    /generate|descriptive|content|input|task|return only|no quotes/i.test(title)
+  ) {
+    return fallbackTitle || "New Chat";
+  }
+
+  return title.slice(0, 54);
 };
 
 export const getDynamicPrompts = async () => {

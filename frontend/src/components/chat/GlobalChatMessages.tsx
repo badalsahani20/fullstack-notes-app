@@ -1,37 +1,15 @@
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { BrainCircuit, ChevronRight, FileText, Search, Globe, Check } from "lucide-react";
-import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
+import { parseIrisResponse } from "@/utils/parseIrisResponse";
 
 // ── Tool label map ───────────────────────────────────────────────────────────
 const TOOL_META: Record<string, { icon: React.ReactNode; label: string }> = {
   get_note_content: { icon: <FileText size={12} />, label: "Read note" },
   search_web:       { icon: <Search size={12} />,   label: "Searched the web" },
   crawl_url:        { icon: <Globe size={12} />,    label: "Read webpage" },
-};
-
-const markdownComponents = {
-  code({ className, children, ...props }: any) {
-    const rawCode = String(children ?? "").replace(/\n$/, "");
-    const language = className?.replace("language-", "") || "";
-    const isBlock = Boolean(language) || rawCode.includes("\n");
-
-    if (!isBlock) {
-      return (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    }
-
-    return <MarkdownCodeBlock code={rawCode} language={language} />;
-  },
 };
 
 // --- Thinking Widget ---
@@ -183,20 +161,10 @@ export const GlobalChatMessages = ({
 
                       {/* 3. Message content (Bottom) */}
                       <div className="gc-markdown max-w-full">
-                        {isActiveStream && isStreaming ? (
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkMath]}
-                            rehypePlugins={[rehypeKatex]}
-                            components={markdownComponents}
-                          >
-                            {displayText}
-                          </ReactMarkdown>
-                        ) : (
-                          <IrisMessageBody
-                            segments={msg.segments ?? [{ kind: "text", content: msg.text }]}
-                            onAnswer={sendMessage}
-                          />
-                        )}
+                        <IrisMessageBody
+                          segments={msg.segments ?? parseIrisResponse(displayText)}
+                          onAnswer={sendMessage}
+                        />
                       </div>
 
                       {isActiveStream && isStreaming && <span className="gc-cursor" />}
@@ -205,7 +173,17 @@ export const GlobalChatMessages = ({
                 </>
               ) : (
                 <div className="gc-msg-bubble gc-msg-bubble-user">
-                  {msg.text}
+                  {msg.imageUrl && (
+                    <a
+                      href={msg.imageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="gc-user-image-link"
+                    >
+                      <img src={msg.imageUrl} alt="Uploaded attachment" className="gc-user-image" />
+                    </a>
+                  )}
+                  {msg.text && <div>{msg.text}</div>}
                 </div>
               )}
             </div>
