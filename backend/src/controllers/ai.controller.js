@@ -489,7 +489,7 @@ const persistToDb = async (
   summary = "",
 ) => {
   const safeUserContent = imageBase64
-    ? `[User attached an image] ${message}`.trim()
+    ? `[Attached Image]\n${message}`.trim()
     : message;
 
   const sessionToUpdate =
@@ -516,7 +516,7 @@ const persistToDb = async (
 //  Main chat controller 
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, stream } = req.body;
+  const { message, imageBase64, pdfContext ,stream } = req.body;
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res
@@ -577,6 +577,7 @@ Use the provided data to answer the user's query accurately.`;
       noteContext: noteContext,
       webContext: toolContext,
       systemPrompt: finalSystemPrompt,
+      pdfContext: pdfContext || "",
       imageBase64,
       stream: isStreaming,
     });
@@ -597,6 +598,12 @@ Use the provided data to answer the user's query accurately.`;
   if (isStreaming) {
     try {
       finalReply = await streamAiResponse(result.stream, res, noteFetched);
+      // Send metadata (like extracted PDF text) after the stream completes
+      if (result.pdfContext) {
+        res.write(
+          `data: ${JSON.stringify({ type: "metadata", pdfContext: result.pdfContext })}\n\n`,
+        );
+      }
     } catch (streamError) {
       console.error("Streaming error:", streamError.message);
     } finally {
@@ -632,6 +639,7 @@ Use the provided data to answer the user's query accurately.`;
         { role: "assistant", content: finalReply },
       ],
       sessionId: activeSessionId,
+      pdfContext: result.pdfContext,
     },
   });
 });

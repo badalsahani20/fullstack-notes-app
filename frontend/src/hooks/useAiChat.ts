@@ -79,6 +79,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [streamedMessageText, setStreamedMessageText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
 
+  const [pdfContext, setPdfContext] = useState<string | null>(null);
+  const [pdfInjected, setPdfInjected] = useState(false);
+
   const isNew = noteId === "new";
   const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
 
@@ -393,6 +396,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           noteContext,
           hasSelection,
           imageBase64: sentImage,
+          pdfContext: pdfInjected ? null : pdfContext,
           stream: true,
         }),
         signal: abortControllerRef.current.signal,
@@ -454,6 +458,12 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
                 continue;
               }
 
+              // ── Metadata event (for persisting extracted PDF context) ────
+              if (data.type === "metadata" && data.pdfContext) {
+                setPdfContext(data.pdfContext);
+                continue;
+              }
+
               // ── Regular text & reasoning tokens ────────────────────────────────
               const content = data.choices?.[0]?.delta?.content || "";
               const reasoning = data.choices?.[0]?.delta?.reasoning || "";
@@ -512,6 +522,11 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
       setChatHistory((prev) => [...prev, { role: "user", content: textToSend }, { role: "assistant", content: fullText }]);
       setResult(null);
+
+      // If we just sent a PDF, it is now "injected" into the history
+      if (pdfContext && !pdfInjected) {
+        setPdfInjected(true);
+      }
 
       // Persist to DB
       const persistedMessages = messagesRef.current;
