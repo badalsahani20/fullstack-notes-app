@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { X, ImageIcon, Square, ArrowUp, Plus } from "lucide-react";
+import { X, ImageIcon, Square, ArrowUp, Plus, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface GlobalChatComposeProps {
@@ -35,13 +36,41 @@ export const GlobalChatCompose = ({
   disclaimerText = "Iris can make mistakes. Double-check important info.",
 }: GlobalChatComposeProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [fileAccept, setFileAccept] = useState("image/*,.pdf");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        attachMenuRef.current &&
+        !attachMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", handlePointerDown);
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [isMenuOpen]);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 160) + "px";
     }
   }, [input, textareaRef]);
+
+  // Close lightbox on Escape
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,6 +93,13 @@ export const GlobalChatCompose = ({
     fileRef.current?.click();
   };
 
+  const openFilePicker = (accept: string) => {
+    setFileAccept(accept);
+    window.setTimeout(() => fileRef.current?.click(), 0);
+  };
+
+  const isPdf = attachedImage?.startsWith("data:application/pdf");
+
   return (
     <div className="gc-compose-wrap">
       <div className="gc-compose">
@@ -72,65 +108,114 @@ export const GlobalChatCompose = ({
         {attachedImage && (
           <div className="gc-img-preview-wrap">
             <div className="gc-img-preview">
-              {attachedImage.startsWith("data:application/pdf") ? (
-                <div className="flex items-center justify-center bg-[#2a2a2a] w-16 h-20 rounded-md">
-                  <span className="text-xs font-bold text-gray-300">PDF</span>
+              {isPdf ? (
+                <div className="gc-pdf-thumb">
+                  <FileText size={18} />
+                  <span className="gc-pdf-thumb-label">PDF</span>
                 </div>
               ) : (
-                <img src={attachedImage} alt="Attached" className="gc-img-thumb" />
+                <img
+                  src={attachedImage}
+                  alt="Attached"
+                  className="gc-img-thumb"
+                  onClick={() => setLightboxOpen(true)}
+                  style={{ cursor: "zoom-in" }}
+                  title="Click to preview"
+                />
               )}
-              <button className="gc-img-remove" onClick={() => setAttachedImage(null)}>
-                <X size={11} />
+              <button
+                className="gc-img-remove"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setAttachedImage(null);
+                  setLightboxOpen(false);
+                }}
+                title="Remove"
+              >
+                <X size={9} />
               </button>
             </div>
           </div>
         )}
 
-        <textarea
-          ref={textareaRef}
-          className="gc-textarea custom-scrollbar"
-          placeholder={placeholder}
-          rows={1}
-          value={input}
-          disabled={isSending}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-        />
-
         <div className="gc-compose-footer">
-          <div className="relative">
+          <div className="relative" ref={attachMenuRef}>
             <button
               type="button"
-              className="gc-icon-btn"
+              className="gc-icon-btn gc-compose-plus"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               title="Attach"
             >
               <Plus size={18} />
             </button>
-            
+
             {isMenuOpen && (
-              <div className="absolute bottom-full left-0 mb-2 bg-[#2a2a2a] border border-[#3f3f3f] rounded-lg p-1 shadow-xl flex flex-col gap-1 z-50 min-w-[100px]">
+              <div className="gc-attach-menu">
                 <button
                   type="button"
-                  className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md hover:bg-[#3f3f3f] text-[13px] text-gray-200 transition-colors ${imageDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`gc-attach-option ${imageDisabled ? "gc-attach-option-disabled" : ""}`}
                   onClick={() => {
-                    handleImageClick();
+                    if (imageDisabled) {
+                      handleImageClick();
+                    } else {
+                      openFilePicker("image/*");
+                    }
                     setIsMenuOpen(false);
                   }}
                   title={imageDisabled ? "Image unavailable" : "Attach image"}
                 >
-                  <ImageIcon size={14} />
-                  <span>Image / PDF</span>
+                  <span className="gc-attach-option-icon gc-attach-option-image">
+                    <ImageIcon size={16} />
+                  </span>
+                  <span className="gc-attach-option-copy">
+                    <span>Image</span>
+                    <small>PNG, JPG, WebP</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className="gc-attach-option"
+                  onClick={() => {
+                    openFilePicker(".pdf,application/pdf");
+                    setIsMenuOpen(false);
+                  }}
+                  title="Attach PDF"
+                >
+                  <span className="gc-attach-option-icon gc-attach-option-pdf">
+                    <FileText size={16} />
+                  </span>
+                  <span className="gc-attach-option-copy">
+                    <span>PDF</span>
+                    <small>Documents up to 15 MB</small>
+                  </span>
                 </button>
               </div>
             )}
           </div>
-          <input type="file" ref={fileRef} accept="image/*,.pdf" className="hidden" onChange={handleFileChange} />
+          <input
+            type="file"
+            ref={fileRef}
+            accept={fileAccept}
+            className="hidden"
+            onChange={handleFileChange}
+          />
+
+          <textarea
+            ref={textareaRef}
+            className="gc-textarea custom-scrollbar"
+            placeholder={placeholder}
+            rows={1}
+            value={input}
+            disabled={isSending}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
 
           {isSending ? (
             <button
@@ -147,12 +232,38 @@ export const GlobalChatCompose = ({
               disabled={!input.trim() && !attachedImage}
               onClick={handleSend}
             >
-              <ArrowUp size={15} />
+              <ArrowUp size={17} />
             </button>
           )}
         </div>
       </div>
       <p className="gc-disclaimer">{disclaimerText}</p>
+
+      {/* Lightbox — portal-rendered outside compose box */}
+      {lightboxOpen &&
+        attachedImage &&
+        !isPdf &&
+        createPortal(
+          <div
+            className="gc-lightbox-overlay"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <div
+              className="gc-lightbox-inner"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src={attachedImage} alt="Preview" className="gc-lightbox-img" />
+              <button
+                className="gc-lightbox-close"
+                onClick={() => setLightboxOpen(false)}
+                title="Close (Esc)"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
