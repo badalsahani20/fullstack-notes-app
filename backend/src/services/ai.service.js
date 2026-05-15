@@ -64,9 +64,9 @@ export const executeOpenRouter = async (
 
   // OpenRouter can emit reasoning by default for thinking models. Qwen is the
   // vision path here, so explicitly disable reasoning to avoid token burn.
-  if (isQwenModel) {
+  if (isQwenModel || !includeReasoning) {
     bodyPayload.reasoning = { effort: "none", exclude: true };
-  } else if (includeReasoning) {
+  } else {
     bodyPayload.reasoning = { effort: "medium", exclude: false };
   }
 
@@ -218,6 +218,7 @@ const getAiReply = async (
   systemPrompt,
   history,
   stream = false,
+  useReasoning = true,
 ) => {
   // Ensure history content is always text-only strings for safety
   const safeHistory = history.map((h) => ({
@@ -258,16 +259,18 @@ const getAiReply = async (
     const activeModel = isVisualConvo
       ? "qwen/qwen3.5-flash-02-23"
       : PRIMARY_MODEL;
-    const useReasoning = !isVisualConvo; // Disable reasoning when using the vision model
+    
+    // Disable reasoning if it's a visual convo (Qwen doesn't support it) OR if the user turned it off
+    const shouldReason = !isVisualConvo && useReasoning;
 
     const reply = await executeOpenRouter(
       activeModel,
       messages,
       stream,
-      useReasoning,
+      shouldReason,
     );
     console.log(
-      `🤖 Chat answered by ${activeModel} (Reasoning: ${useReasoning})`,
+      `🤖 Chat answered by ${activeModel} (Reasoning: ${shouldReason})`,
     );
     return reply;
   } catch (error) {
@@ -561,6 +564,7 @@ export const chatWithAi = async ({
   imageBase64 = null,
   stream = false,
   systemPrompt = "", // Add this to receive custom prompts from controller
+  useReasoning = true,
 }) => {
   ensureAiApiKey(); // Only requires Gemini or OpenRouter — Groq is a fallback, not a prerequisite
 
@@ -682,6 +686,7 @@ export const chatWithAi = async ({
     combinedSystemPrompt,
     trimmedHistory,
     stream,
+    useReasoning,
   );
 
   if (stream) {
@@ -734,19 +739,27 @@ export const generateTitle = async (text) => {
     .slice(0, 54)
     .trim();
 
-  const rawTitle = await executeOpenRouter(
-    PRIMARY_MODEL,
-    [
-      {
-        role: "system",
-        content:
-          "Generate a short chat title. Return only 3-6 words. No quotes. No markdown. Do not include the words task, content, input, title, generate, descriptive, or explanation.",
-      },
-      { role: "user", content: source.slice(0, 500) },
-    ],
-    false,
-    false,
-  );
+  const titleMessages = [
+    {
+      role: "system",
+      content:
+        "You are a helpful assistant. Your job is to read the provided chat transcript and generate a short, descriptive title (3-5 words). Do NOT continue the conversation. Do NOT use quotes or markdown. Return ONLY the title itself, nothing else.",
+    },
+    { role: "user", content: `Chat Transcript:\n${source.slice(0, 600)}\n\nGenerated Title:` },
+  ];
+
+  let rawTitle = "";
+  try {
+    rawTitle = await executeGroq(titleMessages);
+  } catch (groqErr) {
+    console.warn("⚠️ generateTitle: Groq failed, falling back to OpenRouter:", groqErr.message);
+    try {
+      rawTitle = await executeOpenRouter("meta-llama/llama-3.1-8b-instruct", titleMessages, false, false);
+    } catch (orErr) {
+      console.error("❌ generateTitle: all models failed:", orErr.message);
+      return fallbackTitle || "New Chat";
+    }
+  }
 
   const title = rawTitle
     .replace(/```[\s\S]*?```/g, "")

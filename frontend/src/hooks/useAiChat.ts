@@ -81,6 +81,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   const [pdfContext, setPdfContext] = useState<string | null>(null);
   const [pdfInjected, setPdfInjected] = useState(false);
+  const [useReasoning, setUseReasoning] = useState(true);
 
   const isNew = noteId === "new";
   const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
@@ -398,6 +399,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           imageBase64: sentImage,
           pdfContext: pdfInjected ? null : pdfContext,
           stream: true,
+          useReasoning,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -644,5 +646,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     startNewChat,
     setResult,
     chatHistory,
+    useReasoning,
+    setUseReasoning,
   };
 };

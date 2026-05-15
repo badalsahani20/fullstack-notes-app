@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { X, ImageIcon, Square, ArrowUp, Plus, FileText } from "lucide-react";
+import { X, ImageIcon, Square, ArrowUp, Plus, FileText, Lightbulb } from "lucide-react";
 import { toast } from "sonner";
 
 interface GlobalChatComposeProps {
@@ -18,6 +18,8 @@ interface GlobalChatComposeProps {
   placeholder?: string;
   onStop?: () => void;
   disclaimerText?: string;
+  useReasoning?: boolean;
+  setUseReasoning?: (val: boolean) => void;
 }
 
 export const GlobalChatCompose = ({
@@ -34,6 +36,8 @@ export const GlobalChatCompose = ({
   placeholder = "Ask Iris anything...",
   onStop,
   disclaimerText = "Iris can make mistakes. Double-check important info.",
+  useReasoning = true,
+  setUseReasoning,
 }: GlobalChatComposeProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [fileAccept, setFileAccept] = useState("image/*,.pdf");
@@ -190,9 +194,30 @@ export const GlobalChatCompose = ({
                     <small>Documents up to 15 MB</small>
                   </span>
                 </button>
+
+                {setUseReasoning && (
+                  <button
+                    type="button"
+                    className="gc-attach-option"
+                    onClick={() => {
+                      setUseReasoning(!useReasoning);
+                      setIsMenuOpen(false);
+                    }}
+                    title={useReasoning ? "Turn off reasoning" : "Turn on reasoning"}
+                  >
+                    <span className="gc-attach-option-icon" style={{ color: useReasoning ? "var(--primary-color)" : "inherit" }}>
+                      <Lightbulb size={16} />
+                    </span>
+                    <span className="gc-attach-option-copy">
+                      <span>Thinking</span>
+                      <small>{useReasoning ? "Active (Higher quality)" : "Off (Faster)"}</small>
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
+
           <input
             type="file"
             ref={fileRef}
@@ -216,6 +241,12 @@ export const GlobalChatCompose = ({
               }
             }}
           />
+
+          {useReasoning && (
+            <div className="gc-reasoning-status" title="Thinking is active" style={{ color: "var(--primary-color)", opacity: 0.8, display: "flex", alignItems: "center", marginRight: "6px" }}>
+              <Lightbulb size={14} />
+            </div>
+          )}
 
           {isSending ? (
             <button

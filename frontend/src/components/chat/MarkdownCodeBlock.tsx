@@ -1,5 +1,5 @@
 import { useMemo, useState, lazy, Suspense } from "react";
-import { CheckCheck, Copy, Loader2 } from "lucide-react";
+import { CheckCheck, Copy, Code2, Loader2 } from "lucide-react";
 
 const MermaidDiagram = lazy(() => import("@/components/chat/viz/MermaidDiagram"));
 
@@ -135,10 +135,17 @@ const MarkdownCodeBlock = ({ code, language }: MarkdownCodeBlockProps) => {
   return (
     <div className="gc-code-block">
       <div className="gc-code-header">
-        <span className="gc-code-language">{getLanguageLabel(language)}</span>
-        <button type="button" className="gc-code-copy" onClick={() => void handleCopy()}>
-          {copied ? <CheckCheck size={14} /> : <Copy size={14} />}
-          {copied ? "Copied" : "Copy code"}
+        <div className="gc-code-header-left">
+          <Code2 size={14} className="gc-code-lang-icon" />
+          <span className="gc-code-language">{getLanguageLabel(language)}</span>
+        </div>
+        <button
+          type="button"
+          className="gc-code-copy"
+          onClick={() => void handleCopy()}
+          title={copied ? "Copied!" : "Copy code"}
+        >
+          {copied ? <CheckCheck size={15} className="gc-code-copy-icon-ok" /> : <Copy size={15} />}
         </button>
       </div>
       <pre className="gc-code-pre">

@@ -543,26 +543,28 @@ const persistToDb = async (
 
   const shouldGenerateTitle =
     (!sessionToUpdate.title || sessionToUpdate.title === "New Chat") &&
-    sessionToUpdate.messages.filter((msg) => msg.role === "user").length >= 3;
+    sessionToUpdate.messages.filter((msg) => msg.role === "user").length >= 2;
 
   if (shouldGenerateTitle) {
+    console.log("🏷️ Generating title for session:", activeSessionId);
     const titleContext = sessionToUpdate.messages
       .slice(0, 6)
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join("\n\n");
 
     generateTitle(titleContext)
-      .then((title) =>
-        GlobalChatSession.findByIdAndUpdate(activeSessionId, { title }).exec(),
-      )
-      .catch(() => {});
+      .then((title) => {
+        console.log("✅ Title generated:", title);
+        return GlobalChatSession.findByIdAndUpdate(activeSessionId, { title }).exec();
+      })
+      .catch((err) => console.error("❌ Title update failed:", err.message));
   }
 };
 
 //  Main chat controller 
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, pdfContext ,stream } = req.body;
+  const { message, imageBase64, pdfContext ,stream, useReasoning } = req.body;
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res
@@ -626,6 +628,7 @@ Use the provided data to answer the user's query accurately.`;
       pdfContext: pdfContext || "",
       imageBase64,
       stream: isStreaming,
+      useReasoning: useReasoning !== false,
     });
   } catch (aiError) {
     console.error("❌ All AI models failed:", aiError.message);

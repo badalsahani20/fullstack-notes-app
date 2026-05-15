@@ -1,5 +1,5 @@
 import "katex/dist/katex.min.css";
-import { BrainCircuit, ChevronRight, FileText, Search, Globe, Check } from "lucide-react";
+import { ChevronRight, FileText, Search, Globe, Check } from "lucide-react";
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
@@ -17,9 +17,10 @@ interface ThinkingWidgetProps {
   isThinking: boolean;
   thinkingTime?: number;
   thought?: string;
+  isReasoningOff?: boolean;
 }
 
-const ThinkingWidget = ({ isThinking, thinkingTime, thought }: ThinkingWidgetProps) => {
+const ThinkingWidget = ({ isThinking, thinkingTime, thought, isReasoningOff }: ThinkingWidgetProps) => {
   // If we have thought text, show it in a collapsible detail block
   if (thought) {
     return (
@@ -46,8 +47,7 @@ const ThinkingWidget = ({ isThinking, thinkingTime, thought }: ThinkingWidgetPro
   if (isThinking) {
     return (
       <div className="iris-thinking-indicator">
-        <BrainCircuit size={12} className="iris-thinking-indicator-icon" />
-        <span>Thinking</span>
+        <span>{isReasoningOff ? "Writing" : "Thinking"}</span>
         <span className="iris-thinking-indicator-dots">
           <span style={{ animationDelay: "0ms" }} />
           <span style={{ animationDelay: "180ms" }} />
@@ -58,10 +58,9 @@ const ThinkingWidget = ({ isThinking, thinkingTime, thought }: ThinkingWidgetPro
   }
 
   // Done: closed time badge — no content, nothing to expand
-  if (thinkingTime && thinkingTime > 0) {
+  if (thinkingTime && thinkingTime > 0 && !isReasoningOff) {
     return (
       <div className="iris-thinking-indicator iris-thinking-indicator-done">
-        <BrainCircuit size={12} className="iris-thinking-indicator-icon" />
         <span>Thought for {thinkingTime}s</span>
       </div>
     );
@@ -83,6 +82,7 @@ interface GlobalChatMessagesProps {
   prompts: { students: string[], devs: string[] };
   bottomRef: React.RefObject<HTMLDivElement | null>;
   fullWidthAssistant?: boolean;
+  useReasoning?: boolean;
 }
 
 export const GlobalChatMessages = ({
@@ -95,6 +95,7 @@ export const GlobalChatMessages = ({
   prompts,
   bottomRef,
   fullWidthAssistant = false,
+  useReasoning = true,
 }: GlobalChatMessagesProps) => {
   return (
     <div className={`gc-messages custom-scrollbar${fullWidthAssistant ? " gc-messages-fullwidth-assistant" : ""}`}>
@@ -121,7 +122,7 @@ export const GlobalChatMessages = ({
                 <>
                   {/* ── Pure waiting state: pill only, no bubble wrapper ── */}
                   {isThinking && !displayText && !thought ? (
-                    <ThinkingWidget isThinking={true} />
+                    <ThinkingWidget isThinking={true} isReasoningOff={!useReasoning} />
                   ) : (
                     <div className="gc-msg-bubble gc-msg-bubble-ai">
                       {/* 1. Tool activity chips (Top) */}

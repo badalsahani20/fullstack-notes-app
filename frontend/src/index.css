@@ -3780,59 +3780,89 @@ span[data-ai-ghost] {
   opacity: 0.7;
 }
 
+/* ── ChatGPT-style Code Block ── */
 .gc-code-block {
   overflow: hidden;
-  border-radius: 0.5rem;
-  background: #0d0d0d;
+  border-radius: 0.85rem;
+  background: #282828;
+  margin: 0.5rem 0;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
+/* Header bar */
 .gc-code-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  background: #2f2f2f;
-  color: #b4b4b4;
+  padding: 0.6rem 0.9rem;
+  background: #282828;
+  color: #9a9a9a;
 }
 
+.gc-code-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* </>  icon */
+.gc-code-lang-icon {
+  color: #9a9a9a;
+  flex-shrink: 0;
+}
+
+/* Language label — plain text, no badge */
 .gc-code-language {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  text-transform: lowercase;
-  color: #b4b4b4;
+  color: #9a9a9a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
+/* Icon-only copy button */
 .gc-code-copy {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  border-radius: 4px;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.72rem;
-  color: #b4b4b4;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 0.35rem;
+  color: #9a9a9a;
   background: transparent;
   border: none;
-  transition: color 0.15s ease;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  padding: 0;
 }
 
 .gc-code-copy:hover {
-  background: transparent;
-  color: #ffffff;
+  color: #e0e0e0;
+  background: rgba(255, 255, 255, 0.1);
 }
 
+.gc-code-copy:active {
+  transform: scale(0.9);
+}
+
+.gc-code-copy-icon-ok {
+  color: #4ade80;
+}
+
+/* Code area */
 .gc-code-pre {
   margin: 0;
   overflow-x: auto;
-  padding: 1rem;
+  padding: 0rem 1.1rem 1rem;
   background: transparent;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 }
 
 .gc-code-pre::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
+  height: 5px;
+  width: 5px;
 }
 
 .gc-code-pre::-webkit-scrollbar-track {
@@ -3840,51 +3870,33 @@ span[data-ai-ghost] {
 }
 
 .gc-code-pre::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.14);
   border-radius: 4px;
 }
 
 .gc-code-pre::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
 }
 
+/* Code text */
 .gc-code-content {
   display: block;
   min-width: max-content;
-  color: #e2e8f0;
-  font-size: 0.84rem;
-  line-height: 1.7;
+  color: #d4d4d4;
+  font-size: 0.83rem;
+  line-height: 1.75;
   white-space: pre;
-  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
 }
 
-.gc-token-comment {
-  color: #6a9955;
-}
-
-.gc-token-string {
-  color: #ce9178;
-}
-
-.gc-token-keyword {
-  color: #569cd6;
-}
-
-.gc-token-number {
-  color: #b5cea8;
-}
-
-.gc-token-function {
-  color: #dcdcaa;
-}
-
-.gc-token-property {
-  color: #9cdcfe;
-}
-
-.gc-token-tag {
-  color: #569cd6;
-}
+/* ── Syntax tokens ── */
+.gc-token-comment  { color: #6a9955; font-style: italic; }
+.gc-token-string   { color: #ce9178; }
+.gc-token-keyword  { color: #569cd6; }
+.gc-token-number   { color: #b5cea8; }
+.gc-token-function { color: #dcdcaa; }
+.gc-token-property { color: #9cdcfe; }
+.gc-token-tag      { color: #4ec9b0; }
 
 .gc-thinking {
   display: flex;

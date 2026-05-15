@@ -16,6 +16,7 @@ const GlobalChatPage = () => {
     activeSessionId, messages, messagesLoading,
     isSending, attachedImage, imageDisabled,
     fetchSessions, loadSession, startNewChat, sendMessage, setAttachedImage,
+    useReasoning, setUseReasoning,
   } = useGlobalChatStore();
 
   const [input, setInput] = useState("");
@@ -109,6 +110,7 @@ const GlobalChatPage = () => {
           sendMessage={(text) => sendMessage(text)}
           prompts={prompts}
           bottomRef={bottomRef}
+          useReasoning={useReasoning}
         />
 
         <GlobalChatCompose
@@ -121,6 +123,8 @@ const GlobalChatPage = () => {
           handleSend={handleSend}
           textareaRef={textareaRef}
           fileRef={fileRef}
+          useReasoning={useReasoning}
+          setUseReasoning={setUseReasoning}
         />
       </div>
     </div>

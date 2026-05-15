@@ -41,6 +41,7 @@ type GlobalChatStore = {
   isSending: boolean;
   attachedImage: string | null;
   imageDisabled: boolean;
+  useReasoning: boolean;
 
   // Actions
   fetchSessions: () => Promise<void>;
@@ -48,6 +49,7 @@ type GlobalChatStore = {
   startNewChat: () => void;
   sendMessage: (text: string, image?: string | null) => Promise<void>;
   setAttachedImage: (img: string | null) => void;
+  setUseReasoning: (val: boolean) => void;
   reset: () => void;
 };
 
@@ -60,6 +62,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   isSending: false,
   attachedImage: null,
   imageDisabled: false,
+  useReasoning: true, // Default to true!
 
   fetchSessions: async () => {
     set({ sessionsLoading: true });
@@ -162,6 +165,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
           sessionId: activeSessionId,
           imageBase64: imageForApi || undefined,
           stream: true,
+          useReasoning: get().useReasoning,
         }),
       });
 
@@ -291,9 +295,8 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
       const userTurnCount = get().messages.filter((message) => message.role === "user").length;
 
-      // The backend waits until the third user turn before generating a title,
-      // so only do the quiet refresh once a real title is likely to exist.
-      if (effectiveSessionId && userTurnCount >= 3) {
+      // The backend generates a title after 2 user turns.
+      if (effectiveSessionId && userTurnCount >= 2) {
         window.setTimeout(() => {
           get().fetchSessions();
         }, 2500);
@@ -310,6 +313,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   },
 
   setAttachedImage: (img) => set({ attachedImage: img }),
+  setUseReasoning: (val) => set({ useReasoning: val }),
   reset: () => set({
     sessions: [],
     sessionsLoading: false,

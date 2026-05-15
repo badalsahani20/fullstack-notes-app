@@ -35,6 +35,8 @@ const ContextualAiPanel = ({
     streamingMessageId,
     streamedMessageText,
     isStreaming,
+    useReasoning,
+    setUseReasoning,
   } = aiChat;
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -118,6 +120,7 @@ const ContextualAiPanel = ({
         prompts={prompts}
         bottomRef={bottomRef}
         fullWidthAssistant
+        useReasoning={useReasoning}
       />
 
       <GlobalChatCompose
@@ -133,6 +136,8 @@ const ContextualAiPanel = ({
         topSlot={contextSlot}
         placeholder="Ask about this note, get ideas, or request edits..."
         onStop={stopRequest}
+        useReasoning={useReasoning}
+        setUseReasoning={setUseReasoning}
       />
     </aside>
   );
