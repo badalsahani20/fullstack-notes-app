@@ -27,7 +27,7 @@ const ThinkingWidget = ({ isThinking, thinkingTime, thought, isReasoningOff }: T
       <details className="iris-thinking-details" open={isThinking}>
         <summary className={`iris-thinking-summary ${!isThinking ? "iris-thinking-summary-done" : ""}`}>
           <ChevronRight size={14} className="iris-chevron" />
-          <span>{isThinking ? "Thinking" : `Thought for ${thinkingTime}s`}</span>
+          <span>{isThinking ? (isReasoningOff ? "Writing" : "Thinking") : `Thought for ${thinkingTime}s`}</span>
           {isThinking && (
             <span className="iris-thinking-indicator-dots">
               <span style={{ animationDelay: "0ms" }} />

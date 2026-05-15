@@ -4185,23 +4185,7 @@ span[data-ai-ghost] {
 
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Compose Ã¢â€â‚¬Ã¢â€â‚¬ */
-.gc-compose-wrap {
-  padding: 0.75rem 1.25rem 1.25rem;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
 
-.gc-compose {
-  width: 100%;
-  max-width: 48rem;
-  border: 1px solid var(--divider);
-  border-radius: 1.5rem;
-  background: var(--surface-muted);
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-  position: relative;
-}
 
 .note-ai-header {
   border-bottom: 1px solid var(--divider);
@@ -5368,15 +5352,22 @@ span[data-ai-ghost] {
 .gc-compose-wrap {
   padding: 0.85rem 1.25rem 1.35rem;
   background: linear-gradient(180deg, transparent, rgba(5, 5, 6, 0.98) 32%);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .gc-compose {
+  width: 100%;
   max-width: 52rem;
   min-height: 3.45rem;
   border-radius: 999px;
   background: #212121;
   border-color: rgba(255, 255, 255, 0.08);
   box-shadow: none;
+  position: relative;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 /* When attachment is present, soften the pill corners so the card fits cleanly */
