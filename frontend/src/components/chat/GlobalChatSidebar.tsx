@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { Bot, MessageSquarePlus, Clock } from "lucide-react";
 
@@ -23,7 +24,7 @@ interface GlobalChatSidebarProps {
   startNewChat: () => void;
 }
 
-export const GlobalChatSidebar = ({
+export const GlobalChatSidebar = memo(({
   isMobile,
   sidebarOpen,
   setSidebarOpen,
@@ -65,7 +66,7 @@ export const GlobalChatSidebar = ({
           </div>
 
           <div className="gc-session-list custom-scrollbar">
-            {sessionsLoading ? (
+            {sessionsLoading && sessions.length === 0 ? (
               <div className="gc-session-skeleton-wrap">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="gc-session-skeleton" />
@@ -93,4 +94,4 @@ export const GlobalChatSidebar = ({
       </aside>
     </>
   );
-};
+});
