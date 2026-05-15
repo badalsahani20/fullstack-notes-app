@@ -60,6 +60,7 @@ export const executeOpenRouter = async (
     model: modelId,
     messages: messages,
     stream: stream,
+    max_tokens: 5000,
   };
 
   // OpenRouter can emit reasoning by default for thinking models. Qwen is the
@@ -123,49 +124,92 @@ export const executeOpenRouter = async (
   return content;
 };
 
-const executeNvidia = async (messages, stream = false) => {
-  if (!process.env.NVIDIA_API_KEY) throw new Error("No NVIDIA API Key");
+const executeGemini = async (messages, stream = false) => {
+  ensureAiApiKey();
+  
+  const contents = messages.filter(m => m.role !== 'system').map(m => {
+    let parts = [];
+    if (typeof m.content === "string") {
+      parts = [{ text: m.content }];
+    } else if (Array.isArray(m.content)) {
+      parts = m.content.map(part => {
+        if (part.type === "text") return { text: part.text };
+        if (part.type === "image_url") {
+          const base64Data = part.image_url.url.split(",")[1];
+          const mimeType = part.image_url.url.split(";")[0].split(":")[1] || "image/jpeg";
+          return {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType
+            }
+          };
+        }
+        return null;
+      }).filter(Boolean);
+    }
+    return { role: m.role === "assistant" ? "model" : "user", parts: parts };
+  });
 
-  console.log("🟦 Attempting NVIDIA (Gemma 3 27B)...");
+  const systemMessage = messages.find(m => m.role === 'system');
+  const systemInstruction = systemMessage ? systemMessage.content : "";
 
-  const response = await fetch(
-    "https://integrate.api.nvidia.com/v1/chat/completions",
-    {
+  const geminiModel = systemInstruction 
+    ? genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite", systemInstruction }) 
+    : model;
+
+  console.log("🟦 Attempting Gemini (Gemma)...");
+
+  if (stream) {
+    const result = await geminiModel.generateContentStream({ contents });
+    const encoder = new TextEncoder();
+    return new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of result.stream) {
+            const content = chunk.text();
+            if (content) {
+              const sseChunk = `data: ${JSON.stringify({ choices: [{ delta: { content: content } }] })}\n\n`;
+              controller.enqueue(encoder.encode(sseChunk));
+            }
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      }
+    });
+  } else {
+    const result = await geminiModel.generateContent({ contents });
+    return result.response.text();
+  }
+};
+
+const executeGroq = async (messages, stream = false) => {
+  ensureGroqApiKey();
+  
+  if (stream) {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.NVIDIA_API_KEY}`,
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemma-3n-e4b-it",
+        model: FALLBACK_MODEL,
         messages: messages,
-        stream: stream,
-        max_tokens: 1024,
+        stream: true,
       }),
-    },
-  );
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error(
-      "❌ NVIDIA error:",
-      response.status,
-      JSON.stringify(errorData),
-    );
-    throw new Error(
-      `NVIDIA returned ${response.status}: ${JSON.stringify(errorData)}`,
-    );
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Groq returned ${response.status}: ${JSON.stringify(errorData)}`);
+    }
+    
+    return response.body;
   }
 
-  if (stream) return response.body; // ReadableStream — pipe directly like OpenRouter
-
-  const data = await response.json();
-  console.log("✅ NVIDIA responded successfully");
-  return data.choices[0].message.content;
-};
-
-const executeGroq = async (messages) => {
-  ensureGroqApiKey();
   if (!client?.chat?.completions)
     throw new Error("Groq client not properly initialized");
 
@@ -218,7 +262,7 @@ const getAiReply = async (
   systemPrompt,
   history,
   stream = false,
-  useReasoning = true,
+  useReasoning = false,
 ) => {
   // Ensure history content is always text-only strings for safety
   const safeHistory = history.map((h) => ({
@@ -280,7 +324,7 @@ const getAiReply = async (
     // 🛡️ LEGACY FALLBACK WATERFALL (Gemma <-> Llama)
     if (imageBase64) {
       try {
-        const nvidiaMessages = [
+                const geminiMessages = [
           { role: "system", content: systemPrompt },
           ...safeHistory,
           {
@@ -288,7 +332,6 @@ const getAiReply = async (
             content: [
               {
                 type: "text",
-
                 text: `[System Directive: Describe image and answer prompt]\n\nUser prompt: ${message}`,
               },
               {
@@ -304,8 +347,8 @@ const getAiReply = async (
             ],
           },
         ];
-        console.log("📷 Falling back to NVIDIA Vision (Gemma 3n-e4b-it)...");
-        return await executeNvidia(nvidiaMessages, stream);
+        console.log("📷 Falling back to Gemini Vision (Gemma)...");
+        return await executeGemini(geminiMessages, stream);
       } catch (err) {
         console.warn(
           "Nvidia Vision failed, final fallback to Groq text-only:",
@@ -326,21 +369,28 @@ const getAiReply = async (
         const groqMessages = [
           { role: "system", content: systemPrompt },
           ...safeHistory,
-          { role: "user", content: message },
         ];
+        
+        const lastGroqMsg = groqMessages[groqMessages.length - 1];
+        if (lastGroqMsg && lastGroqMsg.role === "user") {
+          lastGroqMsg.content += `\n\n${message}`;
+        } else {
+          groqMessages.push({ role: "user", content: message });
+        }
         console.log("⚡ Falling back to GROQ (Llama 70B)");
-        return await executeGroq(groqMessages);
+        return await executeGroq(groqMessages, stream);
       } catch (err) {
         console.warn(
           "Groq failed, final fallback to NVIDIA Text:",
           err.message,
         );
-        const nvidiaMessages = [
+                const geminiMessages = [
           { role: "system", content: systemPrompt },
           ...safeHistory,
           { role: "user", content: message },
         ];
-        return await executeNvidia(nvidiaMessages, stream);
+        console.log("🟦 Falling back to Gemini Text (Gemma)...");
+        return await executeGemini(geminiMessages, stream);
       }
     }
   }
@@ -564,7 +614,7 @@ export const chatWithAi = async ({
   imageBase64 = null,
   stream = false,
   systemPrompt = "", // Add this to receive custom prompts from controller
-  useReasoning = true,
+  useReasoning = false,
 }) => {
   ensureAiApiKey(); // Only requires Gemini or OpenRouter — Groq is a fallback, not a prerequisite
 

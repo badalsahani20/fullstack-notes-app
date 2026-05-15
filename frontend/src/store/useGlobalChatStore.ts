@@ -62,7 +62,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   isSending: false,
   attachedImage: null,
   imageDisabled: false,
-  useReasoning: true, // Default to true!
+  useReasoning: false, 
 
   fetchSessions: async () => {
     set({ sessionsLoading: true });

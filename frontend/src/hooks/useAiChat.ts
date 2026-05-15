@@ -81,7 +81,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   const [pdfContext, setPdfContext] = useState<string | null>(null);
   const [pdfInjected, setPdfInjected] = useState(false);
-  const [useReasoning, setUseReasoning] = useState(true);
+  const [useReasoning, setUseReasoning] = useState(false);
 
   const isNew = noteId === "new";
   const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
