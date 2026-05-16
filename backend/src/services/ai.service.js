@@ -156,13 +156,22 @@ const executeGemini = async (messages, stream = false) => {
   const systemInstruction = systemMessage ? systemMessage.content : "";
 
   const geminiModel = systemInstruction 
-    ? genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite", systemInstruction }) 
+    ? genAI.getGenerativeModel({ 
+        model: "gemini-3.1-flash-lite", 
+        systemInstruction,
+        generationConfig: {
+          thinking_level: "MINIMAL" // Force near-zero latency
+        }
+      }) 
     : model;
 
-  console.log("🟦 Attempting Gemini (Gemma)...");
+  console.log("🟦 Attempting Gemini (Fast Mode)...");
 
   if (stream) {
-    const result = await geminiModel.generateContentStream({ contents });
+    const result = await geminiModel.generateContentStream({ 
+      contents,
+      generationConfig: { thinking_level: "MINIMAL" }
+    });
     const encoder = new TextEncoder();
     return new ReadableStream({
       async start(controller) {
@@ -182,7 +191,10 @@ const executeGemini = async (messages, stream = false) => {
       }
     });
   } else {
-    const result = await geminiModel.generateContent({ contents });
+    const result = await geminiModel.generateContent({ 
+      contents,
+      generationConfig: { thinking_level: "MINIMAL" }
+    });
     return result.response.text();
   }
 };
