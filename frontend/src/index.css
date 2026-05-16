@@ -2357,7 +2357,6 @@
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   font-size: 0.92rem;
   line-height: 1.75;
-  padding: 0.85rem 1rem 1rem;
   text-shadow: 0 0 0.01px currentColor;
 }
 
@@ -7217,4 +7216,103 @@ html:not(.dark) .dock-btn-active {
   color: rgba(255, 255, 255, 0.62);
   background: rgba(255, 255, 255, 0.045);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CODE BLOCKS (Shared: Editor + Chat)
+   ═══════════════════════════════════════════════════════════════ */
+
+.gc-code-block {
+  position: relative;
+  margin: 1rem 0;
+  border-radius: 0.85rem;
+  background: #18181b; /* Slightly darker slate/zinc for better contrast */
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  border: none; /* Removed outer border */
+}
+
+.gc-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem 0.25rem; /* Tighter vertical spacing */
+  background: transparent;
+  border: none; /* Removed header border/divider */
+  user-select: none;
+}
+
+.gc-code-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.8; /* Subtle header to keep focus on code */
+}
+
+.gc-code-lang-icon {
+  color: #a1a1aa;
+}
+
+.gc-code-language {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #a1a1aa;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gc-code-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+}
+
+.gc-code-copy:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+.gc-code-copy:active {
+  transform: scale(0.92);
+}
+
+.gc-code-copy-icon-ok {
+  color: #10b981;
+}
+
+.gc-code-pre {
+  margin: 0;
+  padding: 0.75rem 1.25rem 1.25rem;
+  overflow-x: auto;
+  background: transparent;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.gc-code-content {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #e4e4e7;
+  background: transparent;
+  display: block;
+}
+
+/* Syntax Highlighting Tokens (Subtle & Pro) */
+.gc-token-comment { color: #71717a; font-style: italic; }
+.gc-token-keyword { color: #3b82f6; font-weight: 600; }
+.gc-token-string { color: #10b981; }
+.gc-token-number { color: #f59e0b; }
+.gc-token-function { color: #8b5cf6; }
+.gc-token-property { color: #60a5fa; }
+.gc-token-tag { color: #3b82f6; }
+
+
 
