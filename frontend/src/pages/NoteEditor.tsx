@@ -296,6 +296,7 @@ const NoteEditor = () => {
               <ContextualAiPanel
                 aiChat={aiChat}
                 noteTitle={draftTitle || note?.title}
+                isNewNote={isNew}
                 onClose={() => setAiPanelOpen(false)}
                 mobileMode
               />
@@ -338,6 +339,7 @@ const NoteEditor = () => {
               <ContextualAiPanel
                 aiChat={aiChat}
                 noteTitle={draftTitle || note?.title}
+                isNewNote={isNew}
                 onClose={() => setAiPanelOpen(false)}
               />
             </Suspense>

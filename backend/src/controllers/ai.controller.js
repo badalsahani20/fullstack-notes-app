@@ -140,10 +140,10 @@ export const checkGrammarController = catchAsync(async (req, res) => {
 export const aiAssistController = catchAsync(async (req, res) => {
   const { noteId, action, selectedText, noteText, stream } = req.body;
 
-  if (!noteId || !action) {
+  if (!action) {
     return res
       .status(400)
-      .json({ success: false, message: "noteId and action are required" });
+      .json({ success: false, message: "action is required" });
   }
 
   // RATE LIMIT CHECK
@@ -160,7 +160,8 @@ export const aiAssistController = catchAsync(async (req, res) => {
 
   // 1. Resolve Note and Source Text
   let note = null;
-  if (noteId !== "new") {
+  // noteId is null when the note hasn't been saved yet (stateless mode for new notes)
+  if (noteId && noteId !== "new") {
     note = await Notes.findOne({ _id: noteId, user: req.user._id });
     if (!note) {
       return res

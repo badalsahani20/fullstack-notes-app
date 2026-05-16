@@ -608,7 +608,7 @@ export const chatWithAi = async ({
   message,
   history = [],
   summary = "",
-  noteContext = "",
+  noteContext = "" || null,
   webContext = "",
   pdfContext = "",
   imageBase64 = null,

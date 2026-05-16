@@ -83,7 +83,10 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [pdfInjected, setPdfInjected] = useState(false);
   const [useReasoning, setUseReasoning] = useState(false);
 
-  const isNew = noteId === "new";
+  const isNew = noteId === "new" || !noteId;
+  // Resolve the effective noteId to send to the API — null signals the backend
+  // to skip the note DB lookup and run in stateless (context-free) mode.
+  const effectiveNoteId = isNew ? null : noteId;
   const { data: activeNote } = useNoteQuery(isNew ? "" : noteId);
 
   const { mutateAsync: updateNoteAsync } = useUpdateNoteMutation();
@@ -202,7 +205,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
             "Authorization": `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
-            noteId,
+            noteId: effectiveNoteId,
             action,
             selectedText: selectedText || undefined,
             noteText: sourceText,
@@ -287,7 +290,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         // ── Blocking path for inline actions (grammar, continue) ─────────
         const res = await api.post(
           "/ai/assist",
-          { noteId, action, selectedText: selectedText || undefined, noteText: sourceText },
+          { noteId: effectiveNoteId, action, selectedText: selectedText || undefined, noteText: sourceText },
           { signal: abortControllerRef.current.signal }
         );
 
@@ -364,7 +367,15 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     // Default to "Image Context" if they just send an image without text
     const textToSend = trimmed || "Describe this image context.";
 
-    const userMessage: Message = { id: `${Date.now()}-chat-user`, role: "user", text: textToSend };
+    const sentImage = attachedImage;
+    setAttachedImage(null);
+
+    const userMessage: Message = {
+      id: `${Date.now()}-chat-user`,
+      role: "user",
+      text: textToSend,
+      imageUrl: sentImage || undefined
+    };
     const optimisticMessages = [...messagesRef.current, userMessage];
     messagesRef.current = optimisticMessages;
     setMessages(optimisticMessages);
@@ -373,9 +384,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     if (overrideText === undefined) {
       setChatInput("");
     }
-
-    const sentImage = attachedImage;
-    setAttachedImage(null);
 
     try {
       abortControllerRef.current = new AbortController();
@@ -393,7 +401,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         body: JSON.stringify({
           message,
           history: chatHist,
-          noteId,
+          noteId: effectiveNoteId,
           noteContext,
           hasSelection,
           imageBase64: sentImage,
@@ -530,16 +538,18 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         setPdfInjected(true);
       }
 
-      // Persist to DB
-      const persistedMessages = messagesRef.current;
-      const dbHistory = getPersistedHistoryFromMessages(persistedMessages);
-      const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
-      if (latestNote) {
-        void updateNoteAsync({
-          noteId,
-          updates: { chatHistory: dbHistory as Note["chatHistory"] },
-          version: latestNote.version,
-        });
+      // Persist to DB — only when this is a real saved note (not a new/unsaved one)
+      if (!isNew) {
+        const persistedMessages = messagesRef.current;
+        const dbHistory = getPersistedHistoryFromMessages(persistedMessages);
+        const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
+        if (latestNote) {
+          void updateNoteAsync({
+            noteId,
+            updates: { chatHistory: dbHistory as Note["chatHistory"] },
+            version: latestNote.version,
+          });
+        }
       }
 
     } catch (error) {

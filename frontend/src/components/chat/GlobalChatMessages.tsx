@@ -4,6 +4,8 @@ import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
 import { parseIrisResponse } from "@/utils/parseIrisResponse";
+import { useEffect, useState } from "react";
+import { getThinkingState } from "@/utils/getThinkingState";
 
 // ── Tool label map ───────────────────────────────────────────────────────────
 const TOOL_META: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -20,14 +22,26 @@ interface ThinkingWidgetProps {
   isReasoningOff?: boolean;
 }
 
+
 const ThinkingWidget = ({ isThinking, thinkingTime, thought, isReasoningOff }: ThinkingWidgetProps) => {
   // If we have thought text, show it in a collapsible detail block
+  const [thinking, setThinking] = useState(getThinkingState());
+
+  useEffect(() => { 
+    if(!isThinking) return;
+
+    const interval = setInterval(() => {
+      setThinking(getThinkingState());
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [isThinking]);
+
   if (thought) {
     return (
       <details className="iris-thinking-details" open={isThinking}>
         <summary className={`iris-thinking-summary ${!isThinking ? "iris-thinking-summary-done" : ""}`}>
           <ChevronRight size={14} className="iris-chevron" />
-          <span>{isThinking ? (isReasoningOff ? "Writing" : "Thinking") : `Thought for ${thinkingTime}s`}</span>
+          <span>{isThinking ? (isReasoningOff ? thinking.text : "Thinking") : `Thought for ${thinkingTime}s`}</span>
           {isThinking && (
             <span className="iris-thinking-indicator-dots">
               <span style={{ animationDelay: "0ms" }} />
@@ -47,7 +61,7 @@ const ThinkingWidget = ({ isThinking, thinkingTime, thought, isReasoningOff }: T
   if (isThinking) {
     return (
       <div className="iris-thinking-indicator">
-        <span>{isReasoningOff ? "Writing" : "Thinking"}</span>
+        <span>{isReasoningOff ? thinking.text : "Thinking"}</span>
         <span className="iris-thinking-indicator-dots">
           <span style={{ animationDelay: "0ms" }} />
           <span style={{ animationDelay: "180ms" }} />

@@ -1,5 +1,5 @@
 import { useMemo, useRef } from "react";
-import { FileText, Type, X, RefreshCcw } from "lucide-react";
+import { FileText, Type, X, RefreshCcw, Pencil } from "lucide-react";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
 import type { useAiChat } from "@/hooks/useAiChat";
@@ -8,6 +8,8 @@ import type { Message } from "../ai/types";
 type ContextualAiPanelProps = {
   aiChat: ReturnType<typeof useAiChat>;
   noteTitle?: string;
+  /** True when the note hasn't been saved yet (noteId === "new") */
+  isNewNote?: boolean;
   onClose: () => void;
   mobileMode?: boolean;
 };
@@ -15,6 +17,7 @@ type ContextualAiPanelProps = {
 const ContextualAiPanel = ({
   aiChat,
   noteTitle,
+  isNewNote = false,
   onClose,
   mobileMode = false,
 }: ContextualAiPanelProps) => {
@@ -48,7 +51,12 @@ const ContextualAiPanel = ({
   const contextSlot = (
     <div className="note-ai-context-bar">
       <div className="note-ai-context-left">
-        {selectionRange ? (
+        {isNewNote ? (
+          <span className="note-ai-context-chip" style={{ color: "var(--amber-text, #d97706)", borderColor: "color-mix(in srgb, #d97706 25%, transparent)" }}>
+            <Pencil size={12} />
+            No note yet · General chat
+          </span>
+        ) : selectionRange ? (
           <span className="note-ai-context-chip">
             <Type size={12} />
             Selection
@@ -59,7 +67,7 @@ const ContextualAiPanel = ({
             Note context
           </span>
         )}
-        {noteTitle ? <span className="note-ai-context-note">{noteTitle}</span> : null}
+        {!isNewNote && noteTitle ? <span className="note-ai-context-note">{noteTitle}</span> : null}
       </div>
     </div>
   );
@@ -134,7 +142,7 @@ const ContextualAiPanel = ({
         textareaRef={textareaRef}
         fileRef={fileRef}
         topSlot={contextSlot}
-        placeholder="Ask about this note, get ideas, or request edits..."
+        placeholder="Ask about this note or anything..."
         onStop={stopRequest}
         useReasoning={useReasoning}
         setUseReasoning={setUseReasoning}
