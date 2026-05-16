@@ -35,9 +35,7 @@ export const TipTapCodeBlock = React.memo(({ node, editor, getPos }: NodeViewPro
       <div className="gc-code-header" contentEditable={false}>
         <div className="gc-code-header-left">
           <Code2 size={14} className="gc-code-lang-icon" />
-          <span className="gc-code-language">
-            {(node.attrs.language || "code").toUpperCase()}
-          </span>
+          <span className="gc-code-language">CODE BLOCK</span>
         </div>
         <button 
           type="button" 
