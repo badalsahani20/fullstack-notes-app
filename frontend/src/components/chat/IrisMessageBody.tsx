@@ -5,6 +5,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import MarkdownCodeBlock from "./MarkdownCodeBlock";
+import MarkdownWritingBlock from "./MarkdownWritingBlock";
 import IrisVisualBlock from "./IrisVisualBlock";
 import IrisAskBlock from "./IrisAskBlock";
 import type { IrisSegment } from "@/store/useGlobalChatStore";
@@ -18,6 +19,10 @@ const markdownComponents = {
 
     if (!isBlock) {
       return <code className={className} {...props}>{children}</code>;
+    }
+
+    if (language === "writing") {
+      return <MarkdownWritingBlock content={rawCode} />;
     }
 
     return <MarkdownCodeBlock code={rawCode} language={language} />;
