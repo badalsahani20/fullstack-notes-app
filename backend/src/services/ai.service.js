@@ -46,7 +46,7 @@ export const executeOpenRouter = async (
   modelId,
   messages,
   stream = false,
-  includeReasoning = true,
+  includeReasoning = false, // Default to false for token safety
   maxTokens = 5000,
 ) => {
   const isQwenModel = modelId.toLowerCase().includes("qwen");
@@ -62,10 +62,11 @@ export const executeOpenRouter = async (
     messages: messages,
     stream: stream,
     max_tokens: maxTokens,
+    include_reasoning: includeReasoning, // Top-level flag for many providers
   };
 
-  // OpenRouter can emit reasoning by default for thinking models. Qwen is the
-  // vision path here, so explicitly disable reasoning to avoid token burn.
+  // OpenRouter can emit reasoning by default for thinking models. 
+  // Explicitly disable reasoning objects to avoid token burn.
   if (isQwenModel || !includeReasoning) {
     bodyPayload.reasoning = { effort: "none", exclude: true };
   } else {
