@@ -160,7 +160,7 @@ const executeGemini = async (messages, stream = false) => {
         model: "gemini-3.1-flash-lite", 
         systemInstruction,
         generationConfig: {
-          thinking_level: "MINIMAL" // Force near-zero latency
+          thinking_config: { thinking_level: "minimal" } // Correct nesting
         }
       }) 
     : model;
@@ -170,7 +170,9 @@ const executeGemini = async (messages, stream = false) => {
   if (stream) {
     const result = await geminiModel.generateContentStream({ 
       contents,
-      generationConfig: { thinking_level: "MINIMAL" }
+      generationConfig: { 
+        thinking_config: { thinking_level: "minimal" } 
+      }
     });
     const encoder = new TextEncoder();
     return new ReadableStream({
@@ -193,7 +195,9 @@ const executeGemini = async (messages, stream = false) => {
   } else {
     const result = await geminiModel.generateContent({ 
       contents,
-      generationConfig: { thinking_level: "MINIMAL" }
+      generationConfig: { 
+        thinking_config: { thinking_level: "minimal" } 
+      }
     });
     return result.response.text();
   }
