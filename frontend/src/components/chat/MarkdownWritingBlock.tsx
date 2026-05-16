@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CheckCheck, Copy, Pencil, RotateCcw, RotateCw, Check } from "lucide-react";
+import { CheckCheck, Copy, Pencil, RotateCcw, RotateCw } from "lucide-react";
 
 type MarkdownWritingBlockProps = {
   content: string;
