@@ -35,14 +35,6 @@ Your questioning style:
 
 // ─── INTERNAL HELPERS ────────────────────────────────────────────────────────
 
-/**
- * Runs a study-generation prompt through DeepSeek (primary) → Qwen (fallback).
- * Both models have 8k+ context and produce structured JSON reliably.
- *
- * @param {string} systemPrompt - Personality + task instructions
- * @param {string} userPrompt   - Note content + weak-spot hint
- * @returns {Promise<string>} Raw JSON string from the model
- */
 const executeStudyGeneration = async (systemPrompt, userPrompt) => {
   const messages = [
     { role: "system", content: systemPrompt },
@@ -50,9 +42,7 @@ const executeStudyGeneration = async (systemPrompt, userPrompt) => {
   ];
 
   try {
-    console.log("📚 Study generation via DeepSeek (primary)...");
     const raw = await executeOpenRouter(PRIMARY_MODEL, messages, false, false);
-    console.log("✅ DeepSeek generated study content");
     return raw;
   } catch (err) {
     console.warn("⚠️ Primary model failed, falling back to Qwen:", err.message);
@@ -62,8 +52,52 @@ const executeStudyGeneration = async (systemPrompt, userPrompt) => {
       false,
       false,
     );
-    console.log("✅ Qwen generated study content (fallback)");
     return raw;
+  }
+};
+
+/**
+ * Checks if the note content is actually meaningful enough for study material.
+ * Detects gibberish, random keyboard mashing, or extreme brevity.
+ */
+const validateStudyContent = async (noteContent) => {
+  if (!noteContent || noteContent.trim().length < 100) {
+    return {
+      isValid: false,
+      reason: "Note is too short (minimum 100 characters).",
+    };
+  }
+
+  const systemPrompt = `You are a Content Auditor. Your only task is to determine if the provided text contains meaningful, educational information that can be turned into a quiz or flashcards.
+  
+  Reject (isValid: false) if:
+  - The text is gibberish or random keyboard mashing (e.g., "asdfasdf", "hjklhjkl").
+  - The text is just a list of random words with no context.
+  - The text is too shallow or lacks factual substance.
+  
+  Approve (isValid: true) if:
+  - The text explains concepts, facts, stories, or instructions.
+  
+  Return ONLY JSON: { "isValid": boolean, "reason": "short explanation if false" }`;
+
+  try {
+    // Use the faster model for this simple check
+    const raw = await executeOpenRouter(
+      "qwen/qwen3.5-flash-02-23",
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Audit this text:\n\n${noteContent.slice(0, 1000)}` },
+      ],
+      false,
+      false,
+      100 // Set maxTokens to 100 for the audit
+    );
+
+    const result = safeParseStudyJson(raw, "content-audit");
+    return result;
+  } catch (err) {
+    console.error("❌ Content audit failed, bypassing:", err.message);
+    return { isValid: true }; // Bypass on error to avoid blocking the user
   }
 };
 
@@ -110,6 +144,12 @@ export const generateFlashcardsFromNote = async (
   noteContent,
   { count = 12, chatHistory = [], modelStyle = "deepseek" } = {},
 ) => {
+  // 1. Semantic Validation
+  const audit = await validateStudyContent(noteContent);
+  if (audit.isValid === false) {
+    throw new Error(audit.reason || "Content is not suitable for flashcards.");
+  }
+
   const personality =
     QUIZ_PERSONALITIES[modelStyle] ?? QUIZ_PERSONALITIES.deepseek;
 
@@ -155,6 +195,12 @@ export const generateQuizFromNote = async (
     modelStyle = "deepseek",
   } = {},
 ) => {
+  // 1. Semantic Validation
+  const audit = await validateStudyContent(noteContent);
+  if (audit.isValid === false) {
+    throw new Error(audit.reason || "Content is not suitable for a quiz.");
+  }
+
   const personality =
     QUIZ_PERSONALITIES[modelStyle] ?? QUIZ_PERSONALITIES.deepseek;
 

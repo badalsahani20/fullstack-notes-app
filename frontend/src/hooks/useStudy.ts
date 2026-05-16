@@ -72,7 +72,7 @@ export const useStudy = (noteId: string, chatHistory: ChatHistoryMessage[]) => {
     count = 12,
     modelStyle: ModelStyle = "deepseek"
   ) => {
-    if (isNew) return toast.error("Save the note before generating flashcards.");
+    if (isNew) return toast.error("Save your note first to unlock Iris's study tools!");
     setIsGeneratingCards(true);
     try {
       const res = await api.post(`/study/${noteId}/flashcards/generate`, {
@@ -132,7 +132,7 @@ export const useStudy = (noteId: string, chatHistory: ChatHistoryMessage[]) => {
     types: QuizType[] = ["mcq", "true_false", "short_answer"],
     modelStyle: ModelStyle = "deepseek"
   ) => {
-    if (isNew) return toast.error("Save the note before generating a quiz.");
+    if (isNew) return toast.error("Start typing to unlock quizzes and flashcards.");
     setIsGeneratingQuiz(true);
     try {
       const res = await api.post(`/study/${noteId}/quiz/generate`, {

@@ -237,7 +237,7 @@ const QuizSession = ({
       <div className="study-empty">
         <Loader2 size={28} className="animate-spin text-[var(--study-accent)] mb-1" />
         <p className="study-empty-title">Generating quiz…</p>
-        <p className="study-empty-desc">DeepSeek is crafting questions from your note.</p>
+        <p className="study-empty-desc">Iris is crafting questions from your note.</p>
         <div className="study-skeleton w-full mt-2" style={{ height: "8rem" }} />
         <div className="study-skeleton w-full" style={{ height: "2.4rem" }} />
         <div className="study-skeleton w-full" style={{ height: "2.4rem" }} />

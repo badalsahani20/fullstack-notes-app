@@ -47,6 +47,7 @@ export const executeOpenRouter = async (
   messages,
   stream = false,
   includeReasoning = true,
+  maxTokens = 5000,
 ) => {
   const isQwenModel = modelId.toLowerCase().includes("qwen");
   const apiKey =
@@ -60,7 +61,7 @@ export const executeOpenRouter = async (
     model: modelId,
     messages: messages,
     stream: stream,
-    max_tokens: 5000,
+    max_tokens: maxTokens,
   };
 
   // OpenRouter can emit reasoning by default for thinking models. Qwen is the
