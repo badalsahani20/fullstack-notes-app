@@ -1,5 +1,5 @@
 import "katex/dist/katex.min.css";
-import { ChevronRight, FileText, Search, Globe, Check } from "lucide-react";
+import { ChevronRight, FileText, Search, Globe, Check, Copy } from "lucide-react";
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
@@ -111,6 +111,19 @@ export const GlobalChatMessages = ({
   fullWidthAssistant = false,
   useReasoning = true,
 }: GlobalChatMessagesProps) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).catch((err) => {
+      console.error("Failed to copy text:", err);
+    });
+    setCopiedId(id);
+    setTimeout(() => {
+      setCopiedId(null);
+    }, 2000);
+  };
+
   return (
     <div className={`gc-messages custom-scrollbar${fullWidthAssistant ? " gc-messages-fullwidth-assistant" : ""}`}>
       {messagesLoading ? (
@@ -182,12 +195,29 @@ export const GlobalChatMessages = ({
                         />
                       </div>
 
+                      {/* Copy response button once generation completes */}
+                      {!(isActiveStream && isStreaming) && (
+                        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-white/5 text-white/40">
+                          <button
+                            onClick={() => handleCopy(displayText, msg.id)}
+                            className="p-1 rounded-md hover:bg-white/5 hover:text-white transition-colors flex items-center justify-center"
+                            title="Copy response"
+                          >
+                            {copiedId === msg.id ? (
+                              <Check size={14} className="text-emerald-500" />
+                            ) : (
+                              <Copy size={14} />
+                            )}
+                          </button>
+                        </div>
+                      )}
+
                       {isActiveStream && isStreaming && <span className="gc-cursor" />}
                     </div>
                   )}
                 </>
               ) : (
-                <div className="gc-msg-bubble gc-msg-bubble-user">
+                <div className="gc-msg-bubble gc-msg-bubble-user group relative">
                   {msg.imageUrl && (
                     <a
                       href={msg.imageUrl}
@@ -199,6 +229,23 @@ export const GlobalChatMessages = ({
                     </a>
                   )}
                   {msg.text && <div>{msg.text}</div>}
+
+                  {/* Hover Copy Button */}
+                  {msg.text && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute -bottom-2 -right-2 flex items-center bg-[#181818] border border-white/10 shadow-xl p-0.5 rounded-md z-10 cursor-pointer">
+                      <button
+                        onClick={() => handleCopy(msg.text, msg.id)}
+                        className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white transition-colors flex items-center justify-center"
+                        title="Copy prompt"
+                      >
+                        {copiedId === msg.id ? (
+                          <Check size={14} className="text-emerald-500" />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
