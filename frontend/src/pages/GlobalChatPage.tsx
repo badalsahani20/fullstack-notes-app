@@ -17,6 +17,7 @@ const GlobalChatPage = () => {
     isSending, attachedImage, imageDisabled,
     fetchSessions, loadSession, startNewChat, sendMessage, setAttachedImage,
     useReasoning, setUseReasoning,
+    useWebSearch, setUseWebSearch,
   } = useGlobalChatStore();
 
   const [input, setInput] = useState("");
@@ -96,7 +97,7 @@ const GlobalChatPage = () => {
           </div>
           <div>
             <p className="gc-header-name">Iris</p>
-            <p className="gc-header-sub">AI Learning Assistant</p>
+            <p className="gc-header-sub">Your AI Study Partner</p>
           </div>
         </div>
 
@@ -125,6 +126,8 @@ const GlobalChatPage = () => {
           fileRef={fileRef}
           useReasoning={useReasoning}
           setUseReasoning={setUseReasoning}
+          useWebSearch={useWebSearch}
+          setUseWebSearch={setUseWebSearch}
         />
       </div>
     </div>

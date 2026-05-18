@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { X, ImageIcon, Square, ArrowUp, Plus, FileText, Lightbulb } from "lucide-react";
+import { X, ImageIcon, Square, ArrowUp, Plus, FileText, Lightbulb, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 interface GlobalChatComposeProps {
@@ -20,6 +20,8 @@ interface GlobalChatComposeProps {
   disclaimerText?: string;
   useReasoning?: boolean;
   setUseReasoning?: (val: boolean) => void;
+  useWebSearch?: boolean;
+  setUseWebSearch?: (val: boolean) => void;
 }
 
 export const GlobalChatCompose = ({
@@ -38,6 +40,8 @@ export const GlobalChatCompose = ({
   disclaimerText = "Iris can make mistakes. Double-check important info.",
   useReasoning = true,
   setUseReasoning,
+  useWebSearch = false,
+  setUseWebSearch,
 }: GlobalChatComposeProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [fileAccept, setFileAccept] = useState("image/*,.pdf");
@@ -216,6 +220,26 @@ export const GlobalChatCompose = ({
                     </span>
                   </button>
                 )}
+
+                {setUseWebSearch && (
+                  <button
+                    type="button"
+                    className="gc-attach-option"
+                    onClick={() => {
+                      setUseWebSearch(!useWebSearch);
+                      setIsMenuOpen(false);
+                    }}
+                    title={useWebSearch ? "Turn off web search" : "Turn on web search"}
+                  >
+                    <span className="gc-attach-option-icon" style={{ color: useWebSearch ? "var(--primary-color)" : "inherit" }}>
+                      <Globe size={16} />
+                    </span>
+                    <span className="gc-attach-option-copy">
+                      <span>Web Search</span>
+                      <small>{useWebSearch ? "Active (Live data)" : "Off (Faster)"}</small>
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -244,11 +268,18 @@ export const GlobalChatCompose = ({
             }}
           />
 
-          {useReasoning && (
-            <div className="gc-reasoning-status" title="Thinking is active" style={{ color: "var(--primary-color)", opacity: 0.8, display: "flex", alignItems: "center", marginRight: "6px" }}>
-              <Lightbulb size={14} />
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 mr-2" style={{ marginBottom: "9px" }}>
+            {useWebSearch && (
+              <div className="gc-reasoning-status" title="Web Search is active" style={{ color: "var(--primary-color)", opacity: 0.8, display: "flex", alignItems: "center" }}>
+                <Globe size={14} />
+              </div>
+            )}
+            {useReasoning && (
+              <div className="gc-reasoning-status" title="Thinking is active" style={{ color: "var(--primary-color)", opacity: 0.8, display: "flex", alignItems: "center" }}>
+                <Lightbulb size={14} />
+              </div>
+            )}
+          </div>
 
           {isSending ? (
             <button

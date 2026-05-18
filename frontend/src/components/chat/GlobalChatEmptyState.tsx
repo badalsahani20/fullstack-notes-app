@@ -1,81 +1,19 @@
-import { useEffect, useRef, useState } from "react";
-import { FileImage, Globe, Network, Sparkles } from "lucide-react";
+import { useAuthStore } from "@/store/useAuthStore";
 
-const FEATURE_ITEMS = [
-  { icon: Globe, label: "Live web" },
-  { icon: FileImage, label: "Images and PDFs" },
-  { icon: Network, label: "Diagrams" },
-];
-
-const MarqueeRow = ({
-  prompts,
-  direction = "left",
-  onChipClick,
-}: {
-  prompts: string[];
-  direction?: "left" | "right";
-  onChipClick: (text: string) => void;
-}) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isPaused, setIsPaused] = useState(false);
-  const speed = direction === "left" ? 0.45 : -0.45;
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || prompts.length === 0) return;
-
-    let animationId = 0;
-
-    const tick = () => {
-      if (!isPaused) {
-        container.scrollLeft += speed;
-        const halfWidth = container.scrollWidth / 2;
-
-        if (direction === "left" && container.scrollLeft >= halfWidth) {
-          container.scrollLeft = 0;
-        }
-
-        if (direction === "right" && container.scrollLeft <= 0) {
-          container.scrollLeft = halfWidth;
-        }
-      }
-
-      animationId = requestAnimationFrame(tick);
-    };
-
-    if (direction === "right") {
-      container.scrollLeft = container.scrollWidth / 2;
-    }
-
-    animationId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animationId);
-  }, [direction, isPaused, prompts.length, speed]);
-
-  if (prompts.length === 0) return null;
-
-  return (
-    <div
-      ref={containerRef}
-      className="gc-marquee-container"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onTouchStart={() => setIsPaused(true)}
-      onTouchEnd={() => window.setTimeout(() => setIsPaused(false), 1600)}
-    >
-      <div className="gc-marquee-content">
-        {[...prompts, ...prompts].map((prompt, index) => (
-          <button
-            key={`${prompt}-${index}`}
-            type="button"
-            className="gc-chip"
-            onClick={() => onChipClick(prompt)}
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+const getGreeting = (name: string) => {
+  const hr = new Date().getHours();
+  const commaName = name ? `, ${name}` : "";
+  
+  if (hr >= 5 && hr < 12) {
+    return `What are we learning today${commaName}?`;
+  }
+  if (hr >= 12 && hr < 17) {
+    return `Turn confusion into clarity${name ? `, ${name}` : ""}.`;
+  }
+  if (hr >= 17 && hr < 22) {
+    return `Let's build your understanding${name ? `, ${name}` : ""}.`;
+  }
+  return `Ready to study smarter tonight${commaName}?`;
 };
 
 export const GlobalChatEmptyState = ({
@@ -85,39 +23,48 @@ export const GlobalChatEmptyState = ({
   onChipClick: (text: string) => void;
   prompts: { students: string[]; devs: string[] };
 }) => {
-  const studentPrompts = (prompts.students ?? []).slice(0, 8);
-  const devPrompts = (prompts.devs ?? []).slice(0, 8);
+  const { user } = useAuthStore();
+  const firstName = user?.name ? user.name.split(" ")[0] : "";
+  const greeting = getGreeting(firstName);
+
+  const studentList = prompts?.students?.length ? prompts.students : ["Quick crash course on any subject", "Help me improve my writing clarity"];
+  const devList = prompts?.devs?.length ? prompts.devs : ["Break down a complex concept", "How does authentication actually work?"];
+
+  // Take prime actionable prompts to display statically
+  const promptCards = [
+    { text: studentList[0], category: "🎓 Study & Learn" },
+    { text: studentList[1] || studentList[0], category: "📝 Writing & Prep" },
+    { text: devList[0], category: "💡 Solve & Explain" },
+    { text: devList[1] || devList[0], category: "💻 Code & Build" },
+  ];
 
   return (
-    <div className="gc-empty">
-      <div className="gc-empty-orb ai-rail-button ai-rail-button-active" aria-hidden="true">
-        <div className="iris-orb iris-orb-lg" />
-      </div>
-
+    <div className="gc-empty select-none">
       <div className="gc-empty-copy">
-        <h2 className="gc-empty-title">Ask Iris anything</h2>
-        <p className="gc-empty-sub">
-          Explore ideas, debug code, summarize sources, or turn messy notes into something usable.
-        </p>
+        <h2 className="gc-empty-title flex items-center justify-center gap-3 font-semibold text-3xl md:text-4xl tracking-tight select-none">
+          <div className="iris-logo-inline flex items-center justify-center" style={{ width: "2.4rem", height: "2.4rem" }}>
+            <div className="iris-orb" style={{ width: "2rem", height: "2rem" }} />
+          </div>
+          <span>{greeting}</span>
+        </h2>
       </div>
 
-      <div className="gc-feature-strip" aria-label="Iris capabilities">
-        {FEATURE_ITEMS.map(({ icon: Icon, label }) => (
-          <span key={label} className="gc-feature-pill">
-            <Icon size={14} />
-            {label}
-          </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-[46rem] mt-6 px-4">
+        {promptCards.map((card) => (
+          <button
+            key={card.text}
+            type="button"
+            className="flex flex-col items-start text-left p-4 rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.035)] hover:bg-[rgba(255,255,255,0.065)] hover:border-[rgba(255,255,255,0.14)] transition-all duration-200"
+            onClick={() => onChipClick(card.text)}
+          >
+            <span className="text-[10px] uppercase tracking-wider text-[var(--primary-color)] opacity-85 mb-1.5 font-bold">
+              {card.category}
+            </span>
+            <span className="text-[0.875rem] text-[var(--text-strong)] opacity-95 font-medium leading-relaxed">
+              {card.text}
+            </span>
+          </button>
         ))}
-      </div>
-
-      <div className="gc-marquee-wrapper">
-        <MarqueeRow prompts={studentPrompts} onChipClick={onChipClick} />
-        <MarqueeRow prompts={devPrompts} direction="right" onChipClick={onChipClick} />
-      </div>
-
-      <div className="gc-empty-footer">
-        <Sparkles size={13} />
-        <span>Iris keeps the workspace quiet until you ask.</span>
       </div>
     </div>
   );

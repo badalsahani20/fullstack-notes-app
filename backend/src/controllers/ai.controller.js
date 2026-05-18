@@ -88,7 +88,7 @@ const mightNeedWeb = (msg) => {
   const lower = msg.toLowerCase();
   return (
     /https?:\/\/[^\s]+/.test(msg) || // ✅ matches actual URLs
-    /\b(search|google|look up|find online|browse|web|internet|website|article|link|url)\b/.test(lower) || // ✅ explicit search intents
+    /\b(search(?:ing|es|ed)?|google|look up|find online|browse|web|internet|website|article|link|url)\b/.test(lower) || // ✅ explicit search intents
     /\b(latest|recent|new|news|now|current|today|release|update|version|stock|price|rate|conversion|weather)\b/.test(lower) || // Timely keywords
     /\b(api|documentation|lib|package|framework|how to install)\b/.test(lower) || // Technical gaps
     /[\$\€]/.test(msg) // Currency triggers
@@ -494,6 +494,20 @@ const streamAiResponse = async (stream, res, noteFetched) => {
         try {
           const data = JSON.parse(payload);
           const choice = data.choices?.[0];
+
+          // Intercept and detect tool calls delta
+          if (choice?.delta?.tool_calls) {
+            for (const tc of choice.delta.tool_calls) {
+              const toolName = tc.function?.name;
+              if (toolName === "openrouter:web_search" || toolName === "openrouter:web_fetch") {
+                const normTool = toolName === "openrouter:web_search" ? "search_web" : "crawl_url";
+                res.write(
+                  `data: ${JSON.stringify({ type: "tool_call", tool: normTool })}\n\n`,
+                );
+              }
+            }
+          }
+
           finalReply +=
             choice?.delta?.content ||
             choice?.message?.content ||
@@ -565,7 +579,7 @@ const persistToDb = async (
 //  Main chat controller 
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, pdfContext ,stream, useReasoning } = req.body;
+  const { message, imageBase64, pdfContext ,stream, useReasoning, enableWeb } = req.body;
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res
@@ -585,51 +599,51 @@ export const chatWithAiController = catchAsync(async (req, res) => {
 
   // 2. Open SSE early so the browser isn't waiting blind
   const isStreaming = !!stream;
-  if (isStreaming) openSseConnection(res, activeSessionId);
+  const shouldSearchWeb = enableWeb !== false; // Default to true if not provided
 
-  // 3. Tool detection (web search / URL crawl) — runs before note fetch
-  const { toolContext, toolUsed } = await resolveToolContext(
-    message,
-    res,
-    isStreaming,
-  );
+  if (isStreaming) {
+    openSseConnection(res, activeSessionId);
+    if (shouldSearchWeb && mightNeedWeb(message)) {
+      res.write(
+        `data: ${JSON.stringify({ type: "tool_call", tool: "search_web" })}\n\n`,
+      );
+    }
+  }
 
-  // 4. Note context (skipped when a tool already provided context)
+  // 3. Note context (always fetched when relevant to note context)
   const { noteContext, noteFetched } = await resolveNoteContext(req, {
     ...sessionData,
-    toolUsed,
+    toolUsed: null,
   });
 
-  // 5. Call the AI service
+  // 4. Call the AI service
   let result;
   try {
-    const finalSystemPrompt = `You are Iris, a high-performance Agentic AI Assistant. 
-CRITICAL: You have access to real-time information via the blocks below. Do NOT claim you cannot browse the web. 
+    const finalSystemPrompt = `You are Iris, a high-performance Agentic AI Assistant.
+CRITICAL: You have access to real-time search tools (web_search and web_fetch) to fetch the latest data whenever needed. Speak as if you are browsing live.
 
-INSTRUCTIONS FOR DATA USE:
-1. If you use information from the [WEB SEARCH RESULTS] block, you MUST cite the source (e.g., "[Source: example.com]").
-2. Always include a short "Sources" section at the end of your response with clickable markdown links if external data was used.
-3. If the answer is not in the results, say:
-"I couldn't find this information in the search results."
-Do NOT use prior knowledge.
-4. use rounded values for precise data to avoid floating point errors.
+INSTRUCTIONS FOR DATA USE & CITATIONS:
+1. Whenever you perform a search or fetch to obtain information, you MUST cite the source URLs inline (e.g., "[Source: domain.com](URL)").
+2. Always include a brief "Sources" section at the end of your response with clickable markdown links if external data was used.
+3. If you search the web but cannot find the specific information, explain that clearly. Do NOT make up facts.
+4. Use rounded values for precise numerical data to avoid floating point representation errors.
 
-${toolContext ? `[WEB SEARCH RESULTS / EXTERNAL DATA]:\n${toolContext}\n` : ""}
 ${noteContext ? `[EDITOR CONTEXT / NOTE DATA]:\n${noteContext}\n` : ""}
 
-Use the provided data to answer the user's query accurately.`;
+Use the tools and any provided context to answer the user's query accurately.`;
 
     result = await chatWithAi({
       message,
       history,
       summary: sessionSummary || req.body.summary || "",
       noteContext: noteContext,
-      webContext: toolContext,
+      webContext: "",
       systemPrompt: finalSystemPrompt,
       pdfContext: pdfContext || "",
       imageBase64,
       stream: isStreaming,
       useReasoning: useReasoning !== false,
+      enableWeb: shouldSearchWeb,
     });
   } catch (aiError) {
     console.error("❌ All AI models failed:", aiError.message);

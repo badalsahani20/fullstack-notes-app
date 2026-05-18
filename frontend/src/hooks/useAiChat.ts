@@ -82,6 +82,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [pdfContext, setPdfContext] = useState<string | null>(null);
   const [pdfInjected, setPdfInjected] = useState(false);
   const [useReasoning, setUseReasoning] = useState(false);
+  const [useWebSearch, setUseWebSearch] = useState(false);
 
   const isNew = noteId === "new" || !noteId;
   // Resolve the effective noteId to send to the API — null signals the backend
@@ -408,6 +409,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           pdfContext: pdfInjected ? null : pdfContext,
           stream: true,
           useReasoning,
+          enableWeb: useWebSearch,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -658,5 +660,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     chatHistory,
     useReasoning,
     setUseReasoning,
+    useWebSearch,
+    setUseWebSearch,
   };
 };

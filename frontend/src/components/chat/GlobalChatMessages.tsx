@@ -7,12 +7,6 @@ import { parseIrisResponse } from "@/utils/parseIrisResponse";
 import { useEffect, useState } from "react";
 import { getThinkingState } from "@/utils/getThinkingState";
 
-// ── Tool label map ───────────────────────────────────────────────────────────
-const TOOL_META: Record<string, { icon: React.ReactNode; label: string }> = {
-  get_note_content: { icon: <FileText size={12} />, label: "Read note" },
-  search_web:       { icon: <Search size={12} />,   label: "Searched the web" },
-  crawl_url:        { icon: <Globe size={12} />,    label: "Read webpage" },
-};
 
 // --- Thinking Widget ---
 interface ThinkingWidgetProps {
@@ -149,29 +143,57 @@ export const GlobalChatMessages = ({
                 <>
                   {/* ── Pure waiting state: pill only, no bubble wrapper ── */}
                   {isThinking && !displayText && !thought ? (
-                    <ThinkingWidget isThinking={true} isReasoningOff={!useReasoning} />
+                    toolCalls && toolCalls.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        {toolCalls.map((tc, idx) => {
+                          let label = "Working...";
+                          let icon = <Globe size={14} className="iris-search-indicator-icon" />;
+                          if (tc.tool === "search_web") {
+                            label = "Searching the web...";
+                            icon = <Search size={14} className="iris-search-indicator-icon animate-pulse" />;
+                          } else if (tc.tool === "crawl_url") {
+                            label = "Reading webpage...";
+                            icon = <Globe size={14} className="iris-search-indicator-icon animate-pulse" />;
+                          } else if (tc.tool === "get_note_content") {
+                            label = "Reading note...";
+                            icon = <FileText size={14} className="iris-search-indicator-icon animate-pulse" />;
+                          }
+                          return (
+                            <div key={idx} className="iris-search-indicator-pulse">
+                              {icon}
+                              <span>{label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <ThinkingWidget isThinking={true} isReasoningOff={!useReasoning} />
+                    )
                   ) : (
                     <div className="gc-msg-bubble gc-msg-bubble-ai">
-                      {/* 1. Tool activity chips (Top) */}
+                      {/* 1. Premium completed tool badges (Top) */}
                       {toolCalls && toolCalls.length > 0 && (
-                        <div className="gc-tool-chips">
-                          {toolCalls.map((tc, i) => {
-                            const meta =
-                              TOOL_META[tc.tool] ??
-                              ({ icon: <Globe size={12} />, label: tc.tool } as any);
-                            const isDone = !isThinking || displayText.length > 0;
+                        <div className="flex flex-col gap-1.5 mb-2">
+                          {toolCalls.map((tc, idx) => {
+                            let label = tc.tool;
+                            let icon = <Globe size={12} className="text-emerald-500" />;
+                            if (tc.tool === "search_web") {
+                              label = "Searched the web";
+                              icon = <Search size={12} className="text-emerald-500" />;
+                            } else if (tc.tool === "crawl_url") {
+                              label = "Read webpage";
+                              icon = <Globe size={12} className="text-emerald-500" />;
+                            } else if (tc.tool === "get_note_content") {
+                              label = "Read note";
+                              icon = <FileText size={12} className="text-emerald-500" />;
+                            }
                             return (
-                              <div
-                                key={i}
-                                className={`gc-tool-chip${isDone ? "" : " gc-tool-chip-active"}`}
-                              >
-                                <span className="gc-tool-chip-icon">{meta.icon}</span>
-                                <span>{meta.label}</span>
-                                {isDone && (
-                                  <span className="gc-tool-chip-check">
-                                    <Check size={10} strokeWidth={3} />
-                                  </span>
-                                )}
+                              <div key={idx} className="iris-search-complete-badge">
+                                <Check size={12} className="text-emerald-500" />
+                                <span className="flex items-center gap-1">
+                                  {icon}
+                                  {label}
+                                </span>
                               </div>
                             );
                           })}

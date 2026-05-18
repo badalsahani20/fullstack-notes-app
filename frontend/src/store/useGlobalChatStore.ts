@@ -42,6 +42,7 @@ type GlobalChatStore = {
   attachedImage: string | null;
   imageDisabled: boolean;
   useReasoning: boolean;
+  useWebSearch: boolean;
 
   // Actions
   fetchSessions: () => Promise<void>;
@@ -50,6 +51,7 @@ type GlobalChatStore = {
   sendMessage: (text: string, image?: string | null) => Promise<void>;
   setAttachedImage: (img: string | null) => void;
   setUseReasoning: (val: boolean) => void;
+  setUseWebSearch: (val: boolean) => void;
   reset: () => void;
 };
 
@@ -63,6 +65,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   attachedImage: null,
   imageDisabled: false,
   useReasoning: false, 
+  useWebSearch: false,
 
   fetchSessions: async () => {
     set({ sessionsLoading: true });
@@ -166,6 +169,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
           imageBase64: imageForApi || undefined,
           stream: true,
           useReasoning: get().useReasoning,
+          enableWeb: get().useWebSearch,
         }),
       });
 
@@ -314,6 +318,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
   setAttachedImage: (img) => set({ attachedImage: img }),
   setUseReasoning: (val) => set({ useReasoning: val }),
+  setUseWebSearch: (val) => set({ useWebSearch: val }),
   reset: () => set({
     sessions: [],
     sessionsLoading: false,

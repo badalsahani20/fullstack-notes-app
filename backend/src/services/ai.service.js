@@ -48,6 +48,7 @@ export const executeOpenRouter = async (
   stream = false,
   includeReasoning = false, // Default to false for token safety
   maxTokens = 5000,
+  tools = null,
 ) => {
   const isQwenModel = modelId.toLowerCase().includes("qwen");
   const apiKey =
@@ -64,6 +65,10 @@ export const executeOpenRouter = async (
     max_tokens: maxTokens,
     include_reasoning: includeReasoning, // Top-level flag for many providers
   };
+
+  if (tools) {
+    bodyPayload.tools = tools;
+  }
 
   // OpenRouter can emit reasoning by default for thinking models.
   // Explicitly disable reasoning objects to avoid token burn.
@@ -160,15 +165,33 @@ const executeGemini = async (messages, stream = false) => {
   const systemMessage = messages.find((m) => m.role === "system");
   const systemInstruction = systemMessage ? systemMessage.content : "";
 
-  const geminiModel = systemInstruction
-    ? genAI.getGenerativeModel({
+  let geminiModel;
+  if (systemInstruction) {
+    try {
+      geminiModel = genAI.getGenerativeModel({
         model: "gemini-3.1-flash-lite",
         systemInstruction,
         generationConfig: {
-          thinking_config: { thinking_level: "minimal" }, // Correct nesting
+          thinking_config: { thinking_level: "minimal" },
         },
-      })
-    : model;
+        tools: [{ googleSearch: {} }], // Enable native Google Search Grounding!
+      });
+    } catch (err) {
+      console.warn(
+        "⚠️ Failed to load Gemini with native Google Search, loading standard model:",
+        err.message,
+      );
+      geminiModel = genAI.getGenerativeModel({
+        model: "gemini-3.1-flash-lite",
+        systemInstruction,
+        generationConfig: {
+          thinking_config: { thinking_level: "minimal" },
+        },
+      });
+    }
+  } else {
+    geminiModel = model;
+  }
 
   console.log("🟦 Attempting Gemini (Fast Mode)...");
 
@@ -291,6 +314,8 @@ const getAiReply = async (
   history,
   stream = false,
   useReasoning = false,
+  tools = null,
+  enableWeb = true,
 ) => {
   // Ensure history content is always text-only strings for safety
   const safeHistory = history.map((h) => ({
@@ -341,6 +366,8 @@ const getAiReply = async (
         messages,
         stream,
         shouldReason,
+        5000,
+        tools,
       );
       console.log(`✅ Chat answered by ${activeModel} (Tier 1)`);
       return reply;
@@ -361,11 +388,36 @@ const getAiReply = async (
     }
   }
 
+  // --- FALLBACK TOOL DETECTION & WEB SEARCH (ONLY for Tier 3 - Llama 70B) ---
+  let fallbackWebContext = "";
+  if (enableWeb && mightNeedWeb(message)) {
+    try {
+      console.log(
+        "🔍 Secondary failed or inactive. Executing Fallback Tool Pre-routing (Tavily/Jina)...",
+      );
+      const toolDecision = await detectTools(message);
+      if (toolDecision.tool === "search_web") {
+        const searchResults = await performWebSearch(toolDecision.query);
+        fallbackWebContext = `\n--- FALLBACK WEB SEARCH RESULTS for "${toolDecision.query}" ---\n${searchResults}\n--- END RESULTS ---`;
+      } else if (toolDecision.tool === "crawl_url") {
+        const pageContent = await crawlUrl(toolDecision.query);
+        fallbackWebContext = `\n--- FALLBACK URL CONTENT from ${toolDecision.query} ---\n${pageContent.slice(0, 6000)}\n--- END CONTENT ---`;
+      }
+    } catch (toolError) {
+      console.warn("⚠️ Fallback tool execution failed:", toolError.message);
+    }
+  }
+
+  let updatedSystemPrompt = systemPrompt;
+  if (fallbackWebContext) {
+    updatedSystemPrompt = `${systemPrompt}\n\nIMPORTANT: The following are REAL-TIME FALLBACK WEB SEARCH RESULTS to answer the user's query:\n${fallbackWebContext}`;
+  }
+
   // --- TIER 3: GROQ (TERTIARY FALLBACK) ---
   try {
     console.log("⚡ Attempting Tertiary: GROQ (Llama 70B)...");
     const groqMessages = [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: updatedSystemPrompt },
       ...safeHistory,
       {
         role: "user",
@@ -602,6 +654,7 @@ export const chatWithAi = async ({
   stream = false,
   systemPrompt = "", // Add this to receive custom prompts from controller
   useReasoning = false,
+  enableWeb = true,
 }) => {
   ensureAiApiKey(); // Only requires Gemini or OpenRouter — Groq is a fallback, not a prerequisite
 
@@ -717,6 +770,10 @@ export const chatWithAi = async ({
     .filter(Boolean)
     .join("\n\n");
 
+  const tools = enableWeb
+    ? [{ type: "openrouter:web_search" }, { type: "openrouter:web_fetch" }]
+    : null;
+
   const reply = await getAiReply(
     finalMessage,
     finalImageBase64,
@@ -724,6 +781,8 @@ export const chatWithAi = async ({
     trimmedHistory,
     stream,
     useReasoning,
+    tools,
+    enableWeb,
   );
 
   if (stream) {
@@ -909,17 +968,10 @@ const buildIrisPrompt = ({
 }) => {
   const msg = message.toLowerCase();
 
-  const wantsHelp = /help|demo|features|capabilities|what can you do|formatting|tool/.test(msg);
+  const wantsHelp =
+    /help|demo|features|capabilities|what can you do| what are your capabilites|formatting|tool/.test(msg);
 
   const wantsQuiz = wantsHelp || /quiz|ask me|test me|mcq/.test(msg);
-  const wantsViz =
-    wantsHelp ||
-    isVision ||
-    /diagram|flowchart|chart|graph|formula|equation|visuali/.test(msg) ||
-    hasNote;
-  const wantsWriting =
-    wantsHelp ||
-    /write|draft|essay|article|post|poem|content|text for/.test(msg);
   const wantsTeach =
     wantsHelp ||
     hasNote ||
@@ -927,11 +979,12 @@ const buildIrisPrompt = ({
     hasPdf ||
     /explain|teach|how does|what is|summarize|learn|understand/.test(msg);
 
-  const parts = [P_CORE];
+  // Permanently provide core UI capabilities (Writing blocks, VIZ components) 
+  // so the model can agentically decide when to use them.
+  const parts = [P_CORE, P_WRITING, P_VIZ];
+  
   if (wantsTeach) parts.push(P_TEACHING, P_CLARIFY); // teaching context → clarify is available
-  if (wantsViz) parts.push(P_VIZ);
   if (wantsQuiz) parts.push(P_QUIZ); // explicit quiz request → full quiz format
-  if (wantsWriting) parts.push(P_WRITING);
 
   return parts.join("\n\n");
 };

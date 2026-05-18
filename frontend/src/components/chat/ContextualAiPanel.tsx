@@ -40,6 +40,8 @@ const ContextualAiPanel = ({
     isStreaming,
     useReasoning,
     setUseReasoning,
+    useWebSearch,
+    setUseWebSearch,
   } = aiChat;
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -80,7 +82,7 @@ const ContextualAiPanel = ({
         </div>
         <div className="min-w-0 flex-1">
           <p className="gc-header-name">Iris</p>
-          <p className="gc-header-sub">Note-aware assistant</p>
+          <p className="gc-header-sub">Transforms notes into understanding</p>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -146,6 +148,8 @@ const ContextualAiPanel = ({
         onStop={stopRequest}
         useReasoning={useReasoning}
         setUseReasoning={setUseReasoning}
+        useWebSearch={useWebSearch}
+        setUseWebSearch={setUseWebSearch}
       />
     </aside>
   );
