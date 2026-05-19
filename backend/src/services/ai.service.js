@@ -165,33 +165,13 @@ const executeGemini = async (messages, stream = false) => {
   const systemMessage = messages.find((m) => m.role === "system");
   const systemInstruction = systemMessage ? systemMessage.content : "";
 
-  let geminiModel;
-  if (systemInstruction) {
-    try {
-      geminiModel = genAI.getGenerativeModel({
-        model: "gemini-3.1-flash-lite",
-        systemInstruction,
-        generationConfig: {
-          thinking_config: { thinking_level: "minimal" },
-        },
-        tools: [{ googleSearch: {} }], // Enable native Google Search Grounding!
-      });
-    } catch (err) {
-      console.warn(
-        "⚠️ Failed to load Gemini with native Google Search, loading standard model:",
-        err.message,
-      );
-      geminiModel = genAI.getGenerativeModel({
-        model: "gemini-3.1-flash-lite",
-        systemInstruction,
-        generationConfig: {
-          thinking_config: { thinking_level: "minimal" },
-        },
-      });
-    }
-  } else {
-    geminiModel = model;
-  }
+  const geminiModel = genAI.getGenerativeModel({
+    model: "gemini-3.1-flash-lite",
+    ...(systemInstruction ? { systemInstruction } : {}),
+    generationConfig: {
+      thinking_config: { thinking_level: "minimal" },
+    },
+  });
 
   console.log("🟦 Attempting Gemini (Fast Mode)...");
 

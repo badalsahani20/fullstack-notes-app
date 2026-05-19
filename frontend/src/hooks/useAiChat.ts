@@ -3,7 +3,7 @@ import type { Editor } from "@tiptap/react";
 import type { AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import api from "@/lib/api";
+import api, { requestSessionRefresh } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { parseIrisResponse } from "@/utils/parseIrisResponse";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
@@ -199,21 +199,41 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       if (isDialogAction) {
         // ── Streaming path for dialog actions ───────────────────────────
         const { accessToken } = useAuthStore.getState();
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/assist`, {
+        const fetchBody = JSON.stringify({
+          noteId: effectiveNoteId,
+          action,
+          selectedText: selectedText || undefined,
+          noteText: sourceText,
+          stream: true,
+        });
+
+        let response = await fetch(`${import.meta.env.VITE_API_URL}/ai/assist`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${accessToken}`,
           },
-          body: JSON.stringify({
-            noteId: effectiveNoteId,
-            action,
-            selectedText: selectedText || undefined,
-            noteText: sourceText,
-            stream: true,
-          }),
+          body: fetchBody,
           signal: abortControllerRef.current.signal,
         });
+
+        if (response.status === 401) {
+          try {
+            const newToken = await requestSessionRefresh();
+            response = await fetch(`${import.meta.env.VITE_API_URL}/ai/assist`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${newToken}`,
+              },
+              body: fetchBody,
+              signal: abortControllerRef.current.signal,
+            });
+          } catch (e) {
+            window.location.href = "/login";
+            throw new Error("Session expired. Please log in again.");
+          }
+        }
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
@@ -393,26 +413,46 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       const { history: chatHist, message, noteContext, hasSelection } = buildChatHistory(textToSend);
       const { accessToken } = useAuthStore.getState();
 
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
+      const fetchBody = JSON.stringify({
+        message,
+        history: chatHist,
+        noteId: effectiveNoteId,
+        noteContext,
+        hasSelection,
+        imageBase64: sentImage,
+        pdfContext: pdfInjected ? null : pdfContext,
+        stream: true,
+        useReasoning,
+        enableWeb: useWebSearch,
+      });
+
+      let response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          message,
-          history: chatHist,
-          noteId: effectiveNoteId,
-          noteContext,
-          hasSelection,
-          imageBase64: sentImage,
-          pdfContext: pdfInjected ? null : pdfContext,
-          stream: true,
-          useReasoning,
-          enableWeb: useWebSearch,
-        }),
+        body: fetchBody,
         signal: abortControllerRef.current.signal,
       });
+
+      if (response.status === 401) {
+        try {
+          const newToken = await requestSessionRefresh();
+          response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${newToken}`,
+            },
+            body: fetchBody,
+            signal: abortControllerRef.current.signal,
+          });
+        } catch (e) {
+          window.location.href = "/login";
+          throw new Error("Session expired. Please log in again.");
+        }
+      }
 
       if (!response.ok) throw new Error("Failed to connect to AI");
       if (!response.body) throw new Error("No response body");
