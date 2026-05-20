@@ -2,6 +2,7 @@ import { create } from "zustand";
 import api from "@/lib/api";
 import { parseIrisResponse } from "../utils/parseIrisResponse";
 import { uploadImage } from "@/utils/uploadImage";
+import { SseStreamParser } from "../utils/sseParser";
 
 import type { IrisSegment } from "@/components/ai/types";
 
@@ -119,13 +120,13 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
 
     if (image?.startsWith("data:image/")) {
       const response = await fetch(image);
-      const blob = await response.blob();
+      const blob = await response.blob(); // Convert base64 to Blob
       const file = new File([blob], "chat-image.png", {
         type: blob.type || "image/png",
       });
-      imageForApi = await uploadImage(file);
+      imageForApi = await uploadImage(file);// Upload to get a URL for the API
       imageUrl = imageForApi || undefined;
-    } else if (image?.startsWith("http://") || image?.startsWith("https://")) {
+    } else if (image?.startsWith("http://") || image?.startsWith("https://")) { // Already a URL, can be used directly
       imageUrl = image;
     }
 
@@ -196,7 +197,6 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
       let fullText = "";
       let fullThought = "";
       let lastUpdateTime = 0;
@@ -204,67 +204,62 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
       const startTime = Date.now();
       let thinkingEndTime = 0;
 
+      const parser = new SseStreamParser();
+
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        const events = parser.processChunk(value);
 
-        for (const line of lines) {
-          if (line.startsWith("data: ") && line !== "data: [DONE]") {
-            try {
-              const data = JSON.parse(line.slice(6));
+        for (const data of events) {
+          if (data.type === "error") {
+            throw new Error(data.message || "AI service error");
+          }
 
-              if (data.type === "error") {
-                throw new Error(data.message || "AI service error");
-              }
+          // ── Tool activity event from controller ─────────────────────
+          if (data.type === "tool_call" && data.tool) {
+            set((state) => ({
+              messages: state.messages.map((m) =>
+                m.id === aiMsgId
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
+                  : m
+              ),
+            }));
+            continue;
+          }
+          
+          const delta = data.choices?.[0]?.delta;
+          
+          const content = delta?.content || "";
+          const reasoning = delta?.reasoning || "";
+          
+          if (content && fullText.length === 0) {
+            // First content token arrived — thinking is done
+            thinkingEndTime = Date.now();
+          }
+          
+          fullText += content;
+          fullThought += reasoning;
 
-              // ── Tool activity event from controller ─────────────────────
-              if (data.type === "tool_call" && data.tool) {
-                set((state) => ({
-                  messages: state.messages.map((m) =>
-                    m.id === aiMsgId
-                      ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
-                      : m
-                  ),
-                }));
-                continue;
-              }
-              
-              const delta = data.choices?.[0]?.delta;
-              
-              const content = delta?.content || "";
-              const reasoning = delta?.reasoning || "";
-              
-              if (content && fullText.length === 0) {
-                // First content token arrived — thinking is done
-                thinkingEndTime = Date.now();
-              }
-              
-              fullText += content;
-              fullThought += reasoning;
+          const now = Date.now();
+          if (now - lastUpdateTime > THROTTLE_MS) {
+            const currentThinkingTime = thinkingEndTime 
+              ? Math.floor((thinkingEndTime - startTime) / 1000) 
+              : Math.floor((now - startTime) / 1000);
 
-              const now = Date.now();
-              if (now - lastUpdateTime > THROTTLE_MS) {
-                const currentThinkingTime = thinkingEndTime 
-                  ? Math.floor((thinkingEndTime - startTime) / 1000) 
-                  : Math.floor((now - startTime) / 1000);
-
-                set((state) => ({
-                  messages: state.messages.map((m) =>
-                    m.id === aiMsgId ? { 
-                      ...m, 
-                      text: fullText,
-                      thought: fullThought,
-                      isThinking: fullText.length === 0,
-                      thinkingTime: currentThinkingTime
-                    } : m
-                  ),
-                }));
-                lastUpdateTime = now;
-              }
-            } catch (e) {}
+            set((state) => ({
+              messages: state.messages.map((m) =>
+                m.id === aiMsgId ? { 
+                  ...m, 
+                  text: fullText,
+                  thought: fullThought,
+                  isThinking: fullText.length === 0,
+                  thinkingTime: currentThinkingTime
+                } : m
+              ),
+            }));
+            lastUpdateTime = now;
           }
         }
       }

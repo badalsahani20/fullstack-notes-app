@@ -10,6 +10,7 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
+import { sanitizeStream } from "@/utils/streamSanitizer";
 
 const markdownComponents = {
   code({ className, children, ...props }: any) {
@@ -112,7 +113,7 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
                 rehypePlugins={[rehypeKatex]}
                 components={markdownComponents}
                >
-                 {result.suggestion}
+                 {sanitizeStream(result.suggestion)}
                </ReactMarkdown>
                {result.isStreaming && (
                  <span className="gc-cursor" aria-hidden="true" />

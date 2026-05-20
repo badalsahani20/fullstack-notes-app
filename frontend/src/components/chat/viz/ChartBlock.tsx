@@ -47,11 +47,12 @@ const looksLikePlaceholderChart = (raw: string) => {
   );
 };
 
-// 🔐 Safe JSON parsing (handles LLM weirdness)
+// 🔐 Safe JSON parsing (handles LLM weirdness + Chart.js native format)
 const safeParse = (raw: string): ChartData | null => {
   try {
     let cleaned = raw
-      .replace(/```json|```/gi, "")
+      .replace(/```(?:json|chart|comparison)\s*\n?/gi, "")
+      .replace(/```/g, "")
       .trim();
 
     // Extract ONLY the JSON part (from first '{' to last '}')
@@ -67,7 +68,6 @@ const safeParse = (raw: string): ChartData | null => {
     const obj = JSON.parse(cleaned);
 
     if (!obj || typeof obj !== "object") return null;
-    if (!Array.isArray(obj.labels) || !Array.isArray(obj.datasets)) return null;
 
     if (
       Object.prototype.hasOwnProperty.call(obj, "__proto__") ||
@@ -76,7 +76,35 @@ const safeParse = (raw: string): ChartData | null => {
       return null;
     }
 
-    return obj as ChartData;
+    // ── Normalize: support both flat format AND Chart.js native format ──
+    // Flat format:     { chartType, labels, datasets }
+    // Chart.js format: { type, data: { labels, datasets }, options }
+    let labels: string[] | undefined;
+    let datasets: ChartData["datasets"] | undefined;
+    let chartType: ChartData["chartType"] | undefined;
+
+    if (Array.isArray(obj.labels) && Array.isArray(obj.datasets)) {
+      // Flat format (our preferred)
+      labels = obj.labels;
+      datasets = obj.datasets;
+      chartType = obj.chartType;
+    } else if (obj.data && typeof obj.data === "object" && Array.isArray(obj.data.labels) && Array.isArray(obj.data.datasets)) {
+      // Chart.js native format: { type, data: { labels, datasets } }
+      labels = obj.data.labels;
+      datasets = obj.data.datasets;
+      chartType = obj.type || obj.chartType;
+    }
+
+    if (!labels || !datasets) return null;
+
+    // Normalize chartType string
+    const validTypes = ["bar", "line", "pie", "doughnut"] as const;
+    const normalizedType = String(chartType || "bar").toLowerCase().trim();
+    const resolvedType = validTypes.includes(normalizedType as any)
+      ? (normalizedType as ChartData["chartType"])
+      : "bar";
+
+    return { chartType: resolvedType, labels, datasets };
   } catch (err) {
     console.error("Chart JSON Parse Error:", err);
     return null;

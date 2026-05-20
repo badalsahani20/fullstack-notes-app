@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import api, { requestSessionRefresh } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { parseIrisResponse } from "@/utils/parseIrisResponse";
+import { SseStreamParser } from "@/utils/sseParser";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
@@ -262,7 +263,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         } else {
           // ── Live SSE stream path ─────────────────────────────────────────
           const reader = response.body.getReader();
-          const decoder = new TextDecoder();
+          const parser = new SseStreamParser();
           let fullSuggestion = "";
           let dialogOpened = false;
 
@@ -270,36 +271,29 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
             const { value, done } = await reader.read();
             if (done) break;
 
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n");
+            const events = parser.processChunk(value);
 
-            for (const line of lines) {
-              if (line.startsWith("data: ") && line !== "data: [DONE]") {
-                try {
-                  const data = JSON.parse(line.slice(6));
-
-                  if (data.type === "error" || data.error) {
-                    throw new Error(data.message || data.error?.message || "AI service error");
-                  }
-
-                  const token = data.choices?.[0]?.delta?.content || "";
-                  if (!token) continue;
-                  fullSuggestion += token;
-
-                  if (!dialogOpened) {
-                    setSelectionRange(targetRange);
-                    dialogOpened = true;
-                  }
-
-                  setResult({
-                    action,
-                    suggestion: fullSuggestion,
-                    errors: [],
-                    sourceType: selectedText ? "selection" : "note",
-                    isStreaming: true,
-                  });
-                } catch { }
+            for (const data of events) {
+              if (data.type === "error" || data.error) {
+                throw new Error(data.message || data.error?.message || "AI service error");
               }
+
+              const token = data.choices?.[0]?.delta?.content || "";
+              if (!token) continue;
+              fullSuggestion += token;
+
+              if (!dialogOpened) {
+                setSelectionRange(targetRange);
+                dialogOpened = true;
+              }
+
+              setResult({
+                action,
+                suggestion: fullSuggestion,
+                errors: [],
+                sourceType: selectedText ? "selection" : "note",
+                isStreaming: true,
+              });
             }
           }
 
@@ -458,7 +452,6 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       if (!response.body) throw new Error("No response body");
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
       let fullText = "";
       let fullThought = "";
       let lastUpdateTime = 0;
@@ -482,71 +475,65 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       setStreamedMessageText("");
       setIsStreaming(true);
 
+      const parser = new SseStreamParser();
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
+        const events = parser.processChunk(value);
 
-        for (const line of lines) {
-          if (line.startsWith("data: ") && line !== "data: [DONE]") {
-            try {
-              const data = JSON.parse(line.slice(6));
+        for (const data of events) {
+          if (data.type === "error") {
+            throw new Error(data.message || "AI service error");
+          }
 
-              if (data.type === "error") {
-                throw new Error(data.message || "AI service error");
-              }
+          // ── Tool activity event from controller ─────────────────────
+          if (data.type === "tool_call" && data.tool) {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMsgId
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
+                  : m
+              )
+            );
+            continue;
+          }
 
-              // ── Tool activity event from controller ─────────────────────
-              if (data.type === "tool_call" && data.tool) {
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === aiMsgId
-                      ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
-                      : m
-                  )
-                );
-                continue;
-              }
+          // ── Metadata event (for persisting extracted PDF context) ────
+          if (data.type === "metadata" && data.pdfContext) {
+            setPdfContext(data.pdfContext);
+            continue;
+          }
 
-              // ── Metadata event (for persisting extracted PDF context) ────
-              if (data.type === "metadata" && data.pdfContext) {
-                setPdfContext(data.pdfContext);
-                continue;
-              }
+          // ── Regular text & reasoning tokens ────────────────────────────────
+          const content = data.choices?.[0]?.delta?.content || "";
+          const reasoning = data.choices?.[0]?.delta?.reasoning || "";
 
-              // ── Regular text & reasoning tokens ────────────────────────────────
-              const content = data.choices?.[0]?.delta?.content || "";
-              const reasoning = data.choices?.[0]?.delta?.reasoning || "";
+          if (!content && !reasoning) continue;
 
-              if (!content && !reasoning) continue;
+          if (content && fullText.length === 0) {
+            // First content token arrived — thinking is done
+            thinkingEndTime = Date.now();
+          }
 
-              if (content && fullText.length === 0) {
-                // First content token arrived — thinking is done
-                thinkingEndTime = Date.now();
-              }
+          fullText += content;
+          fullThought += reasoning;
 
-              fullText += content;
-              fullThought += reasoning;
+          const now = Date.now();
+          if (now - lastUpdateTime > THROTTLE_MS) {
+            const currentThinkingTime = thinkingEndTime
+              ? Math.floor((thinkingEndTime - streamStartTime) / 1000)
+              : Math.floor((now - streamStartTime) / 1000);
 
-              const now = Date.now();
-              if (now - lastUpdateTime > THROTTLE_MS) {
-                const currentThinkingTime = thinkingEndTime
-                  ? Math.floor((thinkingEndTime - streamStartTime) / 1000)
-                  : Math.floor((now - streamStartTime) / 1000);
-
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === aiMsgId
-                      ? { ...m, isThinking: fullText.length === 0, thought: fullThought, thinkingTime: currentThinkingTime }
-                      : m
-                  )
-                );
-                setStreamedMessageText(fullText);
-                lastUpdateTime = now;
-              }
-            } catch { }
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === aiMsgId
+                  ? { ...m, isThinking: fullText.length === 0, thought: fullThought, thinkingTime: currentThinkingTime }
+                  : m
+              )
+            );
+            setStreamedMessageText(fullText);
+            lastUpdateTime = now;
           }
         }
       }

@@ -17,6 +17,7 @@ import GlobalChatSession from "../models/globalChatSession.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
 import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 import getEffectiveDailyLimit from "../utils/getEffectiveDailyLimit.js";
+import { SseStreamParser } from "../utils/sseParser.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
@@ -218,7 +219,8 @@ export const aiAssistController = catchAsync(async (req, res) => {
     res.setHeader("Connection", "keep-alive");
 
     let finalSuggestion = "";
-    const decoder = new TextDecoder();
+    const parser = new SseStreamParser();
+    const responseDecoder = new TextDecoder();
 
     try {
       for await (const chunk of result) {
@@ -230,32 +232,21 @@ export const aiAssistController = catchAsync(async (req, res) => {
           res.write(
             `data: ${JSON.stringify({ choices: [{ delta: { content: chunkText } }] })}\n\n`,
           );
-        } else {
-          // OpenRouter Path
-          chunkText = decoder.decode(chunk);
-          res.write(chunkText);
-        }
-
-        // Accumulate clean text for caching
-        if (typeof chunk.text === "function") {
           finalSuggestion += chunkText;
         } else {
-          const lines = chunkText.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ") && line !== "data: [DONE]") {
-              try {
-                const data = JSON.parse(line.slice(6));
-                
-                if (data.type === "error" || data.error) {
-                  const errorMsg = data.message || data.error?.message || "AI model error";
-                  throw new Error(errorMsg);
-                }
+          // OpenRouter Path
+          const rawChunkText = responseDecoder.decode(chunk, { stream: true });
+          res.write(rawChunkText);
 
-                finalSuggestion += data.choices?.[0]?.delta?.content || "";
-              } catch (e) {
-                if (e.message) throw e;
-              }
+          // Use parser to safely reconstruct fragmented lines for backend caching
+          const events = parser.processChunk(chunk);
+          for (const data of events) {
+            if (data.type === "error" || data.error) {
+              const errorMsg = data.message || data.error?.message || "AI model error";
+              throw new Error(errorMsg);
             }
+
+            finalSuggestion += data.choices?.[0]?.delta?.content || "";
           }
         }
       }
@@ -470,7 +461,7 @@ const openSseConnection = (res, activeSessionId) => {
 const streamAiResponse = async (stream, res, noteFetched) => {
   const decoder = new TextDecoder();
   let finalReply = "";
-  let buffer = "";
+  const parser = new SseStreamParser();
 
   if (noteFetched) {
     res.write(
@@ -482,42 +473,30 @@ const streamAiResponse = async (stream, res, noteFetched) => {
     const text = decoder.decode(chunk, { stream: true });
     res.write(text);
 
-    buffer += text;
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
+    const events = parser.processChunk(chunk);
 
-    for (const line of lines) {
-      if (line.startsWith("data: ")) {
-        const payload = line.slice(6).trim();
-        if (!payload || payload === "[DONE]") continue;
+    for (const data of events) {
+      const choice = data.choices?.[0];
 
-        try {
-          const data = JSON.parse(payload);
-          const choice = data.choices?.[0];
-
-          // Intercept and detect tool calls delta
-          if (choice?.delta?.tool_calls) {
-            for (const tc of choice.delta.tool_calls) {
-              const toolName = tc.function?.name;
-              if (toolName === "openrouter:web_search" || toolName === "openrouter:web_fetch") {
-                const normTool = toolName === "openrouter:web_search" ? "search_web" : "crawl_url";
-                res.write(
-                  `data: ${JSON.stringify({ type: "tool_call", tool: normTool })}\n\n`,
-                );
-              }
-            }
+      // Intercept and detect tool calls delta
+      if (choice?.delta?.tool_calls) {
+        for (const tc of choice.delta.tool_calls) {
+          const toolName = tc.function?.name;
+          if (toolName === "openrouter:web_search" || toolName === "openrouter:web_fetch") {
+            const normTool = toolName === "openrouter:web_search" ? "search_web" : "crawl_url";
+            res.write(
+              `data: ${JSON.stringify({ type: "tool_call", tool: normTool })}\n\n`,
+            );
           }
-
-          finalReply +=
-            choice?.delta?.content ||
-            choice?.message?.content ||
-            data.content ||
-            data.text ||
-            "";
-        } catch {
-          /* partial JSON or [DONE] */
         }
       }
+
+      finalReply +=
+        choice?.delta?.content ||
+        choice?.message?.content ||
+        data.content ||
+        data.text ||
+        "";
     }
   }
 

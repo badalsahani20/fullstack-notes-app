@@ -9,6 +9,7 @@ import MarkdownWritingBlock from "./MarkdownWritingBlock";
 import IrisVisualBlock from "./IrisVisualBlock";
 import IrisAskBlock from "./IrisAskBlock";
 import type { IrisSegment } from "@/store/useGlobalChatStore";
+import { sanitizeStream } from "@/utils/streamSanitizer";
 
 // 🔒 Stable markdown components (outside component)
 const markdownComponents = {
@@ -106,6 +107,7 @@ interface MarkdownProps {
 }
 
 const MemoizedMarkdown = React.memo(({ content }: MarkdownProps) => {
+  const sanitized = sanitizeStream(content);
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath]}
@@ -113,7 +115,7 @@ const MemoizedMarkdown = React.memo(({ content }: MarkdownProps) => {
       components={markdownComponents}
       skipHtml
     >
-      {content}
+      {sanitized}
     </ReactMarkdown>
   );
 });
