@@ -1,4 +1,5 @@
 import React, { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { Extension } from "@tiptap/core";
 import { DOMParser } from "prosemirror-model";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
@@ -21,17 +22,7 @@ import { TaskList } from "@tiptap/extension-task-list";
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Color } from "@tiptap/extension-color";
-
-// Patterns that indicate the content is a DOCUMENT, not code
-const DOCUMENT_PATTERNS = [
-  /^#{1,6}\s/m,           // Markdown headings (# ## ### etc.)
-  /^\s*[-*+]\s/m,         // Bullet points
-  /^\s*\d+\.\s/m,         // Numbered lists
-  /^\|.+\|/m,             // Table rows
-  /^\s*>/m,               // Blockquotes
-  /^\s*- \[[ x]\]/m,      // Task lists
-  /^---+$/m,              // Horizontal rules
-];
+import { DOCUMENT_PATTERNS, markdownToHtml } from "@/utils/markdownToHtml";
 
 const CODE_MARKERS = [
   /[{};]\s*\n/,
@@ -47,164 +38,6 @@ const looksLikeCodeSnippet = (text: string) => {
   if (DOCUMENT_PATTERNS.some((p) => p.test(text))) return false; // Likely a document with a stray code word
   return matchCount >= 1;
 };
-
-/** Lightweight Markdown → HTML converter for paste handling */
-const markdownToHtml = (md: string): string => {
-  const lines = md.replace(/\r\n/g, "\n").split("\n");
-  const out: string[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Horizontal rule
-    if (/^---+$/.test(line.trim())) {
-      out.push("<hr>");
-      i++;
-      continue;
-    }
-
-    // Headings
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      out.push(`<h${level}>${inlineFormat(headingMatch[2])}</h${level}>`);
-      i++;
-      continue;
-    }
-
-    // Table: detect header row followed by separator
-    if (
-      i + 1 < lines.length &&
-      line.includes("|") &&
-      /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$/.test(lines[i + 1].trim())
-    ) {
-      const tableHtml: string[] = ["<table>"];
-
-      // Header
-      const headers = parseTableRow(line);
-      tableHtml.push("<tr>");
-      headers.forEach((h) => tableHtml.push(`<th>${inlineFormat(h)}</th>`));
-      tableHtml.push("</tr>");
-      i += 2; // skip header + separator
-
-      // Body rows
-      while (i < lines.length && lines[i].includes("|") && lines[i].trim() !== "") {
-        const cells = parseTableRow(lines[i]);
-        tableHtml.push("<tr>");
-        cells.forEach((c) => tableHtml.push(`<td>${inlineFormat(c)}</td>`));
-        tableHtml.push("</tr>");
-        i++;
-      }
-
-      tableHtml.push("</table>");
-      out.push(tableHtml.join(""));
-      continue;
-    }
-
-    // Tab-separated table detection
-    if (line.includes("\t")) {
-      const tabsCount = line.split("\t").length - 1;
-      if (tabsCount > 0) {
-        let isTabTable = false;
-        let j = i + 1;
-        // Require at least one consecutive row with the exact same number of tabs to confirm it's a table
-        while (j < lines.length && lines[j].includes("\t") && lines[j].split("\t").length - 1 === tabsCount) {
-          isTabTable = true;
-          j++;
-        }
-
-        if (isTabTable) {
-          const tableHtml: string[] = ["<table>"];
-          // Optional Header vs Body inference: usually we just assume first row is header
-          const headers = lines[i].split("\t").map((c) => c.trim());
-          tableHtml.push("<tr>");
-          headers.forEach((h) => tableHtml.push(`<th>${inlineFormat(h)}</th>`));
-          tableHtml.push("</tr>");
-          i++;
-
-          // Body rows
-          while (i < j) {
-            const cells = lines[i].split("\t").map((c) => c.trim());
-            tableHtml.push("<tr>");
-            cells.forEach((c) => tableHtml.push(`<td>${inlineFormat(c)}</td>`));
-            tableHtml.push("</tr>");
-            i++;
-          }
-
-          tableHtml.push("</table>");
-          out.push(tableHtml.join(""));
-          continue;
-        }
-      }
-    }
-
-    // Blockquote
-    if (line.match(/^\s*>\s?/)) {
-      const content = line.replace(/^\s*>\s?/, "");
-      out.push(`<blockquote><p>${inlineFormat(content)}</p></blockquote>`);
-      i++;
-      continue;
-    }
-
-    // Unordered list item
-    if (line.match(/^\s*[-*+]\s/)) {
-      const listItems: string[] = [];
-      while (i < lines.length && lines[i].match(/^\s*[-*+]\s/)) {
-        const taskMatch = lines[i].match(/^\s*[-*+]\s+\[([ x])\]\s+(.*)/);
-        if (taskMatch) {
-          const checked = taskMatch[1] === "x" ? ' data-checked="true"' : "";
-          listItems.push(`<li data-type="taskItem"${checked}><p>${inlineFormat(taskMatch[2])}</p></li>`);
-        } else {
-          listItems.push(`<li><p>${inlineFormat(lines[i].replace(/^\s*[-*+]\s+/, ""))}</p></li>`);
-        }
-        i++;
-      }
-      out.push(`<ul>${listItems.join("")}</ul>`);
-      continue;
-    }
-
-    // Ordered list item
-    if (line.match(/^\s*\d+\.\s/)) {
-      const listItems: string[] = [];
-      while (i < lines.length && lines[i].match(/^\s*\d+\.\s/)) {
-        listItems.push(`<li><p>${inlineFormat(lines[i].replace(/^\s*\d+\.\s+/, ""))}</p></li>`);
-        i++;
-      }
-      out.push(`<ol>${listItems.join("")}</ol>`);
-      continue;
-    }
-
-    // Empty line
-    if (line.trim() === "") {
-      i++;
-      continue;
-    }
-
-    // Regular paragraph
-    out.push(`<p>${inlineFormat(line)}</p>`);
-    i++;
-  }
-
-  return out.join("");
-};
-
-/* Convert inline Markdown (bold, italic, code, links) to HTML */
-const inlineFormat = (text: string): string =>
-  text
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
-
-/* Split a Markdown table row into cells */
-const parseTableRow = (row: string): string[] =>
-  row
-    .replace(/^\|/, "")
-    .replace(/\|$/, "")
-    .split("|")
-    .map((c) => c.trim());
-
-import { Extension } from "@tiptap/core";
 
 const FontSize = Extension.create({
   name: "fontSize",

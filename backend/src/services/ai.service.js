@@ -168,9 +168,6 @@ const executeGemini = async (messages, stream = false) => {
   const geminiModel = genAI.getGenerativeModel({
     model: "gemini-3.1-flash-lite",
     ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: {
-      thinking_config: { thinking_level: "minimal" },
-    },
   });
 
   console.log("🟦 Attempting Gemini (Fast Mode)...");
@@ -178,9 +175,6 @@ const executeGemini = async (messages, stream = false) => {
   if (stream) {
     const result = await geminiModel.generateContentStream({
       contents,
-      generationConfig: {
-        thinking_config: { thinking_level: "minimal" },
-      },
     });
     const encoder = new TextEncoder();
     return new ReadableStream({
@@ -203,9 +197,6 @@ const executeGemini = async (messages, stream = false) => {
   } else {
     const result = await geminiModel.generateContent({
       contents,
-      generationConfig: {
-        thinking_config: { thinking_level: "minimal" },
-      },
     });
     return result.response.text();
   }
@@ -256,32 +247,24 @@ const generateContentWithFallback = async (prompt, stream = false) => {
   ensureAiApiKey();
 
   // Try Gemini first if key exists
-  if (process.env.GEMINI_API_KEY) {
-    try {
-      if (stream) {
-        const result = await model.generateContentStream(prompt);
-        console.log("💎 Action answered by Gemma-3-27b-it (Stream)");
-        return result.stream;
-      } else {
-        const result = await model.generateContent(prompt);
-        console.log("💎 Action answered by Gemma-3-27b-it");
-        return result.response.text().trim();
-      }
-    } catch (error) {
-      console.warn("Gemini Error, falling back to OpenRouter:", error.message);
-      if (!getOpenRouterApiKey()) throw error;
-    }
-  }
-
-  // Fallback to OpenRouter using direct fetch
   if (getOpenRouterApiKey()) {
+      return await executeOpenRouter(
+        "inclusionai/ling-2.6-flash",
+        [{ role: "user", content: prompt }],
+        stream,
+      )
+  }
+  console.log("Query answered by deepseek v4 flash:free ");
+
+  // Fallback to qwen using direct fetch
+  if (process.env.QWEN_API) {
     return await executeOpenRouter(
       "meta-llama/llama-3.1-8b-instruct",
       [{ role: "user", content: prompt }],
       stream,
     );
   }
-
+console.log("Query answered by llama 8b instruct");
   throw new Error("No AI feature keys configured");
 };
 
@@ -560,18 +543,18 @@ Return ONLY JSON:
 
 const actionPrompts = {
   summarize: (text) =>
-    `Summarize the following note into concise markdown bullet points. Use hierarchical bullets if necessary. Keep important facts and action items. Return the markdown text only, no code blocks.\n\nNote:\n${text}`,
+    `Summarize the following note into concise markdown bullet points. Use hierarchical bullets if necessary. Keep important facts and action items. Return the final markdown text only, no code blocks, no planning notes, no requirement checklist, no self-correction, and no draft commentary.\n\nNote:\n${text}`,
   explain: (text) =>
-    `Explain the note below in plain, beginner-friendly language. Break it down step by step if the content is complex. Use markdown headings and bullets to organize the explanation. Match the explanation length to the complexity of the note. Return markdown only, no code fences.
+    `Explain the note below in plain, beginner-friendly language. Break it down step by step if the content is complex. Use markdown headings and bullets to organize the explanation. Match the explanation length to the complexity of the note. Return the final markdown only, no code fences, no planning notes, no requirement checklist, no self-correction, and no draft commentary.
 Note:
 ${text}`,
 
   rewrite: (text) =>
-    `Rewrite the text below to improve clarity, grammar, and flow while preserving the original meaning and intent. Return the result as markdown. Do not add new information or change the structure significantly. Return markdown only, no code fences.
+    `Rewrite the text below to improve clarity, grammar, and flow while preserving the original meaning and intent. Return the result as markdown. Do not add new information or change the structure significantly. Return final markdown only, no code fences, no planning notes, no requirement checklist, no self-correction, and no draft commentary.
 Text:
 ${text}`,
   continue: (text) =>
-    `Continue the text below in markdown. Match the tone and style of the original. Do not restate or summarize what came before. Do not wrap output in code fences.
+    `Continue the text below in markdown. Match the tone and style of the original. Do not restate or summarize what came before. Return final markdown only, no code fences, no planning notes, no requirement checklist, no self-correction, and no draft commentary.
     Text:
 ${text}`,
 };

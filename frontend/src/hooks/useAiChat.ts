@@ -12,6 +12,7 @@ import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
 import type { Note } from "@/store/useNoteStore";
 import { stripHtml } from "@/utils/stripHtml";
+import { markdownToHtml } from "@/utils/markdownToHtml";
 
 const getSelection = (editor: Editor | null) => {
   if (!editor) return { text: "", range: null as SelectionRange };
@@ -341,7 +342,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         || "AI action failed. Please try again.";
       const status = axiosError?.response?.status;
 
-      if (status === 429 || /quota|rate limit|too many requests/i.test(message)) {
+      if (status === 429) {
         toast.error("AI Credits Exhausted", {
           description: "You've reached today's limit for quick AI actions. Unlock higher limits with Premium.",
           duration: 5000,
@@ -632,7 +633,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
     const isDialogAction = ["summarize", "explain", "rewrite"].includes(result.action);
     const content = isDialogAction
-      ? result.suggestion
+      ? markdownToHtml(result.suggestion)
       : `<span data-ai-ghost="true">${result.suggestion}</span>`;
 
     editor.chain()

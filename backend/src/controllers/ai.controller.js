@@ -147,18 +147,6 @@ export const aiAssistController = catchAsync(async (req, res) => {
       .json({ success: false, message: "action is required" });
   }
 
-  // RATE LIMIT CHECK
-
-  const rateLimitResult = await checkAndIncrementRateLimit(req.user._id);
-  if (!rateLimitResult.allowed) {
-    return res
-      .status(429)
-      .json({
-        success: false,
-        message: `Daily AI usage limit reached. Used ${rateLimitResult.used} of ${rateLimitResult.limit} today.`,
-      });
-  }
-
   // 1. Resolve Note and Source Text
   let note = null;
   // noteId is null when the note hasn't been saved yet (stateless mode for new notes)
@@ -206,12 +194,31 @@ export const aiAssistController = catchAsync(async (req, res) => {
     });
   }
 
+  // Reserve a daily credit only after validation and cache lookup.
+  // If the model request fails, the credit is refunded below.
+  let creditReserved = false;
+  const rateLimitResult = await checkAndIncrementRateLimit(req.user._id);
+  if (!rateLimitResult.allowed) {
+    return res.status(429).json({
+      success: false,
+      code: "AI_DAILY_LIMIT_EXCEEDED",
+      message: `Daily AI usage limit reached. Used ${rateLimitResult.used} of ${rateLimitResult.limit} today.`,
+    });
+  }
+  creditReserved = true;
+
   // 3. Call AI Service (Stream or Static)
-  const result = await runAiAssist({
-    action,
-    text: sourceText,
-    stream: !!stream,
-  });
+  let result;
+  try {
+    result = await runAiAssist({
+      action,
+      text: sourceText,
+      stream: !!stream,
+    });
+  } catch (error) {
+    if (creditReserved) await refundDailyCount(req.user._id);
+    throw error;
+  }
 
   if (stream) {
     res.setHeader("Content-Type", "text/event-stream");
@@ -251,6 +258,10 @@ export const aiAssistController = catchAsync(async (req, res) => {
         }
       }
 
+      if (!finalSuggestion.trim()) {
+        throw new Error("AI model returned an empty response");
+      }
+
       // Save the streamed result to cache after completion
       await AiAssistCache.findOneAndUpdate(
         {
@@ -277,6 +288,10 @@ export const aiAssistController = catchAsync(async (req, res) => {
         { upsert: true, new: true, setDefaultsOnInsert: true },
       );
     } catch (err) {
+      if (creditReserved) {
+        await refundDailyCount(req.user._id);
+        creditReserved = false;
+      }
       console.error("AI Assist Stream Error:", err.message);
       res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`);
     } finally {
@@ -286,35 +301,40 @@ export const aiAssistController = catchAsync(async (req, res) => {
   }
 
   // 🛡️ Static Path
-  if (action === "grammar" && !hasSelection && note) {
-    note.grammarErrors = result.errors;
-    await note.save();
-  }
+  try {
+    if (action === "grammar" && !hasSelection && note) {
+      note.grammarErrors = result.errors;
+      await note.save();
+    }
 
-  await AiAssistCache.findOneAndUpdate(
-    {
-      user: req.user._id,
-      note: note?._id || null,
-      action,
-      sourceType,
-      inputHash,
-    },
-    {
-      user: req.user._id,
-      note: note?._id || null,
-      action,
-      sourceType,
-      inputHash,
-      noteUpdatedAt: note?.updatedAt || new Date(),
-      response: {
-        action: result.action,
-        suggestion: result.suggestion,
-        errors: result.errors || [],
-        original: result.original || "",
+    await AiAssistCache.findOneAndUpdate(
+      {
+        user: req.user._id,
+        note: note?._id || null,
+        action,
+        sourceType,
+        inputHash,
       },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  );
+      {
+        user: req.user._id,
+        note: note?._id || null,
+        action,
+        sourceType,
+        inputHash,
+        noteUpdatedAt: note?.updatedAt || new Date(),
+        response: {
+          action: result.action,
+          suggestion: result.suggestion,
+          errors: result.errors || [],
+          original: result.original || "",
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+  } catch (error) {
+    if (creditReserved) await refundDailyCount(req.user._id);
+    throw error;
+  }
 
   res.status(200).json({
     success: true,
@@ -771,6 +791,13 @@ async function incrementDailyCount(userId) {
       { $inc: { "aiUsage.dailyCount": 1 } }
     );
   }
+}
+
+async function refundDailyCount(userId) {
+  await User.findOneAndUpdate(
+    { _id: userId, "aiUsage.dailyCount": { $gt: 0 } },
+    { $inc: { "aiUsage.dailyCount": -1 } },
+  );
 }
 
 async function checkAndIncrementRateLimit(userId) {
