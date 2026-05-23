@@ -67,7 +67,7 @@ const aiAssistCacheSchema = new mongoose.Schema(
 );
 
 aiAssistCacheSchema.index(
-  { user: 1, note: 1, action: 1, sourceType: 1, inputHash: 1, noteUpdatedAt: 1 },
+  { user: 1, note: 1, action: 1, sourceType: 1, inputHash: 1 },
   { unique: true }
 );
 

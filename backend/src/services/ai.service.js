@@ -247,7 +247,7 @@ const executeGroq = async (messages, stream = false) => {
 };
 
 // Helper: prefer OpenRouter (ling) → Gemini → QWEN → GROQ
-const generateContentWithFallback = async (prompt, stream = false) => {
+const generateContentWithFallback = async (prompt, stream = true) => {
   ensureAiApiKey();
   const message = [{ role: "user", content: prompt }];
   const errors = [];
@@ -603,26 +603,44 @@ ${text}
 
   noteCreation: (text) => actionPrompts.writeNote(text),
   writeNote: (text) => `
-Write a well-structured and engaging study note based on the following content.
+Write a polished, revision-friendly study note from the provided content.
 
 Goals:
-- Preserve all important concepts and explanations.
-- Improve clarity, flow, and readability.
-- Organize the note using clean markdown headings, subheadings, bullet points, tables, and emphasis where useful.
-- Add short intuitive explanations, real-world examples, analogies, or practical applications when they genuinely improve understanding.
-- Simplify confusing ideas without removing technical accuracy.
-- Highlight key terms, important takeaways, common mistakes, and memory-friendly insights where appropriate.
-- Keep the tone educational, polished, and easy to revise from.
 
-Important:
-- Do not invent false information.
-- Do not add unnecessary filler or motivational text.
-- Do not overuse examples.
-- Keep examples concise and relevant.
-- Maintain a balance between concise revision notes and deep understanding.
+* Preserve all important concepts, definitions, formulas, examples, and explanations.
+* Improve clarity, structure, and readability without changing the meaning.
+* Organize the note using clean markdown headings, bullet points, tables, and code blocks where useful.
+* Convert messy or fragmented content into logically structured notes.
+
+Enhance understanding by:
+
+* adding short intuitive explanations or analogies only when they genuinely help,
+* highlighting key ideas, common mistakes, patterns, and memory-friendly insights,
+* explaining the reasoning or thought process behind difficult concepts when relevant.
+
+Keep the balance between:
+
+* concise revision notes,
+* and enough explanation for independent understanding.
+
+Avoid:
+
+* unnecessary filler,
+* excessive storytelling,
+* robotic phrasing,
+* overexplaining simple concepts,
+* hallucinating unsupported information.
+
+Prioritize:
+
+* high readability,
+* strong learning flow,
+* fast revision,
+* and practical understanding.
+
+The final output should feel like premium human-made study material, not raw AI-generated notes.
 
   ${OUTPUT_RULES}
-
   text:${text}
   `,
 

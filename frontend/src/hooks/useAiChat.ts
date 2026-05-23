@@ -192,7 +192,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     }
 
     abortControllerRef.current = new AbortController();
-    const isDialogAction = ["summarize", "explain", "rewrite"].includes(action);
+    const isDialogAction = ["summarize", "explain", "rewrite", "noteCreation"].includes(action);
     const targetRange = range || { from: editor?.state.selection.from || 0, to: editor?.state.selection.to || 0 };
 
     try {
@@ -629,16 +629,22 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
   /** Replaces the selected text in the editor with the AI suggestion */
   const applySuggestionToSelection = () => {
-    if (!editor || !result?.suggestion || !selectionRange) return;
+    if (!editor || !result?.suggestion) return;
 
-    const isDialogAction = ["summarize", "explain", "rewrite"].includes(result.action);
-    const content = isDialogAction
+    const isMarkdownAction = ["summarize", "explain", "rewrite", "noteCreation"].includes(result.action);
+    const content = isMarkdownAction
       ? markdownToHtml(result.suggestion)
       : `<span data-ai-ghost="true">${result.suggestion}</span>`;
 
+    // For "Insert at cursor" there may be no prior selection — fall back to cursor
+    const range = selectionRange ?? {
+      from: editor.state.selection.from,
+      to: editor.state.selection.to,
+    };
+
     editor.chain()
       .focus()
-      .insertContentAt(selectionRange, content)
+      .insertContentAt(range, content)
       .run();
   };
 

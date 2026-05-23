@@ -110,7 +110,7 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
           </DialogHeader>
 
           <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[var(--panel-bg)] selection:bg-[var(--accent-strong)]/30">
-            <div className="gc-markdown text-[var(--text-strong)] max-w-full overflow-hidden">
+            <div className="gc-markdown text-[var(--text-strong)] max-w-full">
                <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}

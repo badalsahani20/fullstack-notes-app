@@ -2121,16 +2121,16 @@
 
 .assistant-markdown :where(ul, ol) {
   margin: 0.55rem 0 0.75rem;
-  padding-left: 1.2rem;
+  padding-left: 1.4rem !important;
   color: color-mix(in srgb, var(--text-strong) 94%, transparent);
 }
 
 .assistant-markdown ul {
-  list-style-type: disc;
+  list-style-type: disc !important;
 }
 
 .assistant-markdown ol {
-  list-style-type: decimal;
+  list-style-type: decimal !important;
 }
 
 .assistant-markdown li {
@@ -2304,7 +2304,7 @@
   caret-color: var(--accent-strong);
 }
 
-.ProseMirror p.is-empty::before {
+.ProseMirror.is-editor-empty p.is-empty::before {
   color: var(--placeholder-text, #94a3b8);
   content: attr(data-placeholder);
   float: left;
@@ -2404,20 +2404,25 @@
 .ProseMirror ul,
 .ProseMirror ol {
   margin: 0.8rem 0;
-  padding-left: 1.5rem;
+  padding-left: 1.6rem !important;
 }
 
 .ProseMirror ul {
-  list-style-type: disc;
+  list-style-type: disc !important;
 }
 
 .ProseMirror ol {
-  list-style-type: decimal;
+  list-style-type: decimal !important;
 }
 
 .ProseMirror ul li,
 .ProseMirror ol li {
   margin-bottom: 0.4rem;
+}
+
+.ProseMirror ul li::marker,
+.ProseMirror ol li::marker {
+  color: var(--text-strong);
 }
 
 .ProseMirror ul li p,
@@ -2508,10 +2513,11 @@
 
 .tableWrapper {
   overflow-x: auto;
-  margin: 1.5rem 0;
+  overflow-y: clip; /* clips corners for border-radius without blocking horizontal scroll */
+  margin: 1.8rem 0;
   max-width: 100%;
-  border-radius: 6px;
-  /* Thin custom scrollbar for tables */
+  border-radius: 12px;
+  border: 1px solid var(--divider);
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
@@ -2529,25 +2535,55 @@
 
 .ProseMirror table {
   border-collapse: collapse;
-  margin: 0; /* Let tableWrapper handle margin */
+  margin: 0;
   table-layout: auto;
   min-width: 100%;
-  width: max-content; /* Ensure table stretches past container if large */
+  width: max-content;
+}
+
+.ProseMirror table tr {
+  transition: background 0.12s ease;
+}
+
+.ProseMirror table tr:not(:first-child):hover {
+  background: color-mix(in srgb, var(--accent-strong) 4%, transparent);
 }
 
 .ProseMirror table td,
 .ProseMirror table th {
-  border: 1px solid var(--divider);
-  min-width: 6rem;
-  padding: 0.55rem 0.65rem;
-  vertical-align: top;
+  border: none;
+  border-bottom: 1px solid var(--divider);
+  border-right: 1px solid var(--divider);
+  min-width: 7rem;
+  padding: 0.7rem 1rem;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.ProseMirror table td:last-child,
+.ProseMirror table th:last-child {
+  border-right: none;
+}
+
+.ProseMirror table tr:last-child td,
+.ProseMirror table tr:last-child th {
+  border-bottom: none;
 }
 
 .ProseMirror table th {
   background: var(--surface-muted);
   font-weight: 700;
-  border-bottom: 2px solid color-mix(in srgb, var(--text-strong) 15%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--text-strong) 10%, transparent);
+  font-size: 0.9em;
+  letter-spacing: 0.01em;
+  color: var(--text-strong);
+  border-bottom: 1px solid var(--divider);
+}
+
+/* First column as a subtle row-label */
+.ProseMirror table td:first-child {
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text-strong) 80%, transparent);
+  background: color-mix(in srgb, var(--surface-muted) 40%, transparent);
 }
 
 @media (max-width: 1280px) {
@@ -2925,22 +2961,46 @@ span[data-ai-ghost] {
 
 .editor-content-shell .ProseMirror table td,
 .editor-content-shell .ProseMirror table th {
-  border: 1px solid var(--divider);
-  padding: 0.5rem;
+  border: none;
+  border-bottom: 1px solid var(--divider);
+  border-right: 1px solid var(--divider);
+  padding: 0.7rem 1rem;
   min-width: 9rem;
   position: relative;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.editor-content-shell .ProseMirror table td:last-child,
+.editor-content-shell .ProseMirror table th:last-child {
+  border-right: none;
+}
+
+.editor-content-shell .ProseMirror table tr:last-child td,
+.editor-content-shell .ProseMirror table tr:last-child th {
+  border-bottom: none;
 }
 
 .editor-content-shell .ProseMirror table td > p,
 .editor-content-shell .ProseMirror table th > p {
   min-width: max-content;
+  margin: 0;
 }
 
 .editor-content-shell .ProseMirror table th {
-  background: var(--surface-ghost);
-  font-weight: bold;
-  border-bottom: 2px solid color-mix(in srgb, var(--text-strong) 15%, transparent);
-  border-right: 1px solid color-mix(in srgb, var(--text-strong) 10%, transparent);
+  background: var(--surface-muted);
+  font-weight: 700;
+  font-size: 0.9em;
+  letter-spacing: 0.01em;
+  color: var(--text-strong);
+  border-bottom: 1px solid var(--divider);
+}
+
+/* First column row-label treatment */
+.editor-content-shell .ProseMirror table td:first-child {
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text-strong) 80%, transparent);
+  background: color-mix(in srgb, var(--surface-muted) 40%, transparent);
 }
 
 
@@ -3711,20 +3771,24 @@ span[data-ai-ghost] {
 
 .gc-markdown ul {
   margin: 0.4rem 0;
-  padding-left: 1.2rem;
-  list-style-type: disc;
+  padding-left: 1.4rem !important;
+  list-style-type: disc !important;
   color: inherit;
 }
 
 .gc-markdown ol {
   margin: 0.4rem 0;
-  padding-left: 1.2rem;
-  list-style-type: decimal;
+  padding-left: 1.4rem !important;
+  list-style-type: decimal !important;
   color: inherit;
 }
 
 .gc-markdown li {
   margin-bottom: 0.25rem;
+}
+
+.gc-markdown li::marker {
+  color: var(--text-strong);
 }
 
 .gc-markdown code {
@@ -6211,6 +6275,152 @@ html:not(.dark) .iris-viz-modal-body {
 .dock-btn-active .dock-icon-wrapper {
   transform: scale(1.1);
   filter: drop-shadow(0 0 8px color-mix(in srgb, var(--highlight-color, #ffffff) 40%, transparent));
+}
+
+/* ── Font Size Picker ─────────────────────────────────────────── */
+.dock-fontsize-btn {
+  width: auto !important;
+  min-width: 44px;
+  padding: 0 8px;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dock-fontsize-label {
+  min-width: 18px;
+  text-align: center;
+  line-height: 1;
+}
+
+.dock-fontsize-a {
+  font-size: 13px;
+  font-weight: 700;
+  font-style: italic;
+}
+
+.dock-fontsize-chevron {
+  opacity: 0.45;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dock-fontsize-btn:hover .dock-fontsize-chevron,
+[data-state="open"] .dock-fontsize-chevron {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+[data-state="open"].dock-fontsize-btn {
+  background: rgba(255,255,255,0.06);
+  border-color: color-mix(in srgb, #10b981 30%, transparent);
+  color: #10b981;
+}
+
+/* Dropdown panel */
+.dock-fontsize-menu {
+  padding: 6px !important;
+  background: rgba(18, 18, 24, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 14px !important;
+  box-shadow:
+    0 24px 48px rgba(0,0,0,0.5),
+    0 0 0 1px rgba(255,255,255,0.04) inset !important;
+  min-width: 0 !important;
+}
+
+/* Grid of size buttons */
+.dock-fontsize-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+.dock-fontsize-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.01em;
+}
+
+.dock-fontsize-item:hover {
+  background: rgba(255,255,255,0.07);
+  color: #fff;
+  border-color: rgba(255,255,255,0.1);
+}
+
+.dock-fontsize-item-active {
+  background: color-mix(in srgb, #10b981 18%, transparent) !important;
+  border-color: color-mix(in srgb, #10b981 45%, transparent) !important;
+  color: #10b981 !important;
+  box-shadow: 0 0 10px color-mix(in srgb, #10b981 20%, transparent);
+}
+
+/* Default / reset row — spans all 3 cols */
+.dock-fontsize-default {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px 6px 0 0;
+  margin-bottom: 2px;
+  padding-bottom: 6px;
+}
+
+.dock-fontsize-default:hover {
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.04);
+  border-color: transparent;
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+
+/* Light mode overrides */
+html:not(.dark) .dock-fontsize-menu {
+  background: rgba(255,255,255,0.95) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+  box-shadow:
+    0 16px 40px rgba(0,0,0,0.12),
+    0 1px 0 rgba(255,255,255,1) inset !important;
+}
+
+html:not(.dark) .dock-fontsize-item {
+  color: rgba(15,23,42,0.5);
+}
+
+html:not(.dark) .dock-fontsize-item:hover {
+  background: rgba(0,0,0,0.05);
+  color: #0f172a;
+  border-color: rgba(0,0,0,0.08);
+}
+
+html:not(.dark) .dock-fontsize-default {
+  color: rgba(15,23,42,0.35);
+  border-bottom-color: rgba(0,0,0,0.07);
+}
+
+html:not(.dark) .dock-fontsize-default:hover {
+  background: rgba(0,0,0,0.03);
+  color: rgba(15,23,42,0.6);
+}
+
+html:not(.dark) [data-state="open"].dock-fontsize-btn {
+  background: rgba(0,0,0,0.04);
+  border-color: color-mix(in srgb, #10b981 30%, transparent);
+  color: #059669;
 }
 
 

@@ -4,7 +4,7 @@ import {
   List, ListOrdered, CheckSquare,
   Image as ImageIcon, Table as TableIcon,
   Minus, Quote, Code, Eraser,
-  Maximize2, Minimize2, Sparkles, Loader2
+  Maximize2, Minimize2, Sparkles, Loader2, ChevronDown
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils";
 import { uploadImage } from "@/utils/uploadImage";
 import { toast } from "sonner";
 import { useEditorUIStore } from "@/store/useEditorUIStore";
+
+const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32", "36"];
+
 type Props = {
   editor: Editor;
   isMobile?: boolean;
@@ -122,6 +125,52 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
 
           {/* Group 2: Basic Formatting */}
           <div className="dock-toolbar-cluster">
+            {/* Font Size picker */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  title="Font Size"
+                  onMouseDown={(e) => e.preventDefault()}
+                  className="dock-btn dock-fontsize-btn"
+                  style={{ "--highlight-color": "#10b981" } as React.CSSProperties}
+                >
+                  <span className="dock-fontsize-label">
+                    {editor.getAttributes("textStyle").fontSize?.replace("px", "") || <span className="dock-fontsize-a">A</span>}
+                  </span>
+                  <ChevronDown size={9} className="dock-fontsize-chevron" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                side="top"
+                sideOffset={10}
+                className="dock-fontsize-menu"
+              >
+                <div className="dock-fontsize-grid">
+                  <button
+                    className="dock-fontsize-item dock-fontsize-default"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => editor.chain().focus().unsetFontSize().run()}
+                  >
+                    Default
+                  </button>
+                  {FONT_SIZES.map((s) => {
+                    const active = editor.getAttributes("textStyle").fontSize === `${s}px`;
+                    return (
+                      <button
+                        key={s}
+                        className={`dock-fontsize-item${active ? " dock-fontsize-item-active" : ""}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => editor.chain().focus().setFontSize(`${s}px`).run()}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ToolbarButton active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()} icon={<Bold size={16} strokeWidth={1.5} />} title="Bold" color="#10b981" />
             <ToolbarButton active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()} icon={<Italic size={16} strokeWidth={1.5} />} title="Italic" color="#10b981" />
             <ToolbarButton active={editor.isActive("underline")} onClick={() => editor.chain().focus().toggleUnderline().run()} icon={<Underline size={16} strokeWidth={1.5} />} title="Underline" color="#10b981" />

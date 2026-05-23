@@ -43,6 +43,26 @@ export const markdownToHtml = (md: string): string => {
       continue;
     }
 
+    // ── Fenced code blocks ─────────────────────────────────────────────────
+    const fenceMatch = line.match(/^```(\w*)/);
+    if (fenceMatch) {
+      const lang = fenceMatch[1] || "plaintext";
+      i++;
+      const codeLines: string[] = [];
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      const codeContent = codeLines
+        .join("\n")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      out.push(`<pre><code class="language-${lang}">${codeContent}</code></pre>`);
+      continue;
+    }
+
     const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
     if (headingMatch) {
       const level = headingMatch[1].length;
@@ -118,15 +138,38 @@ export const markdownToHtml = (md: string): string => {
 
     if (/^\s*[-*+]\s/.test(line)) {
       const listItems: string[] = [];
-      while (i < lines.length && /^\s*[-*+]\s/.test(lines[i])) {
-        const taskMatch = lines[i].match(/^\s*[-*+]\s+\[([ x])\]\s+(.*)/);
-        if (taskMatch) {
-          const checked = taskMatch[1] === "x" ? ' data-checked="true"' : "";
-          listItems.push(`<li data-type="taskItem"${checked}><p>${inlineFormat(taskMatch[2])}</p></li>`);
-        } else {
-          listItems.push(`<li><p>${inlineFormat(lines[i].replace(/^\s*[-*+]\s+/, ""))}</p></li>`);
+      while (i < lines.length) {
+        const cur = lines[i];
+        // blank line — skip but keep collecting if next line is still a bullet
+        if (cur.trim() === "") {
+          const next = lines[i + 1];
+          if (next === undefined || !/^\s*[-*+]\s/.test(next)) break;
+          i++;
+          continue;
         }
-        i++;
+        // new bullet item
+        if (/^\s*[-*+]\s/.test(cur)) {
+          const taskMatch = cur.match(/^\s*[-*+]\s+\[([ x])\]\s+(.*)/);
+          if (taskMatch) {
+            const checked = taskMatch[1] === "x" ? ' data-checked="true"' : "";
+            listItems.push(`<li data-type="taskItem"${checked}><p>${inlineFormat(taskMatch[2])}</p></li>`);
+          } else {
+            listItems.push(`<li><p>${inlineFormat(cur.replace(/^\s*[-*+]\s+/, ""))}</p></li>`);
+          }
+          i++;
+          continue;
+        }
+        // continuation line — belongs to the previous <li>
+        if (listItems.length > 0 && cur.trim() !== "") {
+          // Append to the text inside the last <li>'s <p>
+          listItems[listItems.length - 1] = listItems[listItems.length - 1].replace(
+            /<\/p><\/li>$/,
+            ` ${inlineFormat(cur.trim())}</p></li>`
+          );
+          i++;
+          continue;
+        }
+        break;
       }
       out.push(`<ul>${listItems.join("")}</ul>`);
       continue;
