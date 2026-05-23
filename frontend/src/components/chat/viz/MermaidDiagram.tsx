@@ -57,6 +57,20 @@ const sanitizeMermaidCode = (rawCode: string) => {
     }
   );
 
+  // xychart-beta: models often emit `x-axis "Label" ["A", "B"]` which is invalid.
+  // The x-axis directive only accepts the array — strip the stray quoted label.
+  cleaned = cleaned.replace(
+    /^(\s*x-axis\s+)"[^"]*"\s+(\[)/gim,
+    "$1$2"
+  );
+
+  // xychart-beta: emojis in title lines break the Mermaid parser — strip them.
+  // Handles both quoted (`title "Foo 😅"`) and unquoted (`title Foo 😅`) forms.
+  cleaned = cleaned.replace(
+    /^(\s*title\s+.+)$/gim,
+    (match: string) => match.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{FE00}-\u{FE0F}]/gu, "").trimEnd()
+  );
+
   return cleaned;
 };
 
@@ -108,6 +122,7 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
 
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sanitizedCode, setSanitizedCode] = useState("");
 
   useEffect(() => {
     if (!code) {
@@ -127,6 +142,7 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
         if (!containerRef.current) return;
 
         const cleanCode = sanitizeMermaidCode(code);
+        setSanitizedCode(cleanCode);
 
         await mermaid.parse(cleanCode);
 
@@ -155,7 +171,7 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
     return (
       <div className="iris-viz-error">
         Failed to render diagram.
-        <pre className="text-xs opacity-60">{code}</pre>
+        <pre className="text-xs opacity-60">{sanitizedCode || code}</pre>
       </div>
     );
   }

@@ -5,8 +5,7 @@ import {
   Bold, Italic,
   Underline, Strikethrough, Highlighter,
   Heading1, Heading2, List, ListOrdered, Quote, Code, Terminal,
-  Sparkles, FileText, HelpCircle, ArrowRight, Loader2,
-  MoreHorizontal, ChevronDown, Eraser, Wand2, X,
+  Sparkles, Loader2, MoreHorizontal, ChevronDown, Eraser, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AiAction } from "@/components/ai/types";
@@ -15,6 +14,7 @@ type Props = {
   editor: Editor;
   onAction?: (action: AiAction) => void;
   loadingAction?: AiAction | null;
+  onAskAi?: (selectedText: string, startLine: number, endLine: number) => void;
 };
 
 // ── Curated marker palette ──────────────────────────────────────
@@ -27,24 +27,6 @@ const MARKER_COLORS = [
   { color: "#fdba74", label: "Orange" },
   { color: "#c4b5fd", label: "Purple" },
   { color: "#a5f3fc", label: "Cyan" },
-];
-
-/** Derive the smart primary AI label + action from selection word-count */
-function getSmartAiAction(editor: Editor): { label: string; action: AiAction } {
-  const text = editor.state.doc
-    .textBetween(editor.state.selection.from, editor.state.selection.to, " ")
-    .trim();
-  const words = text ? text.split(/\s+/).length : 0;
-  if (words >= 80) return { label: "Summarize", action: "summarize" };
-  if (words >= 12) return { label: "Rewrite", action: "rewrite" };
-  return { label: "Improve", action: "grammar" };
-}
-
-const AI_MENU_ITEMS: Array<{ label: string; icon: React.ReactNode; action: AiAction }> = [
-  { label: "Summarize", icon: <FileText size={13} />, action: "summarize" },
-  { label: "Explain", icon: <HelpCircle size={13} />, action: "explain" },
-  { label: "Continue", icon: <ArrowRight size={13} />, action: "continue" },
-  { label: "Rewrite", icon: <Wand2 size={13} />, action: "rewrite" },
 ];
 
 const MORE_ITEMS = [
@@ -62,21 +44,18 @@ const MORE_ITEMS = [
 
 import { useEditorUIStore } from "@/store/useEditorUIStore";
 
-const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
-  const [showAiMenu, setShowAiMenu] = React.useState(false);
+const EditorBubbleMenu = ({ editor, onAction, loadingAction, onAskAi }: Props) => {
   const [showMore, setShowMore] = React.useState(false);
   const [showMarker, setShowMarker] = React.useState(false);
 
   const { markerColor, setMarkerColor } = useEditorUIStore();
 
-  const aiMenuRef = React.useRef<HTMLDivElement>(null);
   const moreRef = React.useRef<HTMLDivElement>(null);
   const markerRef = React.useRef<HTMLDivElement>(null);
 
   // Close flyouts when selection collapses natively
   React.useEffect(() => {
     if (editor.state.selection.empty) {
-      setShowAiMenu(false);
       setShowMore(false);
     }
   }, [editor.state.selection.empty]);
@@ -84,7 +63,6 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
   // Close on outside click
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (aiMenuRef.current && !aiMenuRef.current.contains(e.target as Node)) setShowAiMenu(false);
       if (moreRef.current && !moreRef.current.contains(e.target as Node)) setShowMore(false);
       if (markerRef.current && !markerRef.current.contains(e.target as Node)) setShowMarker(false);
     };
@@ -92,8 +70,6 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const { label: smartLabel, action: smartAction } = getSmartAiAction(editor);
-  const isPrimaryLoading = loadingAction === smartAction;
   const isHighlightActive = editor.isActive("markerHighlight");
 
   function applyColor(color: string) {
@@ -111,7 +87,7 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
       editor={editor}
       pluginKey="standardBubbleMenu"
       shouldShow={({ editor }) => {
-        if (showMarker || showAiMenu || showMore) return true;
+        if (showMarker || showMore) return true;
         return !editor.isActive("aiGhostText") && !editor.state.selection.empty;
       }}
       options={{
@@ -168,7 +144,6 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
                 title="Color Options"
                 onClick={() => {
                   setShowMarker(v => !v);
-                  setShowAiMenu(false);
                   setShowMore(false);
                 }}
                 className="bubble-fmt-btn px-1 ml-[-2px] !min-w-[16px]"
@@ -228,64 +203,28 @@ const EditorBubbleMenu = ({ editor, onAction, loadingAction }: Props) => {
         {/* Divider */}
         <div className="bubble-divider" />
 
-        {/* Primary AI CTA — selection-aware */}
+        {/* Ask AI selection button */}
         <button
           type="button"
-          onClick={() => !loadingAction && onAction?.(smartAction)}
-          disabled={!!loadingAction}
+          onClick={() => {
+            const { from, to } = editor.state.selection;
+            const selectedText = editor.state.doc.textBetween(from, to, "\n");
+            const textBeforeSelection = editor.state.doc.textBetween(0, from, "\n");
+            const startLine = textBeforeSelection.split("\n").length;
+            const endLine = startLine + selectedText.split("\n").length - 1;
+            onAskAi?.(selectedText, startLine, endLine);
+          }}
           className="bubble-ai-primary"
-          title={smartLabel}
+          title="Ask Iris about this selection"
         >
-          {isPrimaryLoading
-            ? <Loader2 size={13} className="animate-spin" />
-            : <Sparkles size={13} />
-          }
-          <span>{isPrimaryLoading ? "Working…" : smartLabel}</span>
+          <span>Ask Iris</span>
         </button>
-
-        {/* AI ▾ dropdown trigger */}
-        <div className="relative" ref={aiMenuRef}>
-          <button
-            type="button"
-            onClick={() => { setShowAiMenu(v => !v); setShowMore(false); setShowMarker(false); }}
-            className={cn("bubble-ai-chevron", showAiMenu && "bubble-ai-chevron-open")}
-            title="More AI actions"
-            aria-label="AI actions menu"
-          >
-            <span className="sr-only">AI</span>
-            <ChevronDown size={11} className={cn("transition-transform duration-150", showAiMenu && "rotate-180")} />
-          </button>
-
-          {showAiMenu && (
-            <div className="bubble-dropdown bubble-dropdown-left">
-              {AI_MENU_ITEMS.map(item => (
-                <button
-                  key={item.action}
-                  type="button"
-                  disabled={!!loadingAction}
-                  onClick={() => { onAction?.(item.action); setShowAiMenu(false); }}
-                  className={cn(
-                    "bubble-dropdown-item",
-                    loadingAction === item.action && "bubble-dropdown-item-loading"
-                  )}
-                >
-                  <span className="bubble-dropdown-item-icon">
-                    {loadingAction === item.action
-                      ? <Loader2 size={12} className="animate-spin text-[var(--accent-strong)]" />
-                      : item.icon}
-                  </span>
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* More ⋯ */}
         <div className="relative" ref={moreRef}>
           <button
             type="button"
-            onClick={() => { setShowMore(v => !v); setShowAiMenu(false); setShowMarker(false); }}
+            onClick={() => { setShowMore(v => !v); setShowMarker(false); }}
             className={cn("bubble-more", showMore && "bubble-more-open")}
             title="More formatting"
             aria-label="More options"

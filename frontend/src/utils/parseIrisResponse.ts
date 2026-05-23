@@ -25,12 +25,16 @@ export const parseIrisResponse = (text: string): IrisSegment[] => {
   const blocks: Array<{ start: number; end: number; segment: IrisSegment }> = [];
 
   // ── IRIS_VIZ ────────────────────────────────────────────────────────────────
+  // Also accept "xychart-beta" as a type (model sometimes confuses the Mermaid
+  // diagram subtype with the IRIS_VIZ type attribute). Normalised to "mermaid".
   const vizRegex =
-    /\[IRIS_VIZ(?:\s+type=["']?(mermaid|chart|math)["']?\s+title=["']?([^"'\]]*)["']?|:(mermaid|chart|math):([^\]]*))\]([\s\S]*?)\[\/IRIS_VIZ\]/gi;
+    /\[(?:IRIS_VIZ|\/IRIS_VIZ(?=\s|:))(?:\s+type=["']?(mermaid|chart|math|xychart-beta)["']?\s+title=["']?([^"'\]]*)['"']?|:(mermaid|chart|math):([^\]]*))\]([\s\S]*?)\[\/IRIS_VIZ\]/gi;
 
   let m: RegExpExecArray | null;
   while ((m = vizRegex.exec(text)) !== null) {
-    const type  = (m[1] || m[3] || "").toLowerCase() as "mermaid" | "chart" | "math";
+    const rawType = (m[1] || m[3] || "").toLowerCase();
+    // Normalise xychart-beta → mermaid so the renderer picks it up correctly
+    const type = (rawType === "xychart-beta" ? "mermaid" : rawType) as "mermaid" | "chart" | "math";
     const title = (m[2] || m[4] || "").trim();
     const data  = m[5] ?? "";
 
@@ -46,7 +50,7 @@ export const parseIrisResponse = (text: string): IrisSegment[] => {
   // ── IRIS_ASK ─────────────────────────────────────────────────────────────────
   // Captures everything between [IRIS_ASK ...] and [/IRIS_ASK] as the body.
   // Attributes are parsed from the tag's attribute string separately.
-  const askRegex = /\[IRIS_ASK([^\]]*)\]([\s\S]*?)\[\/IRIS_ASK\]/gi;
+  const askRegex = /\[(?:IRIS_ASK|\/IRIS_ASK(?=\s|:))([^\]]*)\]([\s\S]*?)\[\/IRIS_ASK\]/gi;
 
   while ((m = askRegex.exec(text)) !== null) {
     const attrStr = m[1] ?? "";

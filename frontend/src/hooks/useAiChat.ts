@@ -114,7 +114,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const loadHistory = () => {
     if (activeNote?.chatHistory && activeNote.chatHistory.length > 0) {
       const historicMessages = activeNote.chatHistory.map((m: any) => ({
-        id: m.id || `${Date.now()}-${Math.random()}`,
+        id: m.id || crypto.randomUUID(),
         role: m.role,
         text: m.content as string,
         segments: m.segments,
@@ -387,7 +387,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     setAttachedImage(null);
 
     const userMessage: Message = {
-      id: `${Date.now()}-chat-user`,
+      id: crypto.randomUUID(),
       role: "user",
       text: textToSend,
       imageUrl: sentImage || undefined
@@ -460,7 +460,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       let thinkingEndTime = 0;
 
       // Add assistant message with isThinking:true — same as global chat store
-      const aiMsgId = `${Date.now()}-chat-assistant`;
+      const aiMsgId = crypto.randomUUID();
       const streamStartTime = Date.now();
       const initialAssistantMsg: Message = {
         id: aiMsgId,
@@ -602,7 +602,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       }
 
       setChatHistory((prev) => [...prev, { role: "user", content: trimmed }]);
-      const errorMessage: Message = { id: `${Date.now()}-chat-error`, role: "assistant", text: message };
+      const errorMessage: Message = { id: crypto.randomUUID(), role: "assistant", text: message };
       const failedMessages = [...messagesRef.current, errorMessage];
       messagesRef.current = failedMessages;
       setMessages(failedMessages);

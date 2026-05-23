@@ -4,9 +4,17 @@ import {
   List, ListOrdered, CheckSquare,
   Image as ImageIcon, Table as TableIcon,
   Minus, Quote, Code, Eraser,
-  Maximize2, Minimize2
+  Maximize2, Minimize2, Sparkles, Loader2
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { actionMeta, type AiAction } from "@/components/ai/types";
+import type { useAiChat } from "@/hooks/useAiChat";
 import { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { uploadImage } from "@/utils/uploadImage";
@@ -16,9 +24,10 @@ type Props = {
   editor: Editor;
   isMobile?: boolean;
   yOffset?: number;
+  aiChat?: ReturnType<typeof useAiChat>;
 };
 
-const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
+const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -38,6 +47,7 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
       toast.success("Image uploaded!", { id: toastId });
     } catch (error) {
       toast.error("Upload failed", { id: toastId });
+      console.warn("Image upload failed", error);
     } finally {
       event.target.value = "";
     }
@@ -58,7 +68,7 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
       <div className="dock-toolbar">
         <div className="dock-toolbar-inner">
           {/* Group 1: Utilities */}
-          <div className="dock-toolbar-cluster">
+          <div className="dock-toolbar-cluster flex items-center">
             <ToolbarButton 
               active={isFocusMode} 
               onClick={toggleFocusMode} 
@@ -66,6 +76,46 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0 }: Props) => {
               title="Toggle Focus Mode" 
               color="#3b82f6"
             />
+            {aiChat && !isMobile && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={aiChat.loadingAction !== null}
+                    className={cn(
+                      "dock-btn transition-all duration-300 ml-1",
+                      aiChat.loadingAction && "dock-btn-active"
+                    )}
+                    style={{ "--highlight-color": "var(--accent-strong)" } as React.CSSProperties}
+                    title="AI Actions"
+                  >
+                    <div className="dock-icon-wrapper flex items-center justify-center">
+                      {aiChat.loadingAction ? (
+                        <Loader2 size={16} className="animate-spin text-[var(--accent-strong)]" strokeWidth={1.5} />
+                      ) : (
+                        <Sparkles size={16} className="text-[var(--accent-strong)]" strokeWidth={1.5} />
+                      )}
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  side="top"
+                  sideOffset={8}
+                  className="assistant-actions-menu w-44 shadow-md z-[99999]"
+                >
+                  {(Object.keys(actionMeta) as AiAction[]).map((action) => (
+                    <DropdownMenuItem
+                      key={action}
+                      onClick={() => void aiChat.runAction(action)}
+                      className="assistant-actions-menu-item cursor-pointer text-sm py-1.5 transition-colors"
+                    >
+                      {actionMeta[action].label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           <div className="dock-divider" />

@@ -63,6 +63,15 @@ function breakTheFourthWall() {
       <li><em>"Explain why my code is failing (again)"</em></li>
     </ul>
 
+    <h3>5. AI Superpowers (No Wand Required) 🔮</h3>
+    <p>We've crammed some serious AI magic into this app because, let's face it, we couldn't help ourselves. Here's how to put Iris to work:</p>
+    <ul>
+      <li><strong>Ask Iris on Selection:</strong> Select any text and click <strong>Ask Iris</strong> in the bubble menu. Boom! The side panel flies open, captures your selection (with line numbers, because we're fancy like that), and pre-fills the prompt for you. No copy-pasting required. Slices through dense reading like dual katanas. ⚔️</li>
+      <li><strong>Editor AI Actions:</strong> Spot that glowing Sparkles button in the bottom toolbar? That's <strong>AI Actions</strong>. One tap and Iris can improve your writing, generate a summary, fix up the grammar, or just keep the momentum going when inspiration decides to take a coffee break. 🪄</li>
+      <li><strong>Interactive Quizzes:</strong> Type <em>"Test my knowledge"</em> or <em>"Make a quiz"</em> in the Iris panel. She'll cook up multiple-choice questions right inside the chat — weirdly fun, suspiciously effective. 🧠</li>
+      <li><strong>Distraction-Free Study Mode:</strong> Hit the <strong>Study</strong> button in the top-right header. Sidebars vanish, clutter disappears, and suddenly you're the most focused person in the room. Iris stays with you, obviously. 🎯</li>
+    </ul>
+
     <p>Now go on, delete this note and write something that'll change the world. Or just a list of cat names. I don't judge. <strong>Happy Note-Taking!</strong></p>
   `,
 });

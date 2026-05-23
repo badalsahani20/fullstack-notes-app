@@ -10,3 +10,38 @@ export const uploadImage = async (file: File) => {
 
     return response.data.secure_url;
 }
+
+export const prepareChatImage = async (image?: string | null) => {
+    if (!image) {
+        return {
+            imageForApi: null,
+            imageUrl: undefined,
+        };
+    }
+
+    if (image.startsWith("data:image/")) {
+        const response = await fetch(image);
+        const blob = await response.blob();
+        const file = new File([blob], "chat-image.png", {
+            type: blob.type || "image/png",
+        });
+        const uploadedUrl = await uploadImage(file);
+
+        return {
+            imageForApi: uploadedUrl || null,
+            imageUrl: uploadedUrl || undefined,
+        };
+    }
+
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+        return {
+            imageForApi: image,
+            imageUrl: image,
+        };
+    }
+
+    return {
+        imageForApi: image,
+        imageUrl: image,
+    };
+};

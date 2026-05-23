@@ -1,5 +1,6 @@
 import { useMemo, useRef } from "react";
 import { FileText, Type, X, RefreshCcw, Pencil } from "lucide-react";
+import { motion } from "framer-motion";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
 import type { useAiChat } from "@/hooks/useAiChat";
@@ -75,7 +76,12 @@ const ContextualAiPanel = ({
   );
 
   return (
-    <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}>
+    <motion.aside
+      initial={mobileMode ? { x: "100%" } : { x: 40, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}
+    >
       <div className="gc-header note-ai-header">
         <div className="gc-header-avatar ai-rail-button ai-rail-button-active cursor-default">
           <div className="iris-orb" />
@@ -151,7 +157,7 @@ const ContextualAiPanel = ({
         useWebSearch={useWebSearch}
         setUseWebSearch={setUseWebSearch}
       />
-    </aside>
+    </motion.aside>
   );
 };
 

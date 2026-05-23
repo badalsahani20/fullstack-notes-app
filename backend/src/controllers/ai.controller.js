@@ -89,9 +89,15 @@ const mightNeedWeb = (msg) => {
   const lower = msg.toLowerCase();
   return (
     /https?:\/\/[^\s]+/.test(msg) || // ✅ matches actual URLs
-    /\b(search(?:ing|es|ed)?|google|look up|find online|browse|web|internet|website|article|link|url)\b/.test(lower) || // ✅ explicit search intents
-    /\b(latest|recent|new|news|now|current|today|release|update|version|stock|price|rate|conversion|weather)\b/.test(lower) || // Timely keywords
-    /\b(api|documentation|lib|package|framework|how to install)\b/.test(lower) || // Technical gaps
+    /\b(search(?:ing|es|ed)?|google|look up|find online|browse|web|internet|website|article|link|url)\b/.test(
+      lower,
+    ) || // ✅ explicit search intents
+    /\b(latest|recent|new|news|now|current|today|release|update|version|stock|price|rate|conversion|weather)\b/.test(
+      lower,
+    ) || // Timely keywords
+    /\b(api|documentation|lib|package|framework|how to install)\b/.test(
+      lower,
+    ) || // Technical gaps
     /[\$\€]/.test(msg) // Currency triggers
   );
 };
@@ -111,7 +117,9 @@ const cleanSessionTitle = (title = "") => {
 
   if (
     !cleaned ||
-    /generate|descriptive|return only|no quotes|input content|task:/i.test(cleaned)
+    /generate|descriptive|return only|no quotes|input content|task:/i.test(
+      cleaned,
+    )
   ) {
     return "New Chat";
   }
@@ -249,7 +257,8 @@ export const aiAssistController = catchAsync(async (req, res) => {
           const events = parser.processChunk(chunk);
           for (const data of events) {
             if (data.type === "error" || data.error) {
-              const errorMsg = data.message || data.error?.message || "AI model error";
+              const errorMsg =
+                data.message || data.error?.message || "AI model error";
               throw new Error(errorMsg);
             }
 
@@ -293,7 +302,9 @@ export const aiAssistController = catchAsync(async (req, res) => {
         creditReserved = false;
       }
       console.error("AI Assist Stream Error:", err.message);
-      res.write(`data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({ type: "error", message: err.message })}\n\n`,
+      );
     } finally {
       res.end();
     }
@@ -432,7 +443,7 @@ const resolveToolContext = async (message, res, isStreaming) => {
   return { toolContext, toolUsed };
 };
 
-// Fetch note context from the DB or frontend payload (skipped when a tool was used) 
+// Fetch note context from the DB or frontend payload (skipped when a tool was used)
 const resolveNoteContext = async (
   req,
   { isGlobalChat, noteId, history, toolUsed },
@@ -443,7 +454,8 @@ const resolveNoteContext = async (
 
   // Only fetch note context if the message is actually about the note/editor context.
   // We allow this even if a tool was used, so you can compare web data with note data.
-  const isNoteQuery = noteId && (hasSelection || shouldFetchNote(message, history));
+  const isNoteQuery =
+    noteId && (hasSelection || shouldFetchNote(message, history));
   const shouldIncludeContext = !!isNoteQuery;
 
   if (shouldIncludeContext) {
@@ -466,7 +478,7 @@ const resolveNoteContext = async (
   return { noteContext, noteFetched };
 };
 
-// Set up SSE headers and fire the keep-alive comment 
+// Set up SSE headers and fire the keep-alive comment
 const openSseConnection = (res, activeSessionId) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -477,7 +489,7 @@ const openSseConnection = (res, activeSessionId) => {
   res.write(": keep-alive\n\n");
 };
 
-// Pipe OpenRouter SSE chunks to the client and accumulate the full reply 
+// Pipe OpenRouter SSE chunks to the client and accumulate the full reply
 const streamAiResponse = async (stream, res, noteFetched) => {
   const decoder = new TextDecoder();
   let finalReply = "";
@@ -502,8 +514,12 @@ const streamAiResponse = async (stream, res, noteFetched) => {
       if (choice?.delta?.tool_calls) {
         for (const tc of choice.delta.tool_calls) {
           const toolName = tc.function?.name;
-          if (toolName === "openrouter:web_search" || toolName === "openrouter:web_fetch") {
-            const normTool = toolName === "openrouter:web_search" ? "search_web" : "crawl_url";
+          if (
+            toolName === "openrouter:web_search" ||
+            toolName === "openrouter:web_fetch"
+          ) {
+            const normTool =
+              toolName === "openrouter:web_search" ? "search_web" : "crawl_url";
             res.write(
               `data: ${JSON.stringify({ type: "tool_call", tool: normTool })}\n\n`,
             );
@@ -523,7 +539,7 @@ const streamAiResponse = async (stream, res, noteFetched) => {
   return finalReply;
 };
 
-// Save the completed turn to the global-chat session in MongoDB 
+// Save the completed turn to the global-chat session in MongoDB
 const persistToDb = async (
   message,
   finalReply,
@@ -533,8 +549,7 @@ const persistToDb = async (
   summary = "",
 ) => {
   const isImageUrl =
-    typeof imageBase64 === "string" &&
-    /^https?:\/\//i.test(imageBase64);
+    typeof imageBase64 === "string" && /^https?:\/\//i.test(imageBase64);
   const safeUserContent = imageBase64
     ? `${isImageUrl ? `[Attached Image](${imageBase64})` : "[Attached Image]"}\n${message}`.trim()
     : message;
@@ -544,7 +559,9 @@ const persistToDb = async (
   if (!sessionToUpdate) return;
 
   if (!finalReply?.trim()) {
-    console.warn("Skipping chat persistence because assistant reply was empty.");
+    console.warn(
+      "Skipping chat persistence because assistant reply was empty.",
+    );
     return;
   }
 
@@ -569,16 +586,19 @@ const persistToDb = async (
     generateTitle(titleContext)
       .then((title) => {
         console.log("✅ Title generated:", title);
-        return GlobalChatSession.findByIdAndUpdate(activeSessionId, { title }).exec();
+        return GlobalChatSession.findByIdAndUpdate(activeSessionId, {
+          title,
+        }).exec();
       })
       .catch((err) => console.error("❌ Title update failed:", err.message));
   }
 };
 
-//  Main chat controller 
+//  Main chat controller
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, pdfContext ,stream, useReasoning, enableWeb } = req.body;
+  const { message, imageBase64, pdfContext, stream, useReasoning, enableWeb } =
+    req.body;
 
   if ((!message || !message.trim()) && !imageBase64) {
     return res
@@ -588,7 +608,13 @@ export const chatWithAiController = catchAsync(async (req, res) => {
 
   // 1. Resolve session & history
   const sessionData = await resolveSession(req);
-  const { isGlobalChat, history, summary: sessionSummary, activeSessionId, activeSession } = sessionData;
+  const {
+    isGlobalChat,
+    history,
+    summary: sessionSummary,
+    activeSessionId,
+    activeSession,
+  } = sessionData;
 
   if (isGlobalChat && req.body.sessionId && !sessionData.session) {
     return res
@@ -773,22 +799,22 @@ async function incrementDailyCount(userId) {
 
   // Atomic update: if lastResetAt is before today OR doesn't exist, reset to 1.
   const resetUpdate = await User.findOneAndUpdate(
-    { 
-      _id: userId, 
+    {
+      _id: userId,
       $or: [
         { "aiUsage.lastResetAt": { $lt: startOfToday } },
         { "aiUsage.lastResetAt": { $exists: false } },
-        { aiUsage: { $exists: false } }
-      ]
+        { aiUsage: { $exists: false } },
+      ],
     },
-    { $set: { "aiUsage.dailyCount": 1, "aiUsage.lastResetAt": now } }
+    { $set: { "aiUsage.dailyCount": 1, "aiUsage.lastResetAt": now } },
   );
 
   // If the above didn't match anything, it means lastResetAt is today. Just increment.
   if (!resetUpdate) {
     await User.findOneAndUpdate(
       { _id: userId },
-      { $inc: { "aiUsage.dailyCount": 1 } }
+      { $inc: { "aiUsage.dailyCount": 1 } },
     );
   }
 }
@@ -812,8 +838,9 @@ async function checkAndIncrementRateLimit(userId) {
   const limit = getEffectiveDailyLimit(user);
 
   // If their last reset was yesterday (or earlier), or missing, their effective count is 0
-  const isNewDay = !user.aiUsage?.lastResetAt || user.aiUsage.lastResetAt < startOfToday;
-  const effectiveCount = isNewDay ? 0 : (user.aiUsage?.dailyCount || 0);
+  const isNewDay =
+    !user.aiUsage?.lastResetAt || user.aiUsage.lastResetAt < startOfToday;
+  const effectiveCount = isNewDay ? 0 : user.aiUsage?.dailyCount || 0;
 
   if (effectiveCount >= limit) {
     return { allowed: false, used: effectiveCount, limit };

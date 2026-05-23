@@ -11,12 +11,12 @@ const aiAssistCacheSchema = new mongoose.Schema(
     note: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Notes",
-      required: true,
+      required: false,
       index: true,
     },
     action: {
       type: String,
-      enum: ["grammar", "summarize", "explain", "rewrite", "continue"],
+      enum: ["grammar", "summarize", "explain", "rewrite", "continue", "noteCreation", "writeNote"],
       required: true,
       index: true,
     },

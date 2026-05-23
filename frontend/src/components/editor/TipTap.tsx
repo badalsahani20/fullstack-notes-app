@@ -23,6 +23,16 @@ import { TaskItem } from "@tiptap/extension-task-item";
 import { TextAlign } from "@tiptap/extension-text-align";
 import { Color } from "@tiptap/extension-color";
 import { DOCUMENT_PATTERNS, markdownToHtml } from "@/utils/markdownToHtml";
+import { usePanelStore } from "@/store/usePanelStore";
+import Placeholder from "@tiptap/extension-placeholder";
+
+const PLACEHOLDERS = [
+  "Need a starting point? Generate study notes with AI.",
+  "Turn a topic into structured notes instantly.",
+  "Paste a topic, lecture, or idea to begin.",
+  "Stuck on the blank page? Let AI create a study draft.",
+  "Start writing manually or generate notes with AI."
+];
 
 const CODE_MARKERS = [
   /[{};]\s*\n/,
@@ -127,6 +137,12 @@ type TipTapProps = {
 const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: TipTapProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const placeholderText = React.useMemo(() => {
+    const randomIndex = Math.floor(Math.random() * PLACEHOLDERS.length);
+    return PLACEHOLDERS[randomIndex];
+  }, []);
+
   const editor = useEditor({
     editable,
     extensions: [
@@ -145,6 +161,10 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
       FontFamily.configure({ types: ["textStyle"] }),
       Table.configure({ resizable: true }),
       TableRow, TableHeader, TableCell,
+      Placeholder.configure({
+        placeholder: placeholderText,
+        emptyNodeClass: "is-empty",
+      }),
     ],
     content,
     onUpdate: ({ editor }) => { onChange?.(editor.getHTML()); },
@@ -236,9 +256,32 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
   return (
     <div className="editor-shell relative mx-auto w-full max-w-[46rem]" style={{ ["--editor-font-size" as string]: `18px` }}>
       {editable && aiChat && (
-        <EditorBubbleMenu editor={editor} onAction={aiChat.runAction} loadingAction={aiChat.loadingAction} />
+        <EditorBubbleMenu 
+          editor={editor} 
+          onAction={aiChat.runAction} 
+          loadingAction={aiChat.loadingAction}
+          onAskAi={(selectedText, startLine, endLine) => {
+            const lineRange = startLine === endLine ? `line ${startLine}` : `lines ${startLine}-${endLine}`;
+            aiChat.setChatInput(`explain this part (${lineRange}):\n"${selectedText}"`);
+            usePanelStore.getState().setAiPanelOpen(true);
+            
+            let attempts = 0;
+            const focusTextarea = () => {
+              const chatInputEl = document.querySelector(".gc-textarea") as HTMLTextAreaElement;
+              if (chatInputEl) {
+                chatInputEl.focus();
+                chatInputEl.setSelectionRange(chatInputEl.value.length, chatInputEl.value.length);
+              } else if (attempts < 20) {
+                attempts++;
+                setTimeout(focusTextarea, 100);
+              }
+            };
+            setTimeout(focusTextarea, 100);
+          }}
+        />
       )}
       {editable && <AiInlineMenu editor={editor} />}
+
       <div className="overflow-x-auto">
         <EditorContent className="editor-content-shell" editor={editor} spellCheck={editable} onKeyDown={handleEditorKeyDown} />
       </div>

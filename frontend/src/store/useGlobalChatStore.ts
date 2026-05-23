@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import api from "@/lib/api";
 import { parseIrisResponse } from "../utils/parseIrisResponse";
-import { uploadImage } from "@/utils/uploadImage";
-import { SseStreamParser } from "../utils/sseParser";
+import { prepareChatImage } from "@/utils/uploadImage";
+import { consumeAiChatStream } from "@/utils/consumeAiChatStream";
 
 import type { IrisSegment } from "@/components/ai/types";
 
@@ -115,20 +115,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   sendMessage: async (text: string, image?: string | null) => {
     const { activeSessionId, messages } = get();
     const requestSessionId = activeSessionId;
-    let imageForApi = image || null;
-    let imageUrl: string | undefined;
-
-    if (image?.startsWith("data:image/")) {
-      const response = await fetch(image);
-      const blob = await response.blob(); // Convert base64 to Blob
-      const file = new File([blob], "chat-image.png", {
-        type: blob.type || "image/png",
-      });
-      imageForApi = await uploadImage(file);// Upload to get a URL for the API
-      imageUrl = imageForApi || undefined;
-    } else if (image?.startsWith("http://") || image?.startsWith("https://")) { // Already a URL, can be used directly
-      imageUrl = image;
-    }
+    const { imageForApi, imageUrl } = await prepareChatImage(image);
 
     // 1. Optimistically add user message
     const userMsg: ChatMessage = {
@@ -196,79 +183,34 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
         }));
       }
 
-      const reader = response.body.getReader();
-      let fullText = "";
-      let fullThought = "";
-      let lastUpdateTime = 0;
-      const THROTTLE_MS = 60;
-      const startTime = Date.now();
-      let thinkingEndTime = 0;
-
-      const parser = new SseStreamParser();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const events = parser.processChunk(value);
-
-        for (const data of events) {
-          if (data.type === "error") {
-            throw new Error(data.message || "AI service error");
-          }
-
-          // ── Tool activity event from controller ─────────────────────
-          if (data.type === "tool_call" && data.tool) {
+      const { fullText, fullThought, thinkingTime: finalThinkingTime } =
+        await consumeAiChatStream(response.body, {
+          throttleMs: 60,
+          onToolCall: ({ tool }) => {
             set((state) => ({
               messages: state.messages.map((m) =>
                 m.id === aiMsgId
-                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool }] }
                   : m
               ),
             }));
-            continue;
-          }
-          
-          const delta = data.choices?.[0]?.delta;
-          
-          const content = delta?.content || "";
-          const reasoning = delta?.reasoning || "";
-          
-          if (content && fullText.length === 0) {
-            // First content token arrived — thinking is done
-            thinkingEndTime = Date.now();
-          }
-          
-          fullText += content;
-          fullThought += reasoning;
-
-          const now = Date.now();
-          if (now - lastUpdateTime > THROTTLE_MS) {
-            const currentThinkingTime = thinkingEndTime 
-              ? Math.floor((thinkingEndTime - startTime) / 1000) 
-              : Math.floor((now - startTime) / 1000);
-
+          },
+          onUpdate: ({ fullText, fullThought, isThinking, thinkingTime }) => {
             set((state) => ({
               messages: state.messages.map((m) =>
-                m.id === aiMsgId ? { 
-                  ...m, 
+                m.id === aiMsgId ? {
+                  ...m,
                   text: fullText,
                   thought: fullThought,
-                  isThinking: fullText.length === 0,
-                  thinkingTime: currentThinkingTime
+                  isThinking,
+                  thinkingTime,
                 } : m
               ),
             }));
-            lastUpdateTime = now;
-          }
-        }
-      }
+          },
+        });
 
-      // 🎨 FINAL POLISH: Parse visualizations and clean up state
       const segments = parseIrisResponse(fullText);
-      const finalThinkingTime = thinkingEndTime 
-        ? Math.floor((thinkingEndTime - startTime) / 1000) 
-        : (fullThought ? Math.floor((Date.now() - startTime) / 1000) : 0);
 
       set((state) => ({
         isSending: false,

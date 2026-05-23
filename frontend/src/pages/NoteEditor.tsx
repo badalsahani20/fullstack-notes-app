@@ -263,6 +263,8 @@ const NoteEditor = () => {
           isMobile={isMobile}
 
           isSaving={isSavingNote}
+          loadingAction={aiChat.loadingAction}
+          onRunAction={aiChat.runAction}
         />
 
         <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
@@ -280,6 +282,7 @@ const NoteEditor = () => {
             editor={editorInstance}
             isMobile={isMobile}
             yOffset={isMobile ? keyboardOffset : 0}
+            aiChat={aiChat}
           />
         )}
       </motion.section>
@@ -287,23 +290,25 @@ const NoteEditor = () => {
   );
 
   return (
-    <div className="flex h-full min-h-0">
-      {isAiPanelOpen && isMobile ? (
+    <div className="flex h-full min-h-0 w-full relative">
+      {isMobile ? (
         <>
           {editorPane}
-          <div className="assistant-mobile-overlay">
-            <Suspense fallback={<AiPanelSkeleton mobileMode />}>
-              <ContextualAiPanel
-                aiChat={aiChat}
-                noteTitle={draftTitle || note?.title}
-                isNewNote={isNew}
-                onClose={() => setAiPanelOpen(false)}
-                mobileMode
-              />
-            </Suspense>
-          </div>
+          {isAiPanelOpen && (
+            <div className="assistant-mobile-overlay">
+              <Suspense fallback={<AiPanelSkeleton mobileMode />}>
+                <ContextualAiPanel
+                  aiChat={aiChat}
+                  noteTitle={draftTitle || note?.title}
+                  isNewNote={isNew}
+                  onClose={() => setAiPanelOpen(false)}
+                  mobileMode
+                />
+              </Suspense>
+            </div>
+          )}
         </>
-      ) : isAiPanelOpen ? (
+      ) : (
         <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
           {/* Study panel — left side */}
           {isStudyPanelOpen && (
@@ -325,50 +330,34 @@ const NoteEditor = () => {
               <ResizableHandle className="assistant-resize-handle" />
             </>
           )}
-          <ResizablePanel minSize="0" className="min-w-0 h-full">
-            {editorPane}
-          </ResizablePanel>
-          <ResizableHandle className="assistant-resize-handle" />
-          <ResizablePanel
-            defaultSize="35%"
-            minSize="25%"
-            maxSize="55%"
-            className="assistant-panel-shell h-full"
-          >
-            <Suspense fallback={<AiPanelSkeleton />}>
-              <ContextualAiPanel
-                aiChat={aiChat}
-                noteTitle={draftTitle || note?.title}
-                isNewNote={isNew}
-                onClose={() => setAiPanelOpen(false)}
-              />
-            </Suspense>
-          </ResizablePanel>
-        </ResizablePanelGroup>
 
-      ) : isStudyPanelOpen ? (
-        <ResizablePanelGroup orientation="horizontal" className="h-full min-h-0">
-          <ResizablePanel
-            defaultSize="35%"
-            minSize="25%" 
-            maxSize="60%"
-            className="h-full"
-          >
-            <Suspense fallback={<div className="study-skeleton h-full" />}>
-              <StudyPanel
-                noteId={noteId || ""}
-                chatHistory={aiChat.chatHistory ?? []}
-                onClose={() => setStudyPanelOpen(false)}
-              />
-            </Suspense>
-          </ResizablePanel>
-          <ResizableHandle className="assistant-resize-handle" />
+          {/* Stable Central Editor */}
           <ResizablePanel minSize="0" className="min-w-0 h-full">
             {editorPane}
           </ResizablePanel>
+
+          {/* AI Assistant panel — right side */}
+          {isAiPanelOpen && (
+            <>
+              <ResizableHandle className="assistant-resize-handle" />
+              <ResizablePanel
+                defaultSize="35%"
+                minSize="25%"
+                maxSize="55%"
+                className="assistant-panel-shell h-full"
+              >
+                <Suspense fallback={<AiPanelSkeleton />}>
+                  <ContextualAiPanel
+                    aiChat={aiChat}
+                    noteTitle={draftTitle || note?.title}
+                    isNewNote={isNew}
+                    onClose={() => setAiPanelOpen(false)}
+                  />
+                </Suspense>
+              </ResizablePanel>
+            </>
+          )}
         </ResizablePanelGroup>
-      ) : (
-        editorPane
       )}
 
       {isMobile && !isAiPanelOpen ? (
@@ -406,20 +395,6 @@ const NoteEditor = () => {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {/* Ask AI button */}
-          <button
-            type="button"
-            className="mobile-ai-fab mobile-ai-fab-sm"
-            onClick={() => {
-              void preloadAiPanel();
-              setAiPanelOpen(true);
-            }}
-            aria-label="Open AI assistant"
-          >
-            <Bot size={14} />
-            <span>Ask AI</span>
-          </button>
         </div>
       ) : null}
 

@@ -29,8 +29,12 @@ const getOpenRouterApiKey = () =>
 
 // --- VALIDATION HELPERS ---
 const ensureAiApiKey = () => {
-  if (!process.env.GEMINI_API_KEY && !getOpenRouterApiKey()) {
-    throw new Error(`Both GEMINI and OPENROUTER api keys are missing`);
+  if (
+    !process.env.GEMINI_API_KEY &&
+    !getOpenRouterApiKey() &&
+    !process.env.QWEN_API
+  ) {
+    throw new Error(`No AI provider API keys configured (GEMINI, OPENROUTER, or QWEN)`);
   }
 };
 
@@ -242,30 +246,53 @@ const executeGroq = async (messages, stream = false) => {
   return response.choices[0].message.content;
 };
 
-// Helper: Tries Gemini first, falls back to OpenRouter if Gemini fails or is missing
+// Helper: prefer OpenRouter (ling) → Gemini → QWEN → GROQ
 const generateContentWithFallback = async (prompt, stream = false) => {
   ensureAiApiKey();
+  const message = [{ role: "user", content: prompt }];
+  const errors = [];
 
-  // Try Gemini first if key exists
+  // 1) OpenRouter (preferred for `ling`)
   if (getOpenRouterApiKey()) {
-      return await executeOpenRouter(
-        "inclusionai/ling-2.6-flash",
-        [{ role: "user", content: prompt }],
-        stream,
-      )
+    try {
+      return await executeOpenRouter("inclusionai/ling-2.6-flash", message, stream);
+    } catch (err) {
+      errors.push(`Ling-2.6 flash failed: ${err.message}`);
+      console.warn("⚠️ Ling-2.6 flash failed, trying fallback models:", err.message);
+    }
   }
-  console.log("Query answered by deepseek v4 flash:free ");
 
-  // Fallback to qwen using direct fetch
-  if (process.env.QWEN_API) {
-    return await executeOpenRouter(
-      "meta-llama/llama-3.1-8b-instruct",
-      [{ role: "user", content: prompt }],
-      stream,
-    );
+  // 2) Gemini
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      return await executeGemini(message, stream);
+    } catch (err) {
+      errors.push(`Gemini failed: ${err.message}`);
+      console.warn("⚠️ Gemini failed, trying fallback models:", err.message);
+    }
   }
-console.log("Query answered by llama 8b instruct");
-  throw new Error("No AI feature keys configured");
+
+  // 3) QWEN (via OpenRouter when QWEN_API is present)
+  if (process.env.QWEN_API) {
+    try {
+      return await executeOpenRouter("qwen/qwen3.5-flash-02-23", message, stream);
+    } catch (err) {
+      errors.push(`QWEN/OpenRouter failed: ${err.message}`);
+      console.warn("⚠️ QWEN/OpenRouter failed, trying fallback models:", err.message);
+    }
+  }
+
+  // 4) GROQ / fallback
+  if (process.env.GROQ_API_KEY) {
+    try {
+      return await executeGroq(message, stream);
+    } catch (err) {
+      errors.push(`Groq failed: ${err.message}`);
+      console.warn("⚠️ Groq failed:", err.message);
+    }
+  }
+
+  throw new Error(`No AI feature keys configured or all providers failed: ${errors.join(" | ")}`);
 };
 
 // --- ROUTING & ORCHESTRATION ---
@@ -541,22 +568,79 @@ Return ONLY JSON:
   }
 };
 
-const actionPrompts = {
-  summarize: (text) =>
-    `Summarize the following note into concise markdown bullet points. Use hierarchical bullets if necessary. Keep important facts and action items. Return the final markdown text only, no code blocks, no planning notes, no requirement checklist, no self-correction, and no draft commentary.\n\nNote:\n${text}`,
-  explain: (text) =>
-    `Explain the note below in plain, beginner-friendly language. Break it down step by step if the content is complex. Use markdown headings and bullets to organize the explanation. Match the explanation length to the complexity of the note. Return the final markdown only, no code fences, no planning notes, no requirement checklist, no self-correction, and no draft commentary.
-Note:
-${text}`,
+const OUTPUT_RULES = `
+Output only the final markdown.
+Do not include:
+- planning notes
+- self-correction commentary
+- requirement checklists
+- draft commentary
+- unnecessary prefaces
 
-  rewrite: (text) =>
-    `Rewrite the text below to improve clarity, grammar, and flow while preserving the original meaning and intent. Return the result as markdown. Do not add new information or change the structure significantly. Return final markdown only, no code fences, no planning notes, no requirement checklist, no self-correction, and no draft commentary.
+Use code fences only for actual code.
+`;
+const actionPrompts = {
+  summarize: (text) => `
+Summarize this note into concise, information-dense markdown bullets.
+Preserve key concepts, facts, and action items.
+Use hierarchical bullets only when useful.
+
+${BASE_RULES}
+
+Note:
+${text}
+`,
+  explain: (text) => `
+Explain this note in beginner-friendly language using clear markdown structure.
+Simplify difficult concepts while preserving technical accuracy.
+Match explanation depth to the topic complexity.
+
+${BASE_RULES}
+
+Note:
+${text}
+`,
+
+  noteCreation: (text) => actionPrompts.writeNote(text),
+  writeNote: (text) => `
+Write a well-structured and engaging study note based on the following content.
+
+Goals:
+- Preserve all important concepts and explanations.
+- Improve clarity, flow, and readability.
+- Organize the note using clean markdown headings, subheadings, bullet points, tables, and emphasis where useful.
+- Add short intuitive explanations, real-world examples, analogies, or practical applications when they genuinely improve understanding.
+- Simplify confusing ideas without removing technical accuracy.
+- Highlight key terms, important takeaways, common mistakes, and memory-friendly insights where appropriate.
+- Keep the tone educational, polished, and easy to revise from.
+
+Important:
+- Do not invent false information.
+- Do not add unnecessary filler or motivational text.
+- Do not overuse examples.
+- Keep examples concise and relevant.
+- Maintain a balance between concise revision notes and deep understanding.
+
+  ${OUTPUT_RULES}
+  `,
+
+    rewrite: (text) => `
+Rewrite the text to improve clarity, grammar, and flow while preserving meaning and tone.
+
+${OUTPUT_RULES}
+
 Text:
-${text}`,
-  continue: (text) =>
-    `Continue the text below in markdown. Match the tone and style of the original. Do not restate or summarize what came before. Return final markdown only, no code fences, no planning notes, no requirement checklist, no self-correction, and no draft commentary.
-    Text:
-${text}`,
+${text}
+`,
+  continue: (text) => `
+Continue the text naturally while matching its tone and structure.
+Do not repeat or summarize previous content.
+
+${OUTPUT_RULES}
+
+Text:
+${text}
+`
 };
 
 export const runAiAssist = async ({ action, text, stream = false }) => {
@@ -925,9 +1009,11 @@ For revision: prioritize concise summaries, key points, and retention techniques
 Use step-by-step structures separated by horizontal lines (---). Ask thought-provoking follow-up questions when helpful.`;
 
 // VIZ: add when message suggests diagrams, flowcharts, or formulas.
-const P_VIZ = `Visualizations (use sparingly, only when it genuinely aids understanding):
-[IRIS_VIZ type="mermaid|chart|math" title="Title"]content[/IRIS_VIZ]
-mermaid = flowcharts/diagrams, chart = JSON data, math = LaTeX formulas. Do NOT overuse.`;
+const P_VIZ = `Use visualizations only when they genuinely help. Format: [IRIS_VIZ type="mermaid|chart|math" title="Title"]content[/IRIS_VIZ] — opening tag has NO slash, only closing does.
+- mermaid: flowcharts, sequence diagrams, bar/line charts (use xychart-beta inside content — never put xychart-beta as the type attribute).
+- chart: JSON data for charts. math: LaTeX formulas.
+- Bar chart example: [IRIS_VIZ type="mermaid" title="My Chart"]\nxychart-beta\n    title "My Chart"\n    x-axis ["A", "B", "C"]\n    y-axis "Count" 0 --> 10\n    bar [2, 5, 8]\n[/IRIS_VIZ]`;
+
 
 // CLARIFY: always add when teaching — lets Iris ask one focused question before explaining.
 const P_CLARIFY = `If the request is broad or ambiguous, ask ONE clarifying question first using:
@@ -936,6 +1022,7 @@ A) Option A
 B) Option B
 C) Option C
 [/IRIS_ASK]
+(CRITICAL: The opening tag starts with [IRIS_ASK, and only the closing tag has a slash: [/IRIS_ASK]).
 Only do this when it genuinely helps. Skip for simple or clear requests.`;
 
 // QUIZ: add only when user explicitly asks to be tested.
