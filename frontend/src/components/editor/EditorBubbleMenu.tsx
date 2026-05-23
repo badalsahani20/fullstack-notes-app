@@ -5,15 +5,12 @@ import {
   Bold, Italic,
   Underline, Strikethrough, Highlighter,
   Heading1, Heading2, List, ListOrdered, Quote, Code, Terminal,
-  Sparkles, Loader2, MoreHorizontal, ChevronDown, Eraser, X,
+  MoreHorizontal, ChevronDown, Eraser, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AiAction } from "@/components/ai/types";
 
 type Props = {
   editor: Editor;
-  onAction?: (action: AiAction) => void;
-  loadingAction?: AiAction | null;
   onAskAi?: (selectedText: string, startLine: number, endLine: number) => void;
 };
 
@@ -44,7 +41,7 @@ const MORE_ITEMS = [
 
 import { useEditorUIStore } from "@/store/useEditorUIStore";
 
-const EditorBubbleMenu = ({ editor, onAction, loadingAction, onAskAi }: Props) => {
+const EditorBubbleMenu = ({ editor, onAskAi }: Props) => {
   const [showMore, setShowMore] = React.useState(false);
   const [showMarker, setShowMarker] = React.useState(false);
 

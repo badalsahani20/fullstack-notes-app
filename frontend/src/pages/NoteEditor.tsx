@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
-import { Bot, Wand2, Loader2 } from "lucide-react";
+import { Wand2, Loader2 } from "lucide-react";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { usePanelStore } from "@/store/usePanelStore";

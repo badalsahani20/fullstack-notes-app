@@ -1,6 +1,7 @@
 import React from "react";
 import type { Editor } from "@tiptap/react";
-import { Archive, Star, Bot, BookOpen, ChevronLeft, Share2, MoreHorizontal } from "lucide-react";
+import { Archive, Star, Bot, BookOpen, ChevronLeft, Share2, MoreHorizontal, Loader2 } from "lucide-react";
+import type { AiAction } from "@/components/ai/types";
 
 import { motion } from "framer-motion";
 import { EditorStats } from "./EditorStats";
@@ -35,6 +36,8 @@ type EditorHeaderProps = {
   isStudyOpen?: boolean;
   isMobile?: boolean;
   isSaving?: boolean;
+  loadingAction?: AiAction | null;
+  onRunAction?: (action: AiAction) => Promise<void>;
 };
 
 
@@ -60,6 +63,7 @@ const EditorHeader = ({
   isStudyOpen,
   isMobile,
   isSaving,
+  loadingAction,
 }: EditorHeaderProps) => {
 
   const [isShareOpen, setIsShareOpen] = React.useState(false);
@@ -166,8 +170,12 @@ const EditorHeader = ({
               className={`ignite-button h-7 !px-3 text-[0.8rem] ${isAiOpen ? "nav-action-btn-active" : ""}`}
               aria-label="Toggle AI Assistant"
             >
-              <Bot size={14} />
-              <span className="hidden sm:inline">Ask AI</span>
+              {loadingAction ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Bot size={14} />
+              )}
+              <span className="hidden sm:inline">{loadingAction ? "Thinking..." : "Ask AI"}</span>
             </button>
           )}
 

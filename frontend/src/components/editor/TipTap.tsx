@@ -258,8 +258,6 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
       {editable && aiChat && (
         <EditorBubbleMenu 
           editor={editor} 
-          onAction={aiChat.runAction} 
-          loadingAction={aiChat.loadingAction}
           onAskAi={(selectedText, startLine, endLine) => {
             const lineRange = startLine === endLine ? `line ${startLine}` : `lines ${startLine}-${endLine}`;
             aiChat.setChatInput(`explain this part (${lineRange}):\n"${selectedText}"`);
