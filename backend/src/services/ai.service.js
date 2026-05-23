@@ -585,7 +585,7 @@ Summarize this note into concise, information-dense markdown bullets.
 Preserve key concepts, facts, and action items.
 Use hierarchical bullets only when useful.
 
-${BASE_RULES}
+${OUTPUT_RULES}
 
 Note:
 ${text}
@@ -595,7 +595,7 @@ Explain this note in beginner-friendly language using clear markdown structure.
 Simplify difficult concepts while preserving technical accuracy.
 Match explanation depth to the topic complexity.
 
-${BASE_RULES}
+${OUTPUT_RULES}
 
 Note:
 ${text}
@@ -622,6 +622,8 @@ Important:
 - Maintain a balance between concise revision notes and deep understanding.
 
   ${OUTPUT_RULES}
+
+  text:${text}
   `,
 
     rewrite: (text) => `
