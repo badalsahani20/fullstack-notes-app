@@ -12,12 +12,15 @@ import { useFolderStore } from "@/store/useFolderStore";
 import { usePanelStore } from "@/store/usePanelStore";
 import { WhatsNewModal } from "@/components/ui/WhatsNewModal";
 import { useWhatsNew } from "@/hooks/useWhatsNew";
+import { SettingsDialog } from "@/components/ui/SettingsDialog";
+import { useSettingsUIStore } from "@/store/useSettingsStore";
 
 type Pops = {
   middlePanel: React.ReactNode;
 }
 const MainLayout = ({ middlePanel }: Pops) => {
   const { isOpen: isWhatsNewOpen, dismiss: dismissWhatsNew } = useWhatsNew();
+  const { settingsOpen, closeSettings } = useSettingsUIStore();
   const bootstrapStartedRef = useRef(false);
   const {
     showGlobalHeader,
@@ -120,6 +123,7 @@ const MainLayout = ({ middlePanel }: Pops) => {
         <MobileDrawer open={isMobileDrawerOpen} onClose={() => setMobileDrawerOpen(false)} />
       )}
       <WhatsNewModal isOpen={isWhatsNewOpen} onDismiss={dismissWhatsNew} />
+      <SettingsDialog open={settingsOpen} onOpenChange={(v) => !v && closeSettings()} />
     </>
   );
 };

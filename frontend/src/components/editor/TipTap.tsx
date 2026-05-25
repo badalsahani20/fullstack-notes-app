@@ -25,6 +25,8 @@ import { Color } from "@tiptap/extension-color";
 import { DOCUMENT_PATTERNS, markdownToHtml } from "@/utils/markdownToHtml";
 import { usePanelStore } from "@/store/usePanelStore";
 import Placeholder from "@tiptap/extension-placeholder";
+import { useSettingsStore } from "@/store/useSettingsStore";
+import { cn } from "@/lib/utils";
 
 const PLACEHOLDERS = [
   "Need a starting point? Generate study notes with AI.",
@@ -137,6 +139,28 @@ type TipTapProps = {
 const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: TipTapProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { editorFont, editorFontSize, spellCheck, editorWidth } = useSettingsStore();
+
+  const fontSizeMap = {
+    sm: "15px",
+    md: "17px",
+    lg: "19px",
+    xl: "22px",
+  };
+
+  const editorWidthMap = {
+    comfortable: "max-w-[46rem]",
+    wide: "max-w-[64rem]",
+    full: "max-w-full",
+  };
+
+  const resolvedFontFamily =
+    editorFont === "Inter" ? "'Inter', sans-serif" :
+    editorFont === "Georgia" ? "'Georgia', serif" :
+    editorFont === "Lora" ? "'Lora', serif" :
+    editorFont === "JetBrains Mono" ? "'JetBrains Mono', monospace" :
+    "system-ui, sans-serif";
 
   const placeholderText = React.useMemo(() => {
     const randomIndex = Math.floor(Math.random() * PLACEHOLDERS.length);
@@ -254,7 +278,13 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
   if (!editor) return <div>Loading editor...</div>;
 
   return (
-    <div className="editor-shell relative mx-auto w-full max-w-[46rem]" style={{ ["--editor-font-size" as string]: `18px` }}>
+    <div
+      className={cn("editor-shell relative mx-auto w-full", editorWidthMap[editorWidth])}
+      style={{
+        ["--editor-font-size" as string]: fontSizeMap[editorFontSize],
+        ["--editor-font-family" as string]: resolvedFontFamily,
+      }}
+    >
       {editable && aiChat && (
         <EditorBubbleMenu 
           editor={editor} 
@@ -281,7 +311,7 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
       {editable && <AiInlineMenu editor={editor} />}
 
       <div className="overflow-x-auto">
-        <EditorContent className="editor-content-shell" editor={editor} spellCheck={editable} onKeyDown={handleEditorKeyDown} />
+        <EditorContent className="editor-content-shell" editor={editor} spellCheck={spellCheck && editable} onKeyDown={handleEditorKeyDown} />
       </div>
     </div>
   );

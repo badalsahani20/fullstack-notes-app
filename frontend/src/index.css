@@ -2298,6 +2298,7 @@
   min-height: 56vh;
   padding: 4px 8px 48px;
   font-size: var(--editor-font-size, 18px);
+  font-family: var(--editor-font-family, inherit);
   color: var(--text-strong);
   line-height: 2.02;
   letter-spacing: 0.002em;

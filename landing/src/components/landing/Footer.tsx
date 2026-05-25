@@ -86,7 +86,13 @@ export const Footer = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
-          <span>© {new Date().getFullYear()} Notesify. Crafted with care.</span>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-6">
+            <span>© {new Date().getFullYear()} Notesify. Crafted with care.</span>
+            <div className="flex gap-4">
+              <a href="/terms" className="hover:text-stone-300 transition-colors">Terms of Service</a>
+              <a href="/privacy" className="hover:text-stone-300 transition-colors">Privacy Policy</a>
+            </div>
+          </div>
           <span>Designed for thinkers · Built for speed</span>
         </div>
       </div>

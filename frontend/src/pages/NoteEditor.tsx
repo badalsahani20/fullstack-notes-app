@@ -9,6 +9,7 @@ import { useNoteQuery } from "@/hooks/useNotesQuery";
 import { usePanelStore } from "@/store/usePanelStore";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/editor/TipTap";
+import { useSettingsStore } from "@/store/useSettingsStore";
 const ContextualAiPanel = lazy(() => import("@/components/chat/ContextualAiPanel"));
 const StudyPanel = lazy(() => import("@/components/study/StudyPanel"));
 
@@ -77,6 +78,18 @@ const NoteEditor = () => {
   const { isAiPanelOpen, setAiPanelOpen } = usePanelStore();
   const [isStudyPanelOpen, setStudyPanelOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 960px)");
+
+  const { focusModeDefault } = useSettingsStore();
+
+  useEffect(() => {
+    if (focusModeDefault && noteId && !isNew) {
+      const searchParams = new URLSearchParams(location.search);
+      if (!searchParams.has("focus")) {
+        searchParams.set("focus", "2");
+        navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+      }
+    }
+  }, [focusModeDefault, noteId, isNew, location.search, location.pathname, navigate]);
 
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 

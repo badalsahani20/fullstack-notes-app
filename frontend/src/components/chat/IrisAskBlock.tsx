@@ -46,6 +46,15 @@ const IrisAskBlock = ({ segment, onAnswer, answered = false, chosenAnswer: contr
     const len = (segment.options || []).length; // 0 when no options
 
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target;
+      if (target instanceof HTMLElement) {
+        const isTyping = Boolean(target.closest("input, textarea, [contenteditable='true'], .ProseMirror"));
+        const isSelfInput = inputRef.current && target === inputRef.current;
+        if (isTyping && !isSelfInput) {
+          return;
+        }
+      }
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setActiveIndex((i) => (i + 1) % (len + 1)); // +1 for input row

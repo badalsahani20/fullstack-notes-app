@@ -11,8 +11,8 @@ import { NavLink, useParams, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useNoteStore } from "@/store/useNoteStore";
 import { usePanelStore } from "@/store/usePanelStore";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useSettingsUIStore } from "@/store/useSettingsStore";
 
 const ActivityBar = () => {
   const { noteId } = useParams();
@@ -21,6 +21,7 @@ const ActivityBar = () => {
   const { searchQuery, setSearchQuery } = useNoteStore();
   const { isFolderPanelOpen, toggleFolderPanel } = usePanelStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const openSettings = useSettingsUIStore((s) => s.openSettings);
 
   const toggleNotesPanel = (e: React.MouseEvent) => {
     // Only toggle focus mode if we are actually viewing a note
@@ -155,7 +156,7 @@ const ActivityBar = () => {
         <button
           className="nav-action-btn"
           aria-label="Settings"
-          onClick={() => toast.info("Settings are coming soon!")}
+          onClick={openSettings}
         >
           <Settings size={18} className="nav-icon" />
         </button>

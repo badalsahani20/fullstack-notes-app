@@ -14,10 +14,12 @@ import {
 import { useAuthStore } from "@/store/useAuthStore";
 import { toast } from "sonner";
 import { logout } from "@/lib/auth";
+import { useSettingsUIStore } from "@/store/useSettingsStore";
 
 const UserMenu = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const openSettings = useSettingsUIStore((s) => s.openSettings);
 
   const handleLogout = async () => {
     await logout();
@@ -62,7 +64,7 @@ const UserMenu = () => {
           <UserIcon className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info("Settings are coming soon!")}>
+        <DropdownMenuItem className="cursor-pointer" onClick={openSettings}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>
