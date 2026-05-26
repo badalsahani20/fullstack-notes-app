@@ -122,7 +122,7 @@ export const GenerateNotesDialog = ({ isOpen, onClose, onGenerate }: GenerateNot
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden border-none bg-transparent shadow-2xl">
+      <DialogContent showCloseButton={false} className="max-w-md p-0 overflow-hidden border-none bg-transparent shadow-2xl">
         <div className="flex flex-col bg-[var(--panel-bg)] border border-[var(--divider)] rounded-xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
           
           <DialogHeader className="px-6 py-5 border-b border-[var(--divider)] bg-[var(--panel-bg-strong)] flex-row items-center justify-between space-y-0">
