@@ -182,9 +182,9 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   };
 
   /** Runs one of the quick-action presets (Improve, Summarize, Brainstorm, Rewrite) directly into the editor */
-  const runAction = async (action: AiAction) => {
+  const runAction = async (action: AiAction, customPrompt?: string) => {
     const { text: selectedText, range } = getSelection(editor);
-    const sourceText = selectedText || editor?.getText() || plainNoteText;
+    const sourceText = customPrompt || selectedText || editor?.getText() || plainNoteText;
 
     if (!sourceText) {
       toast.error("No text found to process. Add content or select text first.");
@@ -204,7 +204,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         const fetchBody = JSON.stringify({
           noteId: effectiveNoteId,
           action,
-          selectedText: selectedText || undefined,
+          selectedText: customPrompt ? undefined : (selectedText || undefined),
           noteText: sourceText,
           stream: true,
         });

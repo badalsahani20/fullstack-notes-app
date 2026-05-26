@@ -1,4 +1,4 @@
-import React, { useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import React, { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Extension } from "@tiptap/core";
 import { DOMParser } from "prosemirror-model";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
@@ -27,6 +27,7 @@ import { usePanelStore } from "@/store/usePanelStore";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { cn } from "@/lib/utils";
+import { formatMarkDownNodes } from "@/utils/FormatMarkdownNodes";
 
 const PLACEHOLDERS = [
   "Need a starting point? Generate study notes with AI.",
@@ -129,6 +130,7 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
 import { useAiChat } from "@/hooks/useAiChat";
 
 type TipTapProps = {
+  noteId?: string;
   content: string;
   onChange?: (html: string) => void;
   onEditorReady?: (editor: Editor | null) => void;
@@ -136,7 +138,7 @@ type TipTapProps = {
   editable?: boolean;
 };
 
-const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: TipTapProps) => {
+const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = true }: TipTapProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -198,8 +200,9 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
         const html = event.clipboardData?.getData("text/html") ?? "";
 
         // 1. Prioritize native IDE code blocks
+        const isFencedMarkdown = /^\s*`{3,}/m.test(plainText);
         const isIdeCopy = html && /vscode-editor-data|font-family:.*?(?:Consolas|monospace|Courier|JetBrains)/i.test(html);
-        const isCode = plainText && (isIdeCopy || looksLikeCodeSnippet(plainText));
+        const isCode = plainText && !isFencedMarkdown && (isIdeCopy || looksLikeCodeSnippet(plainText));
 
         if (isCode) {
           // Wrap in code block if there's no rich HTML indicating it's a styled document
@@ -251,6 +254,14 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
 
   const handleEditorKeyDown = (event: ReactKeyboardEvent) => {
     if (!editor || !editable) return;
+
+    // Auto-format raw markdown shortcut: Ctrl/Cmd + Alt + F
+    if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      formatMarkDownNodes(editor);
+      return;
+    }
+
     if (event.key === "Escape") {
       const next = new URLSearchParams(location.search);
       if (next.has("focus")) {
@@ -274,6 +285,25 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
     onEditorReady(editor ?? null);
     return () => onEditorReady(null);
   }, [editor, onEditorReady]);
+
+  // Keep track of the active note ID to detect switches
+  const lastNoteIdRef = useRef<string | undefined>(undefined);
+
+  // Reactively sync content ONLY when first loading or switching notes
+  useEffect(() => {
+    if (!editor || !noteId) return;
+
+    if (noteId !== lastNoteIdRef.current) {
+      const isSwitching = lastNoteIdRef.current !== undefined && lastNoteIdRef.current !== "new";
+      const isInitialMount = lastNoteIdRef.current === undefined;
+      
+      lastNoteIdRef.current = noteId;
+
+      if (isInitialMount || isSwitching) {
+        editor.commands.setContent(content, { emitUpdate: false });
+      }
+    }
+  }, [noteId, editor]);
 
   if (!editor) return <div>Loading editor...</div>;
 

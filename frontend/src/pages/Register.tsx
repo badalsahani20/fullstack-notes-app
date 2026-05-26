@@ -10,6 +10,8 @@ const Register = () => {
         <img 
           src={illustration} 
           alt="" 
+          loading="eager"
+          fetchPriority="high"
           className="h-full w-full object-cover opacity-90 brightness-[85%] contrast-[105%]" 
         />
         {/* Gradients to ensure text readability */}

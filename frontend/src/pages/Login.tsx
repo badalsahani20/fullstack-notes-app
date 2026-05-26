@@ -191,7 +191,7 @@ const Login = () => {
       {/* Footer */}
       <div className="mt-8 flex flex-col items-center gap-4 text-center">
         <p className="text-[10px] text-white max-w-[280px] leading-relaxed">
-          By continuing, you agree to our <span className="text-[#818cf8] font-bold transition-colors hover:text-indigo-100 cursor-pointer">Terms</span> and <span className="text-[#818cf8] font-semibold transition-colors hover:text-indigo-100 cursor-pointer">Privacy Policy</span>.
+          By continuing, you agree to our <span onClick={() => window.open("https://notesify.in/terms", "_blank")} className="text-[#818cf8] font-bold transition-colors hover:text-indigo-100 cursor-pointer">Terms</span> and <span onClick={() => window.open("https://notesify.in/privacy", "_blank")} className="text-[#818cf8] font-semibold transition-colors hover:text-indigo-100 cursor-pointer">Privacy Policy</span>.
         </p>
       </div>
     </>

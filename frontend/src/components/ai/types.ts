@@ -6,9 +6,8 @@
 
 export type AiAction = "grammar" | "summarize" | "explain" | "rewrite" | "continue" | "noteCreation";
 
-export const actionMeta: Record<AiAction, { label: string; prompt: string }> = {
+export const actionMeta: Record<Exclude<AiAction, "noteCreation">, { label: string; prompt: string }> = {
   grammar: { label: "Improve", prompt: "Clean up grammar, punctuation, and small wording issues in this note." },
-  noteCreation: { label: "Generate Notes", prompt: "Create a new note based on the content and context of this selection." },
   summarize: { label: "Summarize", prompt: "Summarize the key ideas from this note into a concise explanation." },
   explain: { label: "Explain", prompt: "Explain this note in simpler language with clear takeaways." },
   rewrite: { label: "Rewrite", prompt: "Rewrite this note for clarity and better flow while keeping meaning intact." },

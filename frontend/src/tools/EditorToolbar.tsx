@@ -4,7 +4,7 @@ import {
   List, ListOrdered, CheckSquare,
   Image as ImageIcon, Table as TableIcon,
   Minus, Quote, Code, Eraser,
-  Maximize2, Minimize2, Sparkles, Loader2, ChevronDown
+  Maximize2, Minimize2, Sparkles, Loader2, ChevronDown, Zap
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -13,13 +13,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { actionMeta, type AiAction } from "@/components/ai/types";
+import { actionMeta } from "@/components/ai/types";
 import type { useAiChat } from "@/hooks/useAiChat";
 import { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { uploadImage } from "@/utils/uploadImage";
 import { toast } from "sonner";
 import { useEditorUIStore } from "@/store/useEditorUIStore";
+import { formatMarkDownNodes } from "@/utils/FormatMarkdownNodes";
 
 const FONT_SIZES = ["12", "14", "16", "18", "20", "24", "28", "32", "36"];
 
@@ -63,6 +64,12 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
     navigate(`${location.pathname}?${next.toString()}`, { replace: true });
   };
 
+  const handleFormatMarkdown = () => {
+    const formatted = formatMarkDownNodes(editor);
+    if(formatted) toast.success("Markdown auto formatted successfully!");
+    else toast.error("No raw markdown paragraphs detected!");
+  };
+
   return (
     <div 
       className={cn("dock-toolbar-wrapper", isMobile && "dock-toolbar-mobile")}
@@ -78,6 +85,13 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
               icon={isFocusMode ? <Minimize2 size={16} strokeWidth={1.5} /> : <Maximize2 size={16} strokeWidth={1.5} />} 
               title="Toggle Focus Mode" 
               color="#3b82f6"
+            />
+            <ToolbarButton 
+              active={false} 
+              onClick={handleFormatMarkdown} 
+              icon={<Zap size={16} strokeWidth={1.5} />} 
+              title="Auto-format Markdown" 
+              color="#ea580c"
             />
             {aiChat && !isMobile && (
               <DropdownMenu>
@@ -107,7 +121,7 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
                   sideOffset={8}
                   className="assistant-actions-menu w-44 shadow-md z-[99999]"
                 >
-                  {(Object.keys(actionMeta) as AiAction[]).map((action) => (
+                  {(Object.keys(actionMeta) as (keyof typeof actionMeta)[]).map((action) => (
                     <DropdownMenuItem
                       key={action}
                       onClick={() => void aiChat.runAction(action)}

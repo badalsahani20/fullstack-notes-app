@@ -15,6 +15,7 @@ const StudyPanel = lazy(() => import("@/components/study/StudyPanel"));
 
 import EmptyEditorState from "@/components/editor/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
+import { GenerateNotesDialog } from "@/components/editor/GenerateNotesDialog";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useAiChat } from "@/hooks/useAiChat";
@@ -27,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { actionMeta, type AiAction } from "@/components/ai/types";
+import { actionMeta } from "@/components/ai/types";
 
 const preloadAiPanel = () => import("@/components/chat/ContextualAiPanel");
 
@@ -68,6 +69,7 @@ const NoteEditor = () => {
   const [draftTitle, setDraftTitle] = useState("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const createdNoteIdRef = useRef<string | null>(null);
+  const [isGenerateNotesOpen, setIsGenerateNotesOpen] = useState(false);
 
   const note = isNew
     ? { _id: "new", title: draftTitle, content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
@@ -81,12 +83,20 @@ const NoteEditor = () => {
 
   const { focusModeDefault } = useSettingsStore();
 
+  const lastInitializedNoteIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (focusModeDefault && noteId && !isNew) {
-      const searchParams = new URLSearchParams(location.search);
-      if (!searchParams.has("focus")) {
-        searchParams.set("focus", "2");
-        navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+    if (!noteId || isNew) return;
+
+    if (noteId !== lastInitializedNoteIdRef.current) {
+      lastInitializedNoteIdRef.current = noteId;
+
+      if (focusModeDefault) {
+        const searchParams = new URLSearchParams(location.search);
+        if (!searchParams.has("focus")) {
+          searchParams.set("focus", "2");
+          navigate(`${location.pathname}?${searchParams.toString()}`, { replace: true });
+        }
       }
     }
   }, [focusModeDefault, noteId, isNew, location.search, location.pathname, navigate]);
@@ -278,11 +288,12 @@ const NoteEditor = () => {
           isSaving={isSavingNote}
           loadingAction={aiChat.loadingAction}
           onRunAction={aiChat.runAction}
+          onOpenGenerateNotes={() => setIsGenerateNotesOpen(true)}
         />
 
         <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
           <TipTap
-            key={editorKey}
+            noteId={note?._id}
             content={isNew ? "" : note.content}
             onChange={handleContentChange}
             onEditorReady={setEditorInstance}
@@ -397,7 +408,7 @@ const NoteEditor = () => {
               sideOffset={8}
               className="assistant-actions-menu w-44 shadow-md z-[99999]"
             >
-              {(Object.keys(actionMeta) as AiAction[]).map((action) => (
+              {(Object.keys(actionMeta) as (keyof typeof actionMeta)[]).map((action) => (
                 <DropdownMenuItem
                   key={action}
                   onClick={() => void aiChat.runAction(action)}
@@ -415,6 +426,12 @@ const NoteEditor = () => {
         result={aiChat.result}
         onApply={aiChat.applySuggestionToSelection}
         onClose={() => aiChat.setResult(null)}
+      />
+
+      <GenerateNotesDialog
+        isOpen={isGenerateNotesOpen}
+        onClose={() => setIsGenerateNotesOpen(false)}
+        onGenerate={(promptContext) => void aiChat.runAction("noteCreation", promptContext)}
       />
     </div>
   );

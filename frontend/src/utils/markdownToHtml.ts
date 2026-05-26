@@ -8,6 +8,7 @@ export const DOCUMENT_PATTERNS = [
   /^\s*>/m,
   /^\s*- \[[ x]\]/m,
   /^---+$/m,
+  /^\s*`{3,}/m,
 ];
 
 const escapeHtml = (text: string): string =>
@@ -30,7 +31,19 @@ const parseTableRow = (row: string): string[] =>
     .map((cell) => cell.trim());
 
 export const markdownToHtml = (md: string): string => {
-  const lines = md.replace(/\r\n/g, "\n").split("\n");
+  // Pre-process to split combined inline code block fences into clean separate lines
+  let processedMd = md.replace(/\r\n/g, "\n");
+  
+  // 1. If there's text before a code fence, put the fence on a new line
+  processedMd = processedMd.replace(/([^\s`]+)\s*(```)/g, "$1\n$2");
+  
+  // 2. If there's code on the same line as the opening fence (e.g. ```javascript const x = 5;), put the code on a new line
+  processedMd = processedMd.replace(/(```\w*)\s+([^\s].*)/g, "$1\n$2");
+  
+  // 3. If there's text on the same line after a closing fence (e.g. ``` other text), put the other text on a new line
+  processedMd = processedMd.replace(/(```)\s+([^\s`].*)/g, "$1\n$2");
+
+  const lines = processedMd.split("\n");
   const out: string[] = [];
   let i = 0;
 

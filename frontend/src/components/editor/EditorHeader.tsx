@@ -1,9 +1,7 @@
 import React from "react";
 import type { Editor } from "@tiptap/react";
-import { Archive, Star, Bot, BookOpen, ChevronLeft, Share2, MoreHorizontal, Loader2 } from "lucide-react";
+import { Archive, Star, BookOpen, ChevronLeft, Share2, MoreHorizontal, Loader2 } from "lucide-react";
 import type { AiAction } from "@/components/ai/types";
-
-import { motion } from "framer-motion";
 import { EditorStats } from "./EditorStats";
 import { ShareModal } from "./ShareModal";
 import type { Note } from "@/store/useNoteStore";
@@ -38,6 +36,7 @@ type EditorHeaderProps = {
   isSaving?: boolean;
   loadingAction?: AiAction | null;
   onRunAction?: (action: AiAction) => Promise<void>;
+  onOpenGenerateNotes?: () => void;
 };
 
 
@@ -64,6 +63,7 @@ const EditorHeader = ({
   isMobile,
   isSaving,
   loadingAction,
+  onOpenGenerateNotes,
 }: EditorHeaderProps) => {
 
   const [isShareOpen, setIsShareOpen] = React.useState(false);
@@ -98,48 +98,18 @@ const EditorHeader = ({
         </div>
 
         <div className="editor-meta-stack">
-          {/* ── Desktop: show all actions inline ── */}
-          <div className="hidden md:flex items-center gap-1">
+          {/* Generate Notes button — desktop only */}
+          {!isMobile && (
             <button
               type="button"
-              onClick={() => setIsShareOpen(true)}
-              className={`editor-star-toggle editor-share-toggle ${note.isShared ? "text-[var(--accent-strong)] border-[var(--accent-strong)]/30 bg-[var(--accent-strong)]/5" : ""}`}
-              aria-label="Share note"
+              onClick={onOpenGenerateNotes}
+              className="ignite-button h-7 !px-3 text-[0.8rem]"
+              aria-label="Generate notes with Iris"
             >
-              <Share2 size={15} />
-              <span className="hidden md:inline">{note.isShared ? "Sharing" : "Share"}</span>
+              <div className="iris-orb shrink-0" style={{ width: "12px", height: "12px", borderWidth: "1px", boxShadow: "none" }} />
+              <span className="hidden sm:inline">Generate Notes</span>
             </button>
-
-            <button
-              type="button"
-              onClick={() => onToggleArchive(note._id)}
-              className={`editor-star-toggle editor-archive-toggle ${note.isArchived ? "editor-archive-toggle-active" : ""}`}
-              aria-label={note.isArchived ? "Unarchive note" : "Archive note"}
-            >
-              <Archive size={15} />
-              <span className="hidden md:inline">{note.isArchived ? "Archived" : "Archive"}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onTogglePin(note._id)}
-              className={`editor-star-toggle editor-pin-toggle ${note.pinned ? "editor-star-toggle-active" : ""}`}
-              aria-label={note.pinned ? "Remove from favorites" : "Add to favorites"}
-            >
-              <motion.div
-                key={note.pinned ? "pinned" : "unpinned"}
-                initial={{ scale: 0.5, rotate: -30 }}
-                animate={{ scale: 1, rotate: 0 }}
-                whileHover={{ scale: 1.2, rotate: 15 }}
-                whileTap={{ scale: 0.8, rotate: -15 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                className="flex items-center justify-center p-0.5"
-              >
-                <Star size={16} fill={note.pinned ? "currentColor" : "none"} strokeWidth={note.pinned ? 2 : 1.5} />
-              </motion.div>
-              <span className="hidden md:inline">{note.pinned ? "Starred" : "Star"}</span>
-            </button>
-          </div>
+          )}
 
           {/* Study button — desktop only */}
           {!isMobile && (
@@ -161,31 +131,30 @@ const EditorHeader = ({
 
           {/* AI button — always visible */}
           {!isMobile && (
-
             <button
               type="button"
               onClick={onAskAi}
               onMouseEnter={onAskAiHover}
               onFocus={onAskAiHover}
               className={`ignite-button h-7 !px-3 text-[0.8rem] ${isAiOpen ? "nav-action-btn-active" : ""}`}
-              aria-label="Toggle AI Assistant"
+              aria-label="Toggle Iris AI Assistant"
             >
               {loadingAction ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
-                <Bot size={14} />
+                <div className="iris-orb shrink-0" style={{ width: "12px", height: "12px", borderWidth: "1px", boxShadow: "none" }} />
               )}
-              <span className="hidden sm:inline">{loadingAction ? "Thinking..." : "Ask AI"}</span>
+              <span className="hidden sm:inline">{loadingAction ? "Thinking..." : "Iris"}</span>
             </button>
           )}
 
-          {/* ── Mobile: collapse Share / Archive / Star into ⋯ menu ── */}
-          <div className="flex md:hidden">
+          {/* Unified expandable menu (Star, Archive, Share) for all screens */}
+          <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="editor-star-toggle"
+                  className="editor-star-toggle flex items-center justify-center rounded-lg p-1.5 hover:bg-white/5 active:bg-white/10 transition-colors"
                   aria-label="More actions"
                 >
                   <MoreHorizontal size={16} />
@@ -233,7 +202,7 @@ const EditorHeader = ({
       <div className="editor-title-meta">
         <span className="editor-folder-label flex items-center gap-1.5 leading-none">
           {(folderLabel ?? folder?.name ?? "All Notes") === "AI Notes" && (
-            <Bot size={12} className="text-[var(--accent-strong)]" />
+            <div className="iris-orb shrink-0" style={{ width: "10px", height: "10px", borderWidth: "1px", boxShadow: "none" }} />
           )}
           {folderLabel ?? folder?.name ?? "All Notes"}
         </span>

@@ -195,8 +195,8 @@ const SignupForm = () => {
 
         <div className="mt-6 flex flex-col items-center gap-4 text-left [@media(max-height:800px)]:mt-4">
           <p className="max-w-[380px] text-sm leading-relaxed text-zinc-200">
-            By signing up, you agree to our <span className="cursor-pointer font-semibold text-[#818cf8] transition-colors hover:text-indigo-400">Terms</span> and{" "}
-            <span className="cursor-pointer font-semibold text-[#818cf8] transition-colors hover:text-indigo-400">Privacy Policy</span>.
+            By signing up, you agree to our <span onClick={() => window.open("https://notesify.in/terms", "_blank")} className="cursor-pointer font-semibold text-[#818cf8] transition-colors hover:text-indigo-400">Terms</span> and{" "}
+            <span onClick={() => window.open("https://notesify.in/privacy", "_blank")} className="cursor-pointer font-semibold text-[#818cf8] transition-colors hover:text-indigo-400">Privacy Policy</span>.
           </p>
         </div>
       </div>

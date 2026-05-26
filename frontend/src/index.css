@@ -136,8 +136,8 @@
   --sidebar-row-hover: rgba(255, 255, 255, 0.035);
   --sidebar-row-active: rgba(30, 64, 175, 0.2);
   --sidebar-badge-bg: rgba(255, 255, 255, 0.06);
-  --code-bg: rgba(165, 180, 252, 0.12);
-  --code-text: #a5b4fc;
+  --code-bg: #2c2c2d;
+  --code-text:  rgb(249, 117, 131);
 
   --theme-transition: background 0.4s ease-in-out,
     color 0.4s ease-in-out,
@@ -2516,6 +2516,7 @@
   overflow-x: auto;
   overflow-y: clip; /* clips corners for border-radius without blocking horizontal scroll */
   margin: 1.8rem 0;
+  width: fit-content;
   max-width: 100%;
   border-radius: 12px;
   border: 1px solid var(--divider);
@@ -2538,8 +2539,8 @@
   border-collapse: collapse;
   margin: 0;
   table-layout: auto;
-  min-width: 100%;
   width: max-content;
+  max-width: 100%;
 }
 
 .ProseMirror table tr {
@@ -2956,8 +2957,8 @@ span[data-ai-ghost] {
   border-collapse: collapse;
   margin: 0;
   table-layout: auto;
-  min-width: 100%;
   width: max-content;
+  max-width: 100%;
 }
 
 .editor-content-shell .ProseMirror table td,
