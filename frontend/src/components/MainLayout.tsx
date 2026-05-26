@@ -12,7 +12,7 @@ import { useFolderStore } from "@/store/useFolderStore";
 import { usePanelStore } from "@/store/usePanelStore";
 import { WhatsNewModal } from "@/components/ui/WhatsNewModal";
 import { useWhatsNew } from "@/hooks/useWhatsNew";
-import { SettingsDialog } from "@/components/ui/SettingsDialog";
+import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { useSettingsUIStore } from "@/store/useSettingsStore";
 
 type Pops = {

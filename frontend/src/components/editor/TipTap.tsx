@@ -140,7 +140,7 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { editorFont, editorFontSize, spellCheck, editorWidth } = useSettingsStore();
+  const { editorFont, editorFontSize, spellCheck, editorWidth, lineSpacing } = useSettingsStore();
 
   const fontSizeMap = {
     sm: "15px",
@@ -283,6 +283,7 @@ const TipTap = ({ content, onChange, onEditorReady, aiChat, editable = true }: T
       style={{
         ["--editor-font-size" as string]: fontSizeMap[editorFontSize],
         ["--editor-font-family" as string]: resolvedFontFamily,
+        ["--editor-line-height" as string]: lineSpacing === "relaxed" ? "2.4" : "2.02",
       }}
     >
       {editable && aiChat && (

@@ -6,6 +6,7 @@ export type EditorFontSize = "sm" | "md" | "lg" | "xl";
 export type AppTheme = "dark" | "darker" | "midnight";
 export type EditorWidth = "comfortable" | "wide" | "full";
 export type SpellCheck = boolean;
+export type LineSpacing = "normal" | "relaxed";
 
 // ─── Non-persisted UI state (dialog open/close) ───────────────────────────────
 interface SettingsUIStore {
@@ -32,6 +33,7 @@ interface SettingsState {
   showWordCount: boolean;
   autoSaveIndicator: boolean;
   focusModeDefault: boolean;
+  lineSpacing: LineSpacing;
 
   // Actions
   setTheme: (theme: AppTheme) => void;
@@ -42,6 +44,7 @@ interface SettingsState {
   setShowWordCount: (val: boolean) => void;
   setAutoSaveIndicator: (val: boolean) => void;
   setFocusModeDefault: (val: boolean) => void;
+  setLineSpacing: (val: LineSpacing) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -56,6 +59,7 @@ export const useSettingsStore = create<SettingsState>()(
       showWordCount: true,
       autoSaveIndicator: true,
       focusModeDefault: false,
+      lineSpacing: "normal",
 
       setTheme: (theme) => set({ theme }),
       setEditorWidth: (editorWidth) => set({ editorWidth }),
@@ -65,6 +69,7 @@ export const useSettingsStore = create<SettingsState>()(
       setShowWordCount: (showWordCount) => set({ showWordCount }),
       setAutoSaveIndicator: (autoSaveIndicator) => set({ autoSaveIndicator }),
       setFocusModeDefault: (focusModeDefault) => set({ focusModeDefault }),
+      setLineSpacing: (lineSpacing) => set({ lineSpacing }),
     }),
     {
       name: "notesify-settings",
