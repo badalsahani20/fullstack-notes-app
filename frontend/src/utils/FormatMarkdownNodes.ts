@@ -17,8 +17,19 @@ export const formatMarkDownNodes = (editor: any) : boolean => {
         const startPos = offset;
         const endPos = offset + node.nodeSize;
 
+        // Check if this paragraph contains any inline/nested image node
+        let hasImage = false;
+        if (node.type.name === "paragraph") {
+            node.descendants((child: any) => {
+                if (child.type.name === "image") {
+                    hasImage = true;
+                }
+            });
+        }
+
         // ONLY target paragraph nodes at the top level to prevent destroying existing formatted lists, headings, tables or blockquotes!
-        if(node.type.name === "paragraph") {
+        // Skip paragraphs that contain images to prevent losing them during raw text format conversion.
+        if (node.type.name === "paragraph" && !hasImage) {
             if(!currentRange) {
                 currentRange = {
                     from: startPos,
