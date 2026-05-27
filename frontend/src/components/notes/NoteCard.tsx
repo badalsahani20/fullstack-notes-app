@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useCallback, useEffect } from "react";
 import { Archive, RotateCcw, Star, Trash2, X, MoreVertical } from "lucide-react";
 import { stripHtml } from "@/utils/stripHtml";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,22 +45,41 @@ const NoteCard = ({
   const preview = useMemo(() => stripHtml(note.content || ""), [note.content]);
   const queryClient = useQueryClient();
 
-  let hoverTimeout: ReturnType<typeof setTimeout>;
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleHoverStart = (noteId: string) => {
-    clearTimeout(hoverTimeout);
-    hoverTimeout = setTimeout(() => {
+  const handleHoverStart = useCallback((noteId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
       queryClient.prefetchQuery({
         queryKey: ["note", noteId],
         queryFn: () => useNoteQuery(noteId),
       });
     }, 150);
-  };
+  }, [queryClient]);
+
+  const handleHoverEnd = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Cleanup timeout on component unmount to prevent leaks
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <article
       onClick={onClick}
       onMouseEnter={() => handleHoverStart(note._id)}
+      onMouseLeave={handleHoverEnd}
       draggable
       onDragStart={(e: any) => {
         e.dataTransfer.setData("application/notesify-note", JSON.stringify({ 
