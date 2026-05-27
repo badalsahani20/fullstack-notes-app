@@ -1,33 +1,14 @@
 import { app, BrowserWindow, screen } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { fork } from 'child_process';
-import isDev from 'electron-is-dev';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let serverProcess;
 let mainWindow;
 
-function startBackend() {
-  // Path to backend/server.js
-  const serverPath = path.join(__dirname, '..', 'backend', 'server.js');
-  
-  serverProcess = fork(serverPath, [], {
-    cwd: path.join(__dirname, '..', 'backend'),
-    env: { ...process.env, NODE_ENV: isDev ? 'development' : 'production' },
-    stdio: 'inherit'
-  });
-
-  serverProcess.on('error', (err) => {
-    console.error('Failed to start backend:', err);
-  });
-
-  serverProcess.on('exit', (code) => {
-    console.log(`Backend server exited with code ${code}`);
-  });
-}
+const isDev = !app.isPackaged;
+const PRODUCTION_URL = 'https://app.notesify.in';
 
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
@@ -41,13 +22,13 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     },
     title: "Notesify",
-    backgroundColor: '#000000',
+    backgroundColor: '#0f0f11', // Match premium dark theme background
     show: false, // Don't show until ready
     autoHideMenuBar: true, // Hide the default menu bar
     titleBarStyle: 'hidden', // Modern title bar
     titleBarOverlay: { // Integrated window controls
       color: '#00000000', // Transparent
-      symbolColor: '#000000', // Black icons
+      symbolColor: '#ffffff', // White icons for dark mode
       height: 35
     },
   });
@@ -59,12 +40,15 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, the backend server (on 5500) will serve the frontend as static files.
-    // Give the backend a moment to start up.
-    setTimeout(() => {
-      mainWindow.loadURL('http://localhost:5500');
-    }, 1000);
+    mainWindow.loadURL(PRODUCTION_URL);
   }
+
+  // Handle loading failures (e.g. offline state) by loading a beautiful local fallback screen
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    if (!isDev && validatedURL.startsWith(PRODUCTION_URL)) {
+      mainWindow.loadFile(path.join(__dirname, 'offline.html'));
+    }
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -76,7 +60,6 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  startBackend();
   createWindow();
 
   app.on('activate', () => {
@@ -90,8 +73,3 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('will-quit', () => {
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-});

@@ -10,7 +10,7 @@
     "desktop:dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\" \"wait-on http://localhost:5173 && electron .\"",
     "build:frontend": "npm run build --prefix frontend",
     "build:backend": "echo \"Backend build not needed for electron-builder yet\"",
-    "build:desktop": "npm run build:frontend && electron-builder"
+    "build:desktop": "electron-builder"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
@@ -23,17 +23,25 @@
     "appId": "com.fullstack-notes.app",
     "productName": "Notesify",
     "directories": {
-      "output": "dist-desktop"
+      "output": "dist-desktop-build"
     },
+    "icon": "build/icon.png",
     "win": {
-      "target": "portable",
-      "icon": "desktop/icon.ico"
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Notesify"
     },
     "files": [
-      "desktop/**/*",
-      "backend/**/*",
-      "frontend/dist/**/*",
-      "!backend/node_modules/**/*"
+      "desktop/**/*"
     ],
     "asar": true
   }
