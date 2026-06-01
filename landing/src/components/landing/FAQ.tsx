@@ -9,7 +9,7 @@ const FAQS = [
   },
   {
     question: "How is Notesify different from other apps?",
-    answer: "Notesify isn't just a place to store text—it's an active learning environment. While most tools focus purely on writing, we focus on understanding. We are currently building native, AI-generated quizzes, interactive puzzles, and spaced-repetition flashcards directly into your workspace. These 'Coming Soon' features will actively test your knowledge and help you retain exactly what you learn."
+    answer: "Notesify isn't just a place to store text—it's an active learning environment. While most tools focus purely on writing, we focus on understanding. We have built native, AI-generated quizzes and spaced-repetition flashcards directly into your workspace. These active study tools instantly test your recall, highlight weak spots, and help you retain exactly what you learn."
   },
   {
     question: "Will there be a paid plan later?",

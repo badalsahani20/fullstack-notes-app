@@ -2,7 +2,7 @@ import { FileText, Hash, Bold, Italic, List, Image as ImageIcon, Sparkles } from
 
 export const EditorPreview = () => {
   return (
-    <div className="glass-card overflow-hidden shadow-2xl shadow-orange-900/20 relative z-10">
+    <div className="glass-card overflow-hidden shadow-2xl shadow-indigo-900/20 relative z-10">
       {/* Window chrome */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
         <div className="flex items-center gap-1.5">
@@ -30,7 +30,7 @@ export const EditorPreview = () => {
             <Icon className="h-3.5 w-3.5" />
           </button>
         ))}
-        <div className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-orange-500/10 border border-orange-500/30 px-2 py-1 text-[11px] text-orange-400 font-medium">
+        <div className="ml-auto inline-flex items-center gap-1.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 px-2 py-1 text-[11px] text-indigo-400 font-medium">
           <Sparkles className="h-3 w-3" /> Iris is on
         </div>
       </div>
@@ -66,7 +66,7 @@ export const EditorPreview = () => {
           <span className="text-stone-600 italic">
             , beginning with our early access community on November 4th
           </span>
-          <span className="inline-block w-[2px] h-4 bg-orange-500 align-middle ml-0.5 animate-blink" />
+          <span className="inline-block w-[2px] h-4 bg-indigo-500 align-middle ml-0.5 animate-blink" />
         </p>
 
         <div className="pt-4 space-y-3">

@@ -7583,7 +7583,7 @@ html:not(.dark) .dock-btn-active {
 }
 
 /* Syntax Highlighting Tokens  */
-.gc-token-comment { color: #71717a; font-style: italic; }
+.gc-token-comment { color: #6a9955; font-style: italic; }
 .gc-token-keyword { color: #3b82f6; font-weight: 600; }
 .gc-token-string { color: #10b981; }
 .gc-token-number { color: #f59e0b; }

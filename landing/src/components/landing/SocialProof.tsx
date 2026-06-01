@@ -46,14 +46,14 @@ export const SocialProof = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-2">
+          {/* <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 pt-2">
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
               <div className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[10px] tracking-widest text-emerald-400 uppercase font-bold">
                 Alpha Access Live
               </span>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

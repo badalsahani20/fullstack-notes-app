@@ -4,7 +4,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { mapDiffsToError } from "../utils/mapDiffsToError.js";
 import { client } from "../utils/groqClient.js";
 import { summarizeHistory } from "../utils/summarizeHistory.js";
-import { OpenRouter } from "@openrouter/sdk";
 import Prompt from "../models/prompts.model.js";
 import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 
@@ -34,7 +33,9 @@ const ensureAiApiKey = () => {
     !getOpenRouterApiKey() &&
     !process.env.QWEN_API
   ) {
-    throw new Error(`No AI provider API keys configured (GEMINI, OPENROUTER, or QWEN)`);
+    throw new Error(
+      `No AI provider API keys configured (GEMINI, OPENROUTER, or QWEN)`,
+    );
   }
 };
 
@@ -255,10 +256,17 @@ const generateContentWithFallback = async (prompt, stream = true) => {
   // 1) OpenRouter (preferred for `ling`)
   if (getOpenRouterApiKey()) {
     try {
-      return await executeOpenRouter("inclusionai/ling-2.6-flash", message, stream);
+      return await executeOpenRouter(
+        "inclusionai/ling-2.6-flash",
+        message,
+        stream,
+      );
     } catch (err) {
       errors.push(`Ling-2.6 flash failed: ${err.message}`);
-      console.warn("⚠️ Ling-2.6 flash failed, trying fallback models:", err.message);
+      console.warn(
+        "⚠️ Ling-2.6 flash failed, trying fallback models:",
+        err.message,
+      );
     }
   }
 
@@ -275,10 +283,17 @@ const generateContentWithFallback = async (prompt, stream = true) => {
   // 3) QWEN (via OpenRouter when QWEN_API is present)
   if (process.env.QWEN_API) {
     try {
-      return await executeOpenRouter("qwen/qwen3.5-flash-02-23", message, stream);
+      return await executeOpenRouter(
+        "qwen/qwen3.5-flash-02-23",
+        message,
+        stream,
+      );
     } catch (err) {
       errors.push(`QWEN/OpenRouter failed: ${err.message}`);
-      console.warn("⚠️ QWEN/OpenRouter failed, trying fallback models:", err.message);
+      console.warn(
+        "⚠️ QWEN/OpenRouter failed, trying fallback models:",
+        err.message,
+      );
     }
   }
 
@@ -292,7 +307,9 @@ const generateContentWithFallback = async (prompt, stream = true) => {
     }
   }
 
-  throw new Error(`No AI feature keys configured or all providers failed: ${errors.join(" | ")}`);
+  throw new Error(
+    `No AI feature keys configured or all providers failed: ${errors.join(" | ")}`,
+  );
 };
 
 // --- ROUTING & ORCHESTRATION ---
@@ -341,13 +358,13 @@ const getAiReply = async (
   // --- TIER 1: OPENROUTER (PRIMARY - FAST & RELIABLE DEEPSEEK) ---
   if (getOpenRouterApiKey()) {
     try {
-      console.log("🔥 Attempting Primary: OpenRouter (DeepSeek/Qwen)...");
+      console.log("🔥 Attempting Primary: Ling-2.6 flash ");
       const isVisualConvo =
         imageBase64 ||
         history.some((h) => h.content.includes("[Attached Image]"));
       const activeModel = isVisualConvo
         ? "qwen/qwen3.5-flash-02-23"
-        : PRIMARY_MODEL;
+        : "inclusionai/ling-2.6-flash";
 
       const shouldReason = !isVisualConvo && useReasoning;
 
@@ -366,19 +383,24 @@ const getAiReply = async (
     }
   }
 
-  // --- TIER 2: GEMINI FLASH (SECONDARY FALLBACK) ---
-  if (process.env.GEMINI_API_KEY) {
+  if (getOpenRouterApiKey()) {
     try {
-      console.log("💎 Attempting Secondary: Gemini Flash...");
-      const reply = await executeGemini(messages, stream);
-      console.log("✅ Chat answered by Gemini Flash (Tier 2)");
+      console.log("Attempting Tier 2: OpenRouter (Deepseek V4 Flash)");
+      const reply = await executeOpenRouter(
+        "deepseek/deepseek-v4-flash",
+        messages,
+        stream,
+        false,
+        5000,
+        tools,
+      );
+      console.log("Chat answered by Ling-2.6 flash (Tier 2)");
       return reply;
-    } catch (geminiError) {
-      console.warn("⚠️ TIER 2 (Gemini) FAILED:", geminiError.message);
+    } catch (error) {
+      console.warn("⚠️ TIER 2 (OpenRouter) FAILED:", error.message);
     }
   }
 
-  // --- FALLBACK TOOL DETECTION & WEB SEARCH (ONLY for Tier 3 - Llama 70B) ---
   let fallbackWebContext = "";
   if (enableWeb && mightNeedWeb(message)) {
     try {
@@ -419,9 +441,21 @@ const getAiReply = async (
     return await executeGroq(groqMessages, stream);
   } catch (groqError) {
     console.error("💀 ALL AI TIERS EXHAUSTED:", groqError.message);
-    throw new Error(
-      "I'm having trouble connecting to my brain right now. Please try again in a moment.",
-    );
+  }
+
+  // --- TIER 4: GEMINI FLASH (SECONDARY FALLBACK) ---
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      console.log("💎 Attempting Secondary: Gemini Flash...");
+      const reply = await executeGemini(messages, stream);
+      console.log("✅ Chat answered by Gemini Flash (Tier 2)");
+      return reply;
+    } catch (geminiError) {
+      console.warn("⚠️ TIER 4 (Gemini) FAILED:", geminiError.message);
+      throw new Error(
+        "I'm having trouble connecting to my brain right now. Please try again in a moment.",
+      );
+    }
   }
 };
 
@@ -577,7 +611,7 @@ Do not include:
 - draft commentary
 - unnecessary prefaces
 
-Use code fences only for actual code.
+Use code fences (\`\`\`language) for actual code, pseudocode, algorithms, plaintext examples, and terminal/console outputs (e.g. \`\`\`plaintext, \`\`\`pseudocode, \`\`\`terminal).
 `;
 
 // STRUCTURE MODE
@@ -626,7 +660,6 @@ Provide complete depth, including step-by-step reasoning, advanced connections, 
 Do not skip details for brevity; cover the topic thoroughly.
 `;
 
-
 // TONE MODES
 
 const P_TECHNICAL_PRECISE = `
@@ -660,7 +693,6 @@ Prioritize everyday conceptual mappings to explain complex ideas.
 const P_QA_STYLE = `
 Structure the output using clear, interactive, and logical question-and-answer pairs.
 `;
-
 
 // SHARED BEHAVIOR
 
@@ -709,7 +741,9 @@ const parsePromptParams = (text) => {
 
   const topic = topicMatch ? topicMatch[1].trim() : text;
   const tone = toneMatch ? toneMatch[1].trim() : "Academic";
-  const structure = structureMatch ? structureMatch[1].trim() : "Detailed Structured Note";
+  const structure = structureMatch
+    ? structureMatch[1].trim()
+    : "Detailed Structured Note";
   const depth = depthMatch ? depthMatch[1].trim() : "Standard";
 
   return { topic, tone, structure, depth };
@@ -756,7 +790,10 @@ ${text}
     let tonePrompt = P_ACADEMIC;
     if (tone.includes("Technical / Precise")) {
       tonePrompt = P_TECHNICAL_PRECISE;
-    } else if (tone.includes("Simple / Analogy Rich") || tone.includes("Simple / Analogy-Rich")) {
+    } else if (
+      tone.includes("Simple / Analogy Rich") ||
+      tone.includes("Simple / Analogy-Rich")
+    ) {
       tonePrompt = P_SIMPLE_ANALOGY;
     } else if (tone.includes("Beginner-Friendly")) {
       tonePrompt = P_BEGINNER_FRIENDLY;
@@ -774,10 +811,20 @@ ${text}
       depthPrompt = P_DEPTH_DEEP;
     }
 
-    return actionPrompts.writeNote(topic, structurePrompt, tonePrompt, depthPrompt);
+    return actionPrompts.writeNote(
+      topic,
+      structurePrompt,
+      tonePrompt,
+      depthPrompt,
+    );
   },
 
-  writeNote: (text, structurePrompt = P_COMPREHENSIVE, tonePrompt = P_ACADEMIC, depthPrompt = P_DEPTH_STANDARD) => `
+  writeNote: (
+    text,
+    structurePrompt = P_COMPREHENSIVE,
+    tonePrompt = P_ACADEMIC,
+    depthPrompt = P_DEPTH_STANDARD,
+  ) => `
 Write a polished, revision-friendly study note from the provided content.
 
 ${structurePrompt}
@@ -817,7 +864,7 @@ Content:
 ${text}
 `,
 
-    rewrite: (text) => `
+  rewrite: (text) => `
 Rewrite the text to improve clarity, grammar, and flow while preserving meaning and tone.
 
 ${OUTPUT_RULES}
@@ -833,7 +880,7 @@ ${OUTPUT_RULES}
 
 Text:
 ${text}
-`
+`,
 };
 
 export const runAiAssist = async ({ action, text, stream = false }) => {
@@ -989,15 +1036,24 @@ export const chatWithAi = async ({
     finalImageBase64 ||
     trimmedHistory.some((h) => h.content.includes("[Attached Image]"));
 
+  const isLingModel = !isVisual && getOpenRouterApiKey();
+
   const basePrompt = isVisual
     ? QWEN_VISION_PROMPT
-    : buildIrisPrompt({
-        message: finalMessage,
-        hasNote: !!safeNoteContext,
-        hasWeb: !!safeWebContext,
-        isVision: false,
-        hasPdf: !!safePdfContext,
-      });
+    : isLingModel
+      ? buildLingPrompt({
+          message: finalMessage,
+          hasNote: !!safeNoteContext,
+          hasWeb: !!safeWebContext,
+          hasPdf: !!safePdfContext,
+        })
+      : buildIrisPrompt({
+          message: finalMessage,
+          hasNote: !!safeNoteContext,
+          hasWeb: !!safeWebContext,
+          isVision: false,
+          hasPdf: !!safePdfContext,
+        });
 
   const combinedSystemPrompt = [
     basePrompt,
@@ -1191,7 +1247,6 @@ const P_VIZ = `Use visualizations only when they genuinely help. Format: [IRIS_V
 - chart: JSON data for charts. math: LaTeX formulas.
 - Bar chart example: [IRIS_VIZ type="mermaid" title="My Chart"]\nxychart-beta\n    title "My Chart"\n    x-axis ["A", "B", "C"]\n    y-axis "Count" 0 --> 10\n    bar [2, 5, 8]\n[/IRIS_VIZ]`;
 
-
 // CLARIFY: always add when teaching — lets Iris ask one focused question before explaining.
 const P_CLARIFY = `If the request is broad or ambiguous, ask ONE clarifying question first using:
 [IRIS_ASK prompt="Your question?"]
@@ -1219,6 +1274,49 @@ NEVER use writing blocks for:
 - Explaining code/DSA, tutoring, or normal chat answers.
 If it's an explanation, use plain markdown. If it's a draft intended for a note, use \`\`\`writing\`\`\`.`;
 
+const buildLingPrompt = ({
+  message = "",
+  hasNote = false,
+  hasWeb = false,
+  hasPdf = false,
+}) => {
+  const parts = [
+    `You are Iris, an intelligent educational AI assistant built into Notesify — a learning and notes platform. Today: ${new Date().toDateString()}.`,
+    `Your role is to act as a supportive, patient, and highly effective teacher. Guide the user step-by-step through a clear learning path.`,
+    `# Teaching Strategy
+1. Explain simply first.
+2. Break complex topics into steps.
+3. Teach interactively—one major idea at a time.
+4. Be patient and encouraging.`,
+    `# Formatting Rules
+- Use clean markdown with readable structure.
+- Prefer concise sections, bullets, spacing, and focused code blocks.
+- Separate major sections with '---' horizontal rules to make it readable.
+- Use code fences for code, pseudocode, terminal output, and structured examples.
+- Use LaTeX ($...$ or $$...$$) for mathematical expressions and formulas.
+- Occasionally use relevant emojis to make learning feel friendly and encouraging.
+- Keep paragraphs short and concise. Avoid walls of text.`,
+  ];
+
+  if (hasNote) {
+    parts.push(`# Note Context
+You have access to the user's current note content below. Refer to it naturally when helping them study, clarify, or extend their notes.`);
+  }
+
+  if (hasWeb) {
+    parts.push(`# Real-time Web Context
+You have access to real-time search results below. Use them to answer factual or highly recent queries accurately.`);
+  }
+
+  if (hasPdf) {
+    parts.push(`# PDF Context
+You have access to the text of the user's uploaded PDF document below. Refer to it to answer questions about the document or explain its concepts.`);
+  }
+
+  parts.push("Let's teach effectively!");
+  return parts.join("\n\n");
+};
+
 // ─── DYNAMIC PROMPT BUILDER ───────────────────────────────────────────────────
 const buildIrisPrompt = ({
   message = "",
@@ -1236,8 +1334,11 @@ const buildIrisPrompt = ({
     hasPdf ||
     /explain|teach|how does|what is|summarize|learn|understand/.test(msg);
 
-  const wantsViz = /diagram|flowchart|visualize|graph|chart|mermaid|plot/.test(msg);
-  const wantsWriting = /essay|article|email|draft|blog|write a note|formal/.test(msg);
+  const wantsViz = /diagram|flowchart|visualize|graph|chart|mermaid|plot/.test(
+    msg,
+  );
+  const wantsWriting =
+    /essay|article|email|draft|blog|write a note|formal/.test(msg);
 
   // Permanently provide core UI capabilities
   // so the model can agentically decide when to use them.
@@ -1245,7 +1346,7 @@ const buildIrisPrompt = ({
 
   if (wantsTeach) parts.push(P_TEACHING, P_CLARIFY); // teaching context → clarify is available
   if (wantsQuiz) parts.push(P_QUIZ); // explicit quiz request → full quiz format
-  if (wantsViz) parts.push(P_VIZ); 
+  if (wantsViz) parts.push(P_VIZ);
   if (wantsWriting) parts.push(P_WRITING);
 
   return parts.join("\n\n");
@@ -1259,4 +1360,3 @@ Use \`\`\`code fences\`\`\` for code and $math$ for LaTeX.
 Adapt your tone naturally — professional for academic content, conversational for casual questions.
 Structure responses with --- dividers and bold headings for scannability.
 IMPORTANT: Think silently. Only output the final answer — no internal reasoning or deliberation.`;
-
