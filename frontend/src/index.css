@@ -5835,7 +5835,7 @@ span[data-ai-ghost] {
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
-  z-index: 2;
+  z-index: 20;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -5850,8 +5850,8 @@ span[data-ai-ghost] {
   pointer-events: none;
 }
 
-.iris-viz-surface:hover .iris-viz-expand,
-.iris-viz-surface:focus-visible .iris-viz-expand {
+.iris-viz-block:hover .iris-viz-expand,
+.iris-viz-block:focus-within .iris-viz-expand {
   opacity: 1;
   transform: translateY(0);
 }
@@ -7808,3 +7808,12 @@ html:not(.dark) .dock-btn-active {
   font-weight: 500;
   opacity: 0.95;
 }
+
+/* Custom inline Link Preview Icon styling */
+.editor-content-shell .ProseMirror a {
+  color: var(--primary) !important;
+  text-decoration: underline !important;
+  cursor: pointer !important;
+}
+
+

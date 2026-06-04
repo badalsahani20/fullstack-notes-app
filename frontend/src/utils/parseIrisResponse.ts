@@ -47,6 +47,28 @@ export const parseIrisResponse = (text: string): IrisSegment[] => {
     }
   }
 
+  // If there is an unclosed [IRIS_VIZ ...] block at the end of the text (streaming), parse it as a streaming viz segment
+  const openVizRegex = /\[(?:IRIS_VIZ)(?:\s+type=["']?(mermaid|chart|math|xychart-beta)["']?\s+title=["']?([^"'\]]*)['"']?|:(mermaid|chart|math):([^\]]*))\]([\s\S]*?)$/gi;
+  openVizRegex.lastIndex = 0;
+  if ((m = openVizRegex.exec(text)) !== null) {
+    const start = m.index;
+    const isOverlapping = blocks.some(b => start >= b.start && start < b.end);
+    if (!isOverlapping) {
+      const rawType = (m[1] || m[3] || "").toLowerCase();
+      const type = (rawType === "xychart-beta" ? "mermaid" : rawType) as "mermaid" | "chart" | "math";
+      const title = (m[2] || m[4] || "").trim();
+      const data  = m[5] ?? "";
+
+      if (type) {
+        blocks.push({
+          start: m.index,
+          end: text.length,
+          segment: { kind: "viz", type, title: title || "Visualization", data: data.trim(), isStreaming: true },
+        });
+      }
+    }
+  }
+
   // ── IRIS_ASK ─────────────────────────────────────────────────────────────────
   // Captures everything between [IRIS_ASK ...] and [/IRIS_ASK] as the body.
   // Attributes are parsed from the tag's attribute string separately.

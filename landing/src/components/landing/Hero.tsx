@@ -25,16 +25,15 @@ export const Hero = () => {
         </FadeIn>
 
         <FadeIn delay={400}>
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white leading-[1.1] mb-6">
-            A quiet place to <br className="hidden sm:block" />
-            <span className="font-serif italic text-indigo-200 font-light tracking-normal transition-all duration-700 group-hover:text-white">think and write.</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.15] mb-6">
+            A calm space for your <br className="hidden sm:block" />
+            notes, <span className="font-serif italic text-indigo-200 font-light tracking-normal transition-all duration-700 group-hover:text-white">quizzes, and flashcards.</span>
           </h1>
         </FadeIn>
 
         <FadeIn delay={500}>
-          <p className="text-lg sm:text-xl text-stone-400 max-w-2xl mx-auto mb-10">
-            Your thoughts, organized. Iris steps in only when you need it — <br className="hidden sm:block" />
-  and stays out of the way when you don't.
+          <p className="text-sm sm:text-[15px] md:text-base text-stone-400 max-w-[560px] mx-auto mb-10 leading-relaxed">
+            Capture notes, generate spaced-repetition flashcards instantly, and study smarter with AI.
           </p>
         </FadeIn>
 
@@ -58,10 +57,10 @@ export const Hero = () => {
             </a>
             
             <a 
-              href="https://app.notesify.in"
+              href="#features"
               className="group inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-bold bg-white/5 hover:bg-white/10 transition-all duration-300 text-white border border-white/10 hover:border-white/20 w-full sm:w-auto"
             >
-              Open App
+              Learn more ↓
             </a>
           </div>
           <p className="mt-6 text-xs text-stone-300 font-medium">Free during public preview · No credit card · Early access</p>

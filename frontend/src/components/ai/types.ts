@@ -29,6 +29,7 @@ export interface VizSegment {
   type: "mermaid" | "chart" | "math";
   title: string;
   data: string;
+  isStreaming?: boolean;
 }
 
 export interface textSegment {

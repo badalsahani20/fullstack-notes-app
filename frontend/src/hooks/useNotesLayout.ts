@@ -2,6 +2,12 @@ import { useLocation, useParams } from "react-router-dom";
 import { useMediaQuery } from "./useMediaQuery";
 import { usePanelStore } from "@/store/usePanelStore";
 
+let lazyCreatedNoteId: string | null = null;
+
+export const setLazyCreatedNoteId = (id: string | null) => {
+  lazyCreatedNoteId = id;
+};
+
 export const useNotesLayout = () => {
   const location = useLocation();
   const { noteId, folderId } = useParams();
@@ -14,7 +20,14 @@ export const useNotesLayout = () => {
   const isChatRoute = location.pathname.startsWith("/chat");
   const showGlobalHeader = !(isEditorFocusMode || (isMobile && Boolean(noteId)) || isChatRoute);
 
-  const animationKey = noteId ? `note-${noteId}` : "empty-state";
+  if (lazyCreatedNoteId && noteId !== "new" && noteId !== lazyCreatedNoteId) {
+    lazyCreatedNoteId = null;
+  }
+
+  let animationKey = noteId ? `note-${noteId}` : "empty-state";
+  if (noteId && noteId === lazyCreatedNoteId) {
+    animationKey = "note-new";
+  }
 
   // Desktop: folder panel is toggled via the activity bar icon (store state).
   // It starts hidden and is never auto-opened by URL — user must click.

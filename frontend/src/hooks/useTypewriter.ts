@@ -54,6 +54,7 @@ export const useTypewriter = (
       if (index >= latest.text.length) {
         window.clearInterval(timer);
         setIsStreaming(false);
+        setStreamingMessageId(null);
       }
     }, 14);
 

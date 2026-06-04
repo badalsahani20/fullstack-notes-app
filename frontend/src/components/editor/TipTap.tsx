@@ -14,6 +14,8 @@ import { MarkerHighlightExtension } from "../../extensions/markerHighlightExtens
 import { AiGhostExtension } from "../../extensions/aiGhostExtension";
 import { AiInlineMenu } from "./AiInlineMenu";
 import { TipTapCodeBlock } from "./TipTapCodeBlock";
+import Link from "@tiptap/extension-link";
+
 
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { createLowlight, common } from "lowlight";
@@ -142,6 +144,8 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
   const navigate = useNavigate();
   const location = useLocation();
 
+
+
   const { editorFont, editorFontSize, spellCheck, editorWidth, lineSpacing } = useSettingsStore();
 
   const fontSizeMap = {
@@ -174,6 +178,7 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
     extensions: [
       StarterKit.configure({
         codeBlock: false, // Disabling native codeBlock to use our CustomCodeBlock
+        link: false, // Disable built-in link extension to avoid duplication and custom extension override
       }),
       CustomCodeBlock,
       TextStyle,
@@ -191,6 +196,12 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
         placeholder: placeholderText,
         emptyNodeClass: "is-empty",
       }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: "https",
+        linkOnPaste: true,
+      }),
     ],
     content,
     onUpdate: ({ editor }) => { onChange?.(editor.getHTML()); },
@@ -198,6 +209,8 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
       handlePaste(view, event) {
         const plainText = event.clipboardData?.getData("text/plain") ?? "";
         const html = event.clipboardData?.getData("text/html") ?? "";
+
+
 
         // 1. Prioritize native IDE code blocks
         const isFencedMarkdown = /^\s*`{3,}/m.test(plainText);
@@ -249,6 +262,7 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
 
         return false;
       },
+
     },
   });
 
@@ -344,6 +358,8 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
       <div className="overflow-x-auto">
         <EditorContent className="editor-content-shell" editor={editor} spellCheck={spellCheck && editable} onKeyDown={handleEditorKeyDown} />
       </div>
+
+
     </div>
   );
 };

@@ -364,7 +364,7 @@ const getAiReply = async (
         history.some((h) => h.content.includes("[Attached Image]"));
       const activeModel = isVisualConvo
         ? "qwen/qwen3.5-flash-02-23"
-        : "inclusionai/ling-2.6-flash";
+        : PRIMARY_MODEL;
 
       const shouldReason = !isVisualConvo && useReasoning;
 
@@ -1297,6 +1297,28 @@ const buildLingPrompt = ({
 - Occasionally use relevant emojis to make learning feel friendly and encouraging.
 - Keep paragraphs short and concise. Avoid walls of text.`,
   ];
+
+  const wantsViz = /diagram|flowchart|visualize|graph|chart|mermaid|plot/.test(
+    message,
+  );
+
+  const P_VIZ = `Use visualizations only when they genuinely help. Format:
+[IRIS_VIZ type="mermaid|chart|math" title="Title"]
+content
+[/IRIS_VIZ]
+— opening tag has NO slash, only closing does.
+
+CRITICAL MERMAID RULES:
+1. Always write the diagram with proper line breaks. NEVER compress the graph into a single line.
+2. If any node label contains special characters (like slashes "/", colons ":", spaces, or parenthesis), you MUST wrap the label in double quotes (e.g., node["/api/route"]).
+3. NEVER use literal '\\n' inside node labels. For multi-line text, wrap the label in double quotes and use '<br/>' (e.g., node["Line 1<br/>Line 2"]).
+4. Ensure the graph definition (e.g., 'graph LR') is on a new line immediately following the opening [IRIS_VIZ] tag.
+5. NEVER wrap the diagram or content inside markdown code fences (\`\`\`) either inside or around the [IRIS_VIZ] tags. The [IRIS_VIZ] tags themselves act as the code block.
+`;
+
+
+  if (wantsViz) parts.push(P_VIZ);
+  
 
   if (hasNote) {
     parts.push(`# Note Context

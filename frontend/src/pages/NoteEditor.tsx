@@ -6,10 +6,12 @@ import type { Editor } from "@tiptap/react";
 import { Wand2, Loader2 } from "lucide-react";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteQuery } from "@/hooks/useNotesQuery";
+import { setLazyCreatedNoteId } from "@/hooks/useNotesLayout";
 import { usePanelStore } from "@/store/usePanelStore";
 import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
 import TipTap from "@/components/editor/TipTap";
 import { useSettingsStore } from "@/store/useSettingsStore";
+import { useQueryClient } from "@tanstack/react-query";
 const ContextualAiPanel = lazy(() => import("@/components/chat/ContextualAiPanel"));
 const StudyPanel = lazy(() => import("@/components/study/StudyPanel"));
 
@@ -61,19 +63,22 @@ const NoteEditor = () => {
   const { mutateAsync: toggleArchiveMut } = useToggleArchiveMutation();
   const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
+  const queryClient = useQueryClient();
 
   const { data: fetchedNote, isLoading: isNoteLoading } = useNoteQuery(isNew ? "" : (noteId || ""));
   const { mutateAsync: updateNoteAsync, isPending: isSavingNote } = useUpdateNoteMutation();
 
   const [isCreating, setIsCreating] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
+  const prevTitleRef = useRef("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const createdNoteIdRef = useRef<string | null>(null);
   const [isGenerateNotesOpen, setIsGenerateNotesOpen] = useState(false);
 
+  const cachedNote = noteId ? queryClient.getQueryData<any>(["note", noteId]) : undefined;
   const note = isNew
     ? { _id: "new", title: draftTitle, content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
-    : fetchedNote;
+    : (fetchedNote || cachedNote);
 
   const folder = folders.find((item) => item._id === (note?.folder || folderId));
   const folderLabel = folder?.name ?? (note?.folder && note?._id !== "new" ? "Loading folder..." : "All Notes");
@@ -157,8 +162,30 @@ const NoteEditor = () => {
   }, [debouncedUpdate]);
 
   useEffect(() => {
-    if (!isNew) {
-      setDraftTitle(note?.title ?? "");
+    if (isNew || !note) return;
+
+    const newTitle = note.title ?? "";
+    const oldTitle = prevTitleRef.current;
+    prevTitleRef.current = newTitle;
+
+    // Detect if the title transitioned from a default "Untitled" title to an AI-generated one
+    const isTransitionFromDefault =
+      ["", "Untitled", "Untitled Note"].includes(oldTitle) &&
+      !["", "Untitled", "Untitled Note"].includes(newTitle);
+
+    if (isTransitionFromDefault) {
+      let currentIndex = 0;
+      setDraftTitle(""); // Start typing from empty
+      const timer = setInterval(() => {
+        currentIndex++;
+        setDraftTitle(newTitle.slice(0, currentIndex));
+        if (currentIndex >= newTitle.length) {
+          clearInterval(timer);
+        }
+      }, 45); // ms per character
+      return () => clearInterval(timer);
+    } else {
+      setDraftTitle(newTitle);
     }
   }, [isNew, note?._id, note?.title]);
 
@@ -173,6 +200,7 @@ const NoteEditor = () => {
       });
       if (newNote?._id) {
         createdNoteIdRef.current = newNote._id;
+        setLazyCreatedNoteId(newNote._id);
         const path = folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`;
         navigate(`${path}${location.search}`, { replace: true });
         return newNote;
@@ -235,7 +263,8 @@ const NoteEditor = () => {
     void togglePinning({ noteId: id, version: note.version });
   }, [isNew, note, togglePinning]);
 
-  if (isNoteLoading || (!note && !hasFetchedFolders && !isNew)) {
+  const isTransitioning = isCreating || (noteId && noteId === createdNoteIdRef.current);
+  if ((isNoteLoading && !isTransitioning) || (!note && !hasFetchedFolders && !isNew)) {
     return <NoteEditorSkeleton />;
   }
 

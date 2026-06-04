@@ -113,13 +113,17 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   // Load chat history from the database when the user explicitly requests it
   const loadHistory = () => {
     if (activeNote?.chatHistory && activeNote.chatHistory.length > 0) {
-      const historicMessages = activeNote.chatHistory.map((m: any) => ({
-        id: m.id || crypto.randomUUID(),
-        role: m.role,
-        text: m.content as string,
-        segments: m.segments,
-        skipAnimation: true,
-      }));
+      const existingIds = new Set(messagesRef.current.map((m) => m.id));
+
+      const historicMessages = activeNote.chatHistory
+        .map((m: any) => ({
+          id: m.id || m._id || crypto.randomUUID(),
+          role: m.role,
+          text: m.content as string,
+          segments: m.segments,
+          skipAnimation: true,
+        }))
+        .filter((m: any) => !existingIds.has(m.id));
 
       const nextMessages = ((prev: Message[]) => {
         // Keep the welcome message at the top, then historic messages, then current messages
@@ -571,7 +575,17 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       // Persist to DB — only when this is a real saved note (not a new/unsaved one)
       if (!isNew) {
         const persistedMessages = messagesRef.current;
-        const dbHistory = getPersistedHistoryFromMessages(persistedMessages);
+        const newDbHistory = getPersistedHistoryFromMessages(persistedMessages);
+        const existingDbHistory = !historyLoaded
+          ? (activeNote?.chatHistory ?? []).map((m: any) => ({
+              id: m.id || m._id,
+              role: m.role,
+              content: m.content,
+              ...(m.segments ? { segments: m.segments } : {}),
+            }))
+          : [];
+        const dbHistory = [...existingDbHistory, ...newDbHistory].slice(-50);
+
         const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
         if (latestNote) {
           void updateNoteAsync({

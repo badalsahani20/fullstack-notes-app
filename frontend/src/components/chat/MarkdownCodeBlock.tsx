@@ -1,7 +1,7 @@
 import { useMemo, useState, lazy, Suspense } from "react";
 import { CheckCheck, Copy, Code2, Loader2 } from "lucide-react";
+import IrisVisualBlock from "./IrisVisualBlock";
 
-const MermaidDiagram = lazy(() => import("@/components/chat/viz/MermaidDiagram"));
 const ComparisonBlock = lazy(() => import("@/components/chat/viz/ComparisonBlock"));
 
 type MarkdownCodeBlockProps = {
@@ -117,13 +117,14 @@ const MarkdownCodeBlock = ({ code, language }: MarkdownCodeBlockProps) => {
 
   if (normalizedLanguage === "mermaid") {
     return (
-      <Suspense fallback={
-        <div className="flex h-48 items-center justify-center rounded-xl bg-white/5 animate-pulse">
-          <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
-        </div>
-      }>
-        <MermaidDiagram code={code} />
-      </Suspense>
+      <IrisVisualBlock
+        visualization={{
+          kind: "viz",
+          type: "mermaid",
+          title: "Diagram",
+          data: code,
+        }}
+      />
     );
   }
 

@@ -117,12 +117,12 @@ const makeSvgResponsive = (svg: string) => {
 };
 
 const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
-  const containerRef = useRef<HTMLDivElement>(null);
   const renderIdRef = useRef(0);
 
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sanitizedCode, setSanitizedCode] = useState("");
+  const [svgHtml, setSvgHtml] = useState("");
 
   useEffect(() => {
     if (!code) {
@@ -139,8 +139,6 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
       setError(false);
 
       try {
-        if (!containerRef.current) return;
-
         const cleanCode = sanitizeMermaidCode(code);
         setSanitizedCode(cleanCode);
 
@@ -153,9 +151,8 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
         const responsiveSvg = makeSvgResponsive(svg);
 
         if (renderIdRef.current !== currentRenderId) return;
-        if (!containerRef.current) return;
 
-        containerRef.current.innerHTML = responsiveSvg;
+        setSvgHtml(responsiveSvg);
         setLoading(false);
       } catch {
         if (renderIdRef.current !== currentRenderId) return;
@@ -180,9 +177,9 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
     <div className="iris-mermaid-wrap">
       {loading && <div>Rendering diagram...</div>}
       <div
-        ref={containerRef}
         className="iris-mermaid"
         style={{ display: loading ? "none" : "block" }}
+        dangerouslySetInnerHTML={{ __html: svgHtml }}
       />
     </div>
   );

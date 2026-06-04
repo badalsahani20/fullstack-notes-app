@@ -3,10 +3,17 @@ import remarkGfm from 'remark-gfm';
 import { Header } from '../components/landing/Header';
 import { Footer } from '../components/landing/Footer';
 import docsContent from './notesify-docs.md?raw';
+import { SEO } from '../components/landing/SEO';
 
 export const DocsPage = () => {
   return (
     <div className="min-h-screen bg-[#050505] text-stone-200 selection:bg-indigo-500/30 font-sans overflow-x-hidden pt-24">
+      <SEO 
+        title="Notesify Documentation — Features, AI Integration & Self-Hosting"
+        description="Learn how to write notes, generate flashcards and quizzes, interact with Iris AI, self-host, and configure Notesify's production-grade workspace."
+        keywords="notesify docs, notesify self-host, iris ai assistant, notesify features, markdown documentation"
+        path="/docs"
+      />
       <Header />
       
       <main className="container mx-auto px-6 max-w-4xl py-12 relative z-10">

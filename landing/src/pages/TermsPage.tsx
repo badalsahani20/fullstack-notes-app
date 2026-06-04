@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FileText, ArrowLeft, ShieldAlert, Key, Scale, HelpCircle } from "lucide-react";
 import { Header } from "../components/landing/Header";
 import { Footer } from "../components/landing/Footer";
+import { SEO } from "../components/landing/SEO";
 
 export const TermsPage = () => {
   useEffect(() => {
@@ -11,6 +12,12 @@ export const TermsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#050505] text-stone-200 selection:bg-indigo-500/30 font-sans overflow-x-hidden">
+      <SEO 
+        title="Terms of Service — Notesify"
+        description="Read the Terms of Service for using Notesify. Learn about your account security, AI assistant usage rules, and intellectual property rights."
+        keywords="notesify terms of service, terms of use, notesify policy"
+        path="/terms"
+      />
       <Header />
 
       <main className="relative z-10 pt-28 pb-16">
