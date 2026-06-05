@@ -61,6 +61,11 @@ const highlightCode = (code: string, language?: string) => {
     return escaped;
   }
 
+  // If the language is "text" or unspecified, do not apply syntax highlighting colors
+  if (lang === "text" || !lang) {
+    return escaped;
+  }
+
   if (["html", "xml", "svg"].includes(lang)) {
     return escaped
       .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="gc-token-comment">$1</span>')

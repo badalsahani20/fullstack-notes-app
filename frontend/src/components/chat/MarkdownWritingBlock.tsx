@@ -40,8 +40,8 @@ const MarkdownWritingBlock = ({ content }: MarkdownWritingBlockProps) => {
     <div className={`gc-writing-block my-4 ${isEditing ? "gc-writing-is-editing" : ""}`}>
       <div className="gc-writing-header">
         <div className="gc-writing-header-left">
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="gc-writing-edit-btn"
             onClick={toggleEdit}
           >
