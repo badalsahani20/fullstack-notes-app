@@ -734,9 +734,9 @@ Ensure clear readability while covering all critical aspects of the topic suffic
 `;
 
 const P_DEPTH_DEEP = `
-Create a deeply comprehensive, detail-rich explanation.
-Provide complete depth, including step-by-step reasoning, advanced connections, extensive practical or conceptual examples, potential edge cases, and exhaustive explanations of complex sub-topics.
-Do not skip details for brevity; cover the topic thoroughly.
+Provide complete coverage of important concepts.
+Expand where depth improves understanding.
+Avoid unnecessary repetition.
 `;
 
 // TONE MODES
@@ -809,6 +809,16 @@ const P_QUALITY = `
 Prefer clarity over exhaustiveness.
 Prefer structure over verbosity.
 Prefer useful explanation over decorative wording.
+
+Optimize for learning, recall, and revision rather than article-style writing.
+
+When helpful:
+- Use concise text diagrams for workflows, processes, hierarchies, algorithms, and system interactions.
+- Use comparison tables for related concepts.
+- Use mental models and intuitive explanations.
+- Highlight common mistakes and exam/interview traps.
+- End major topics with quick-recall summaries.
+
 The output should feel like premium human-made study material optimized for learning and revision.
 `;
 
@@ -925,7 +935,8 @@ ${P_QUALITY}
 Core Requirements:
 - Preserve important concepts, definitions, formulas, examples, reasoning, and explanations.
 - Improve clarity, organization, readability, and learning flow.
-- Use clean markdown with headings, bullets, tables, and emphasis where useful.
+- Use clean markdown with headings, bullets, tables for comparison, and emphasis where useful.
+- When a process, hierarchy, workflow, algorithm, or system interaction is described, prefer a concise text diagram over prose. Use visual structure whenever it improves recall.
 - Add concise intuitive explanations only when they genuinely improve understanding.
 - Highlight important ideas, patterns, misconceptions, and practical insights where relevant.
 
@@ -1018,7 +1029,7 @@ export const chatWithAi = async ({
   pdfContext = "",
   imageBase64 = null,
   stream = false,
-  systemPrompt = "", // Add this to receive custom prompts from controller
+  systemPrompt = "", 
   useReasoning = false,
   enableWeb = true,
 }) => {
@@ -1051,15 +1062,15 @@ export const chatWithAi = async ({
   }
 
   // Summarize history every 20 messages after the first 20 (20, 40, 60...)
-  if (history.length >= 20 && history.length % 20 === 0) {
+  if (history.length >= 40 && history.length % 40 === 0) {
     console.log(`📝 Summarizing conversation at ${history.length} messages...`);
     try {
       // Only summarize the middle part if it's huge, or just the whole thing if it's manageable
       // But let's at least ensure we don't send 100+ messages to the summarizer
       const summarizationInput =
-        history.length > 20 ? history.slice(-20) : history;
+        history.length > 40 ? history.slice(-40) : history;
       summary = await summarizeHistory(summarizationInput);
-      history = history.slice(-5);
+      history = history.slice(-10);
       console.log("📝 New summary generated");
     } catch (err) {
       console.error(
@@ -1067,7 +1078,7 @@ export const chatWithAi = async ({
         err.message,
       );
       // Don't crash the whole chat just because summarization failed
-      history = history.slice(-10); // Trim anyway to keep context window safe
+      history = history.slice(-20); // Trim anyway to keep context window safe
     }
   }
 
@@ -1134,7 +1145,7 @@ export const chatWithAi = async ({
 
   const combinedSystemPrompt = [
     basePrompt,
-    systemPrompt, // Additional instructions from the controller (like web search citations)
+    systemPrompt, 
     webBlock,
     noteBlock,
     pdfBlock,
@@ -1297,15 +1308,16 @@ Help users learn faster, understand deeply, revise efficiently, and stay engaged
 # Text Visualizations
 Use fenced \`\`\`text blocks when structure beats prose: architecture, folder trees, workflows, state transitions, pipelines, hierarchies.
 
-# Inline Code
-Use backticks for: class/method/variable names, commands, APIs, framework features, file names.
-e.g. \`HashMap\`, \`containsKey()\`, \`useState()\`, \`npm install\`, \`package.json\`, \`POST /api/notes\`
+Use inline code for technical terms, APIs, commands, file names, classes, methods, variables, and identifiers when they improve readability.
+Prefer inline code for terminology, code blocks for implementation, and \`text\` blocks for structure and workflows.
 
 # Formatting
-- Headings for major sections; bullets over dense paragraphs; paragraphs ≤5 lines.
-- Code blocks for code; tables for comparisons; numbered steps for procedures.
+Use clean, readable Markdown.
+Prefer headings, lists, tables, code blocks, and spacing when they improve clarity.
+Avoid walls of text.
 - LaTeX for math.
 - Wrap note drafts/essays in \`\`\`writing blocks as raw plain text (no Markdown inside).
+Match formatting and detail to the complexity of the request.
 
 # Citations
 If asked for latest news or current info, prompt the user to enable web search. If enabled, cite inline as [Source: domain.com](URL) and include a Sources section at the end. If search yields nothing, say so — never fabricate facts.

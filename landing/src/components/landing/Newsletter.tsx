@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FadeIn } from '../ui/FadeIn';
+import { SpotlightCard } from '../ui/SpotlightCard';
 import { MessageSquare, Send } from 'lucide-react';
 
 export const Feedback = () => {
@@ -21,7 +22,7 @@ export const Feedback = () => {
   return (
     <section className="relative py-24 z-20 border-t border-white/5 bg-[#050505]">
       <div className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto glass-card p-8 md:p-12 relative overflow-hidden">
+        <SpotlightCard className="max-w-4xl mx-auto p-8 md:p-12 overflow-hidden">
           {/* Subtle background glow */}
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-indigo-500/10 blur-3xl rounded-full"></div>
           
@@ -66,7 +67,7 @@ export const Feedback = () => {
               </FadeIn>
             </div>
           </div>
-        </div>
+        </SpotlightCard>
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import { FadeIn } from '../ui/FadeIn';
+import { SpotlightCard } from '../ui/SpotlightCard';
 import editorPreview from '../../assets/editor-preview.png';
 
 const CapabilityIcon = ({ title }: { title: string }) => {
@@ -134,15 +135,15 @@ export const EditorCapabilities = () => {
               
               <div className="grid sm:grid-cols-2 gap-8">
                 {capabilities.map((cap) => (
-                  <div key={cap.title} className="group cursor-default">
+                  <SpotlightCard key={cap.title} className="group cursor-default p-5">
                     <div className="flex items-center gap-4 mb-3">
                       <CapabilityIcon title={cap.title} />
                       <h3 className="font-bold text-white group-hover:text-indigo-400 transition-colors">{cap.title}</h3>
                     </div>
-                    <p className="text-sm text-stone-500 leading-relaxed">
+                    <p className="text-sm text-stone-400 leading-relaxed font-medium">
                       {cap.desc}
                     </p>
-                  </div>
+                  </SpotlightCard>
                 ))}
               </div>
             </FadeIn>

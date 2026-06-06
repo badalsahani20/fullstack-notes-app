@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/store/useSettingsStore";
-import type { EditorFontFamily, EditorFontSize, LineSpacing } from "@/store/useSettingsStore";
+import type { EditorFontFamily, EditorFontSize, EditorWidth, LineSpacing } from "@/store/useSettingsStore";
 import { SectionLabel, ToggleRow, OptionChip } from "./SettingsShared";
 
 export const EditorTab = () => {
@@ -10,6 +10,7 @@ export const EditorTab = () => {
     showWordCount, setShowWordCount,
     autoSaveIndicator, setAutoSaveIndicator,
     focusModeDefault, setFocusModeDefault,
+    editorWidth, setEditorWidth,
     lineSpacing, setLineSpacing,
   } = useSettingsStore();
 
@@ -73,6 +74,25 @@ export const EditorTab = () => {
           />
         ))}
       </div>
+
+      <SectionLabel>Editor Width</SectionLabel>
+            <div className="flex gap-2 flex-wrap">
+              {(
+                [
+                  { value: "comfortable", label: "Comfortable" },
+                  { value: "wide", label: "Wide" },
+                  { value: "full", label: "Full Width" },
+                ] as { value: EditorWidth; label: string }[]
+              ).map(({ value, label }) => (
+                <OptionChip
+                  key={value}
+                  label={label}
+                  value={value}
+                  current={editorWidth}
+                  onSelect={setEditorWidth}
+                />
+              ))}
+            </div>
 
       <SectionLabel>Behavior</SectionLabel>
       <div className="rounded-xl border border-white/8 bg-white/4 overflow-hidden px-4">

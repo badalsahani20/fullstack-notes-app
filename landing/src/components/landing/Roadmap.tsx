@@ -1,5 +1,6 @@
 import { Users, MessagesSquare, Brain } from 'lucide-react';
 import { FadeIn } from '../ui/FadeIn';
+import { SpotlightCard } from '../ui/SpotlightCard';
 
 export const Roadmap = () => {
   const items = [
@@ -41,7 +42,7 @@ export const Roadmap = () => {
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {items.map((item, i) => (
             <FadeIn key={item.title} delay={i * 100}>
-              <div className="glass-card p-6 relative overflow-hidden h-full">
+              <SpotlightCard className="p-6 relative h-full">
                 <span className={`absolute top-4 right-4 inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-medium tracking-wide uppercase ${
                   item.status === 'LIVE' 
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.2)]' 
@@ -54,7 +55,7 @@ export const Roadmap = () => {
                 </div>
                 <h3 className="text-base font-semibold text-white mb-2">{item.title}</h3>
                 <p className="text-sm text-stone-400 leading-relaxed">{item.desc}</p>
-              </div>
+              </SpotlightCard>
             </FadeIn>
           ))}
         </div>

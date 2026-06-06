@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { FileText, Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { SpotlightCard } from '../ui/SpotlightCard';
 
 export const IrisLiveDemo = () => {
   const SUGGESTIONS = [
@@ -90,7 +91,7 @@ export const IrisLiveDemo = () => {
   };
 
   return (
-    <div className="glass-card overflow-hidden shadow-2xl shadow-indigo-900/10 text-left flex flex-col h-[600px]">
+    <SpotlightCard className="overflow-hidden shadow-2xl shadow-indigo-900/10 text-left flex flex-col h-[600px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5 shrink-0">
         <div className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded-full bg-red-500/70" />
@@ -193,6 +194,6 @@ export const IrisLiveDemo = () => {
           )}
         </div>
       </div>
-    </div>
+    </SpotlightCard>
   );
 };

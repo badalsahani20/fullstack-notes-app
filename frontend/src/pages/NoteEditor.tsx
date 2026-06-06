@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { actionMeta } from "@/components/ai/types";
+import { KeyboardShortcutsModal } from "@/components/editor/KeyboardShortcutsModal";
 
 const preloadAiPanel = () => import("@/components/chat/ContextualAiPanel");
 
@@ -448,6 +449,17 @@ const NoteEditor = () => {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Primary Ask AI button */}
+          <button
+            type="button"
+            className="mobile-ai-fab mobile-ai-fab-secondary"
+            onClick={() => setAiPanelOpen(true)}
+            aria-label="Ask AI"
+          >
+            <div className="iris-orb shrink-0" style={{ width: "12px", height: "12px", borderWidth: "1px", boxShadow: "none" }} />
+            <span>Ask AI</span>
+          </button>
         </div>
       ) : null}
 
@@ -462,6 +474,8 @@ const NoteEditor = () => {
         onClose={() => setIsGenerateNotesOpen(false)}
         onGenerate={(promptContext) => void aiChat.runAction("noteCreation", promptContext)}
       />
+
+      <KeyboardShortcutsModal />
     </div>
   );
 };

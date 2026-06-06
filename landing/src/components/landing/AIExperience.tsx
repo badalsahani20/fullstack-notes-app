@@ -82,7 +82,7 @@ export const AIExperience = () => {
   return (
     <section id="ai" className="relative py-24 md:py-32 overflow-hidden z-20 border-t border-white/5 bg-[#050505]">
       <div className="container mx-auto px-6 max-w-6xl">
-        <div className="grid lg:grid-cols-2 gap-14 items-center">
+        <div className="grid lg:grid-cols-2 gap-14 items-start relative">
           {/* Left: copy + bullets */}
           <FadeIn>
             <div>
@@ -111,8 +111,8 @@ export const AIExperience = () => {
             </div>
           </FadeIn>
 
-          {/* Right: editor/chat preview */}
-          <FadeIn delay={200} className="relative">
+          {/* Right: sticky editor/chat preview */}
+          <FadeIn delay={200} className="relative lg:sticky lg:top-32 h-fit">
             <div className="absolute -inset-10 bg-indigo-500/10 blur-[80px] rounded-full pointer-events-none" />
             <EditorPreview />
           </FadeIn>

@@ -2323,6 +2323,17 @@
   outline: none;
 }
 
+/* Kill TipTap NodeViewWrapper focus ring (orange border on code blocks etc.) */
+.tiptap-nodeview {
+  outline: none !important;
+}
+.tiptap-nodeview:focus,
+.tiptap-nodeview:focus-within,
+.tiptap-nodeview:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .ProseMirror h1 {
   font-size: clamp(1.9rem, 3vw, 2.5rem);
   font-weight: 800;
@@ -2349,20 +2360,22 @@
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   font-size: 0.88em;
   padding: 0.18rem 0.42rem;
-  border: 1px solid color-mix(in srgb, var(--code-text) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--divider) 60%, transparent);
 }
 
-
-
-.ProseMirror pre code {
+/* Block code — reset all inline-code pill styles */
+.ProseMirror pre code,
+.editor-code-block code {
   display: block;
   min-width: max-content;
-  background: transparent;
-  color: #e2e8f0;
+  background: transparent !important;
+  color: #e4e4e7;
   font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
   font-size: 0.92rem;
   line-height: 1.75;
-  text-shadow: 0 0 0.01px currentColor;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
 }
 
 .ProseMirror mark[data-color] {
@@ -3906,6 +3919,73 @@ span[data-ai-ghost] {
   opacity: 0.7;
 }
 
+/* ── Editor Code Block (TipTap) — minimal card style ── */
+.editor-code-block {
+  position: relative;
+  margin: 0.85rem 0;
+  border-radius: 0.75rem;
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  outline: none !important;
+}
+
+.editor-code-block:focus,
+.editor-code-block:focus-within,
+.editor-code-block:focus-visible,
+.editor-code-block * {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.editor-code-pre {
+  margin: 0;
+  padding: 1rem 1.1rem 1rem;
+  overflow-x: auto;
+  background: transparent;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.editor-code-content {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: #e4e4e7;
+  background: transparent;
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  outline: none;
+}
+
+.editor-code-copy-btn {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 0.45rem;
+  color: rgba(255, 255, 255, 0.28);
+  background: transparent;
+  border: none;
+  transition: color 0.15s ease, background 0.15s ease;
+  z-index: 1;
+}
+
+.editor-code-copy-btn:hover {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.editor-code-copy-btn:active {
+  transform: scale(0.92);
+}
+
 /* ── ChatGPT-style Code Block ── */
 .gc-code-block {
   overflow: hidden;
@@ -5294,6 +5374,8 @@ span[data-ai-ghost] {
   border-radius: 0;
   color: rgba(245, 245, 245, 0.93);
   background: transparent;
+  width: 100%;
+  max-width: 100%;
 }
 
 .dark .gc-msg-bubble-ai {

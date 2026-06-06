@@ -1,8 +1,9 @@
 import { FileText, Hash, Bold, Italic, List, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { SpotlightCard } from '../ui/SpotlightCard';
 
 export const EditorPreview = () => {
   return (
-    <div className="glass-card overflow-hidden shadow-2xl shadow-indigo-900/20 relative z-10">
+    <SpotlightCard className="overflow-hidden shadow-2xl shadow-indigo-900/20 relative z-10">
       {/* Window chrome */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
         <div className="flex items-center gap-1.5">
@@ -84,6 +85,6 @@ export const EditorPreview = () => {
           </div>
         </div>
       </div>
-    </div>
+    </SpotlightCard>
   );
 };

@@ -41,6 +41,45 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Wraps the entire selection into a SINGLE code block.
+  // If already in a code block (toggle off) or no real selection, falls back
+  // to the default toggleCodeBlock behaviour.
+  const handleCodeBlock = () => {
+    const { state } = editor;
+    const { selection, schema } = state;
+    const { from, to, empty } = selection;
+
+    // Already inside a code block → just toggle it off
+    if (editor.isActive("codeBlock") || empty) {
+      editor.chain().focus().toggleCodeBlock().run();
+      return;
+    }
+
+    // Collect text from every node in the selection, joining with newlines
+    const lines: string[] = [];
+    state.doc.nodesBetween(from, to, (node) => {
+      if (node.isBlock && node.textContent !== undefined) {
+        lines.push(node.textContent);
+      }
+    });
+
+    const mergedText = lines.join("\n");
+    if (!mergedText.trim()) {
+      editor.chain().focus().toggleCodeBlock().run();
+      return;
+    }
+
+    // Replace entire selection with one code block containing all lines
+    const codeBlockNode = schema.nodes.codeBlock.create(
+      {},
+      mergedText ? [schema.text(mergedText)] : []
+    );
+
+    const tr = state.tr.replaceWith(from, to, codeBlockNode);
+    editor.view.dispatch(tr);
+    editor.commands.focus();
+  };
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -79,13 +118,15 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
         <div className="dock-toolbar-inner">
           {/* Group 1: Utilities */}
           <div className="dock-toolbar-cluster flex items-center">
-            <ToolbarButton 
-              active={isFocusMode} 
-              onClick={toggleFocusMode} 
-              icon={isFocusMode ? <Minimize2 size={16} strokeWidth={1.5} /> : <Maximize2 size={16} strokeWidth={1.5} />} 
-              title="Toggle Focus Mode" 
-              color="#3b82f6"
-            />
+            {!isMobile && (
+              <ToolbarButton 
+                active={isFocusMode} 
+                onClick={toggleFocusMode} 
+                icon={isFocusMode ? <Minimize2 size={16} strokeWidth={1.5} /> : <Maximize2 size={16} strokeWidth={1.5} />} 
+                title="Toggle Focus Mode" 
+                color="#3b82f6"
+              />
+            )}
             <ToolbarButton 
               active={false} 
               onClick={handleFormatMarkdown} 
@@ -215,7 +256,7 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
           {/* Group 5: Blocks */}
           <div className="dock-toolbar-cluster">
             <ToolbarButton active={editor.isActive("blockquote")} onClick={() => editor.chain().focus().toggleBlockquote().run()} icon={<Quote size={16} strokeWidth={1.5} />} title="Blockquote" color="#f43f5e" />
-            <ToolbarButton active={editor.isActive("codeBlock")} onClick={() => editor.chain().focus().toggleCodeBlock().run()} icon={<Code size={16} strokeWidth={1.5} />} title="Code Block" color="#f43f5e" />
+            <ToolbarButton active={editor.isActive("codeBlock")} onClick={handleCodeBlock} icon={<Code size={16} strokeWidth={1.5} />} title="Code Block" color="#f43f5e" />
           </div>
 
           <div className="dock-divider" />

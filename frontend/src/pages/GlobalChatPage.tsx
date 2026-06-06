@@ -111,6 +111,7 @@ const GlobalChatPage = () => {
           sendMessage={(text) => sendMessage(text)}
           prompts={prompts}
           bottomRef={bottomRef}
+          fullWidthAssistant
           useReasoning={useReasoning}
         />
 

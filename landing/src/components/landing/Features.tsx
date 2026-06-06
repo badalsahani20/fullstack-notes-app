@@ -1,4 +1,5 @@
 import { FadeIn } from '../ui/FadeIn';
+import { SpotlightCard } from '../ui/SpotlightCard';
 
 const FeatureIcon = ({ title }: { title: string }) => {
   if (title === "An Assistant That Researches") {
@@ -176,11 +177,11 @@ export const Features = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
           {features.map((f, i) => (
             <FadeIn key={f.title} delay={i * 100}>
-              <div className="glass-card glass-card-hover p-8 group h-full flex flex-col transition-all duration-500 hover:translate-y-[-4px]">
+              <SpotlightCard className="p-8 group h-full flex flex-col">
                 <FeatureIcon title={f.title} />
                 <h3 className="text-xl font-bold mb-3 text-white transition-colors group-hover:text-indigo-400">{f.title}</h3>
                 <p className="text-sm text-stone-400 leading-relaxed font-medium">{f.desc}</p>
-              </div>
+              </SpotlightCard>
             </FadeIn>
           ))}
         </div>

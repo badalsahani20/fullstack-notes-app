@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Extension } from "@tiptap/core";
-import { DOMParser } from "prosemirror-model";
+import { DOMParser, Fragment, Slice } from "prosemirror-model";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -30,6 +30,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { cn } from "@/lib/utils";
 import { formatMarkDownNodes } from "@/utils/FormatMarkdownNodes";
+import { useEditorUIStore } from "@/store/useEditorUIStore";
 
 const PLACEHOLDERS = [
   "Need a starting point? Generate study notes with AI.",
@@ -210,7 +211,41 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
         const plainText = event.clipboardData?.getData("text/plain") ?? "";
         const html = event.clipboardData?.getData("text/html") ?? "";
 
+        // ── Guard: pasting code-block content OUTSIDE a code block ──────────
+        // When the user selects text inside a code block and pastes elsewhere,
+        // TipTap's clipboard slice retains the codeBlock wrapper. Strip it.
+        //
+        // Copy BUTTON uses navigator.clipboard.writeText() → no HTML in clipboard
+        // → clipboardHasCodeBlock = false → falls through → looksLikeCodeSnippet
+        // may re-wrap as a code block (correct behaviour).
+        //
+        // Manual selection copy → browser puts <pre><code> in clipboard HTML
+        // → clipboardHasCodeBlock = true → stripped and inserted as paragraphs.
+        const clipboardHasCodeBlock = /<pre[\s>]/i.test(html) || /<code[\s>]/i.test(html);
+        const cursorInCodeBlock = view.state.selection.$anchor.parent.type.name === "codeBlock";
 
+        if (clipboardHasCodeBlock && !cursorInCodeBlock && plainText) {
+          event.preventDefault();
+          const { state, dispatch } = view;
+          const { schema } = state;
+
+          // Blank lines → paragraph breaks; single newlines → space within paragraph
+          const paraTexts = plainText
+            .replace(/\r\n/g, "\n")
+            .split(/\n{2,}/)
+            .map((block) => block.replace(/\n/g, " ").trim())
+            .filter(Boolean);
+
+          if (paraTexts.length === 0) return true;
+
+          const nodes = paraTexts.map((text) =>
+            schema.nodes.paragraph.create({}, [schema.text(text)])
+          );
+
+          const slice = new Slice(Fragment.fromArray(nodes), 0, 0);
+          dispatch(state.tr.replaceSelection(slice).scrollIntoView());
+          return true;
+        }
 
         // 1. Prioritize native IDE code blocks
         const isFencedMarkdown = /^\s*`{3,}/m.test(plainText);
@@ -269,10 +304,56 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
   const handleEditorKeyDown = (event: ReactKeyboardEvent) => {
     if (!editor || !editable) return;
 
-    // Auto-format raw markdown shortcut: Ctrl/Cmd + Alt + F
-    if ((event.ctrlKey || event.metaKey) && event.altKey && event.key.toLowerCase() === "f") {
+    const mod = event.ctrlKey || event.metaKey;
+
+    // Ctrl/⌘ + Alt + F → auto-format markdown
+    if (mod && event.altKey && event.key.toLowerCase() === "f") {
       event.preventDefault();
       formatMarkDownNodes(editor);
+      return;
+    }
+
+    // Ctrl/⌘ + / → open keyboard shortcuts guide
+    if (mod && event.key === "/") {
+      event.preventDefault();
+      useEditorUIStore.getState().setShortcutsOpen(true);
+      return;
+    }
+
+    // Ctrl/⌘ + Shift + C → toggle code block
+    if (mod && event.shiftKey && event.key.toLowerCase() === "c" && !event.altKey) {
+      // Skip if user is just copying a selection (browser handles that natively)
+      if (editor.state.selection.empty) {
+        event.preventDefault();
+        editor.chain().focus().toggleCodeBlock().run();
+      }
+      return;
+    }
+
+    // Ctrl/⌘ + K → insert / edit link
+    if (mod && !event.shiftKey && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      if (editor.isActive("link")) {
+        editor.chain().focus().unsetLink().run();
+      } else {
+        const url = window.prompt("URL");
+        if (url) editor.chain().focus().setLink({ href: url }).run();
+      }
+      return;
+    }
+
+    // Ctrl/⌘ + Shift + H → toggle highlight
+    if (mod && event.shiftKey && event.key.toLowerCase() === "h") {
+      event.preventDefault();
+      const { markerColor } = useEditorUIStore.getState();
+      editor.chain().focus().toggleMarkerHighlight(markerColor).run();
+      return;
+    }
+
+    // Ctrl/⌘ + \ → clear all formatting
+    if (mod && event.key === "\\") {
+      event.preventDefault();
+      editor.chain().focus().unsetAllMarks().clearNodes().run();
       return;
     }
 
