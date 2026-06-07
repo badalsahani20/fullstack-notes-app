@@ -221,7 +221,7 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
         //
         // Manual selection copy → browser puts <pre><code> in clipboard HTML
         // → clipboardHasCodeBlock = true → stripped and inserted as paragraphs.
-        const clipboardHasCodeBlock = /<pre[\s>]/i.test(html) || /<code[\s>]/i.test(html);
+        const clipboardHasCodeBlock = /<pre[\s>]/i.test(html);
         const cursorInCodeBlock = view.state.selection.$anchor.parent.type.name === "codeBlock";
 
         if (clipboardHasCodeBlock && !cursorInCodeBlock && plainText) {
@@ -248,8 +248,21 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
         }
 
         // 1. Prioritize native IDE code blocks
+        let isVsCodeMarkdown = false;
+        try {
+          const vsData = event.clipboardData?.getData("vscode-editor-data");
+          if (vsData) {
+            const parsed = JSON.parse(vsData);
+            if (parsed.mode === "markdown") {
+              isVsCodeMarkdown = true;
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+
         const isFencedMarkdown = /^\s*`{3,}/m.test(plainText);
-        const isIdeCopy = html && /vscode-editor-data|font-family:.*?(?:Consolas|monospace|Courier|JetBrains)/i.test(html);
+        const isIdeCopy = html && /vscode-editor-data|font-family:.*?(?:Consolas|monospace|Courier|JetBrains)/i.test(html) && !isVsCodeMarkdown;
         const isCode = plainText && !isFencedMarkdown && (isIdeCopy || looksLikeCodeSnippet(plainText));
 
         if (isCode) {

@@ -9,6 +9,9 @@ export const DOCUMENT_PATTERNS = [
   /^\s*- \[[ x]\]/m,
   /^---+$/m,
   /^\s*`{3,}/m,
+  /\[.+\]\([^\s]+\)/,
+  /\*\*.+\*\*/,
+  /`.+`/,
 ];
 
 const escapeHtml = (text: string): string =>
@@ -19,8 +22,10 @@ const escapeHtml = (text: string): string =>
 
 const inlineFormat = (text: string): string =>
   escapeHtml(text)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\b_([^_]+)_\b/g, "<em>$1</em>")
     .replace(/\*([^*]+)\*/g, "<em>$1</em>");
 
 const parseTableRow = (row: string): string[] =>
@@ -203,7 +208,11 @@ export const markdownToHtml = (md: string): string => {
       continue;
     }
 
-    out.push(`<p>${inlineFormat(line)}</p>`);
+    if (lines.length === 1) {
+      out.push(inlineFormat(line));
+    } else {
+      out.push(`<p>${inlineFormat(line)}</p>`);
+    }
     i++;
   }
 
