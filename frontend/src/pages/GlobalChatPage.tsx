@@ -9,6 +9,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GlobalChatSidebar } from "@/components/chat/GlobalChatSidebar";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
+import { ChatModeSelector } from "@/components/chat/ChatModeSelector";
 
 const GlobalChatPage = () => {
   const {
@@ -18,6 +19,7 @@ const GlobalChatPage = () => {
     fetchSessions, loadSession, startNewChat, sendMessage, setAttachedImage,
     useReasoning, setUseReasoning,
     useWebSearch, setUseWebSearch,
+    chatMode, setChatMode,
   } = useGlobalChatStore();
 
   const [input, setInput] = useState("");
@@ -95,9 +97,12 @@ const GlobalChatPage = () => {
           <div className="gc-header-avatar ai-rail-button ai-rail-button-active cursor-default">
             <div className="iris-orb" />
           </div>
-          <div>
-            <p className="gc-header-name">Iris</p>
-            <p className="gc-header-sub">Your AI Study Partner</p>
+          <div className="flex-1 flex items-center gap-2">
+            <div>
+              <p className="gc-header-name">Iris</p>
+              <p className="gc-header-sub">Your AI Study Partner</p>
+            </div>
+            <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} />
           </div>
         </div>
 

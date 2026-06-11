@@ -8,6 +8,7 @@ interface MermaidDiagramProps {
 const MERMAID_THEME_CONFIG = {
   startOnLoad: false,
   theme: "dark" as const,
+  suppressErrorRendering: true,
 };
 
 mermaid.initialize(MERMAID_THEME_CONFIG);

@@ -3,6 +3,7 @@ import { FileText, Type, X, RefreshCcw, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
+import { ChatModeSelector } from "@/components/chat/ChatModeSelector";
 import type { useAiChat } from "@/hooks/useAiChat";
 import type { Message } from "../ai/types";
 
@@ -43,6 +44,8 @@ const ContextualAiPanel = ({
     setUseReasoning,
     useWebSearch,
     setUseWebSearch,
+    chatMode,
+    setChatMode,
   } = aiChat;
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -80,15 +83,11 @@ const ContextualAiPanel = ({
       initial={mobileMode ? { x: "100%" } : { x: 40, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}
+      className={`assistant-rail relative overflow-hidden ${mobileMode ? "assistant-rail-mobile" : "flex"}`}
     >
-      <div className="gc-header note-ai-header">
-        <div className="gc-header-avatar ai-rail-button ai-rail-button-active cursor-default">
-          <div className="iris-orb" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="gc-header-name">Iris</p>
-          <p className="gc-header-sub">Transforms notes into understanding</p>
+      <div className="relative z-10 flex items-center justify-between px-4 py-2 border-b border-white/5 shrink-0">
+        <div className="flex items-center gap-2">
+          <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} />
         </div>
         <div className="flex items-center gap-1">
           <button

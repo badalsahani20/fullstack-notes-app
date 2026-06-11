@@ -233,6 +233,26 @@
 @layer base {
   * {
     @apply border-border outline-ring/60;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--text-strong) 20%, transparent) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--text-strong) 20%, transparent);
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--text-strong) 40%, transparent);
   }
 
   html,
@@ -3806,13 +3826,14 @@ span[data-ai-ghost] {
   color: var(--text-strong);
 }
 
-.gc-markdown code {
-  background: var(--code-bg);
+.gc-markdown :where(code):not(:where(pre code)) {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  color: inherit;
+  border: 1px solid color-mix(in srgb, currentColor 8%, transparent);
   border-radius: 0.35rem;
   padding: 0.15em 0.4em;
-  font-size: 0.82em;
+  font-size: 0.85em;
   font-family: "JetBrains Mono", "Fira Code", monospace;
-  color: var(--code-text);
 }
 
 .gc-markdown pre {
@@ -4613,6 +4634,75 @@ span[data-ai-ghost] {
   color: var(--muted-text);
 }
 
+/* ── Segmented Chat Mode Toggle (Header) ── */
+.gc-mode-selector-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-text);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.gc-mode-selector-btn:hover {
+  background: var(--surface-ghost);
+  color: var(--text-strong);
+  border-color: var(--divider);
+}
+
+.gc-mode-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  background: var(--popover);
+  border: 1px solid var(--divider);
+  border-radius: 0.75rem;
+  padding: 0.35rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  animation: dropdownReveal 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (max-width: 640px) {
+  .gc-mode-dropdown {
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 260px;
+  }
+}
+
+.gc-mode-dropdown-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.gc-mode-dropdown-item:hover {
+  background: var(--surface-ghost);
+}
+
+.gc-mode-dropdown-item.active {
+  background: color-mix(in srgb, var(--accent-strong) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent-strong) 30%, transparent);
+}
+
 .gc-compose-footer {
   display: flex;
   align-items: flex-end;
@@ -4681,7 +4771,8 @@ span[data-ai-ghost] {
   font-size: 0.68rem;
   color: var(--muted-text);
   text-align: center;
-  margin: 0.5rem auto 0;
+  margin: 0.75rem auto 0;
+  opacity: 0.8;
 }
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile Ã¢â€â‚¬Ã¢â€â‚¬ */
@@ -5576,16 +5667,18 @@ span[data-ai-ghost] {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 10;
 }
 
 .gc-compose {
   width: 100%;
   max-width: 52rem;
   min-height: 3.45rem;
-  border-radius: 1.65rem;
+  border-radius: 1.5rem;
   background: #212121;
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   position: relative;
   transition: border-radius 0.2s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }

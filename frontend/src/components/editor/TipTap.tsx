@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { Extension } from "@tiptap/core";
-import { DOMParser, Fragment, Slice } from "prosemirror-model";
+import { DOMParser } from "prosemirror-model";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import BubbleMenu from "@tiptap/extension-bubble-menu";
 import { TextStyle } from "@tiptap/extension-text-style";
@@ -49,9 +49,27 @@ const CODE_MARKERS = [
 
 const looksLikeCodeSnippet = (text: string) => {
   if (!text.includes("\n")) return false;
+
+  // 1. Detect standard programming languages
   const matchCount = CODE_MARKERS.filter((p) => p.test(text)).length;
   if (matchCount >= 2) return true; // Strong code confidence overrides document patterns
+
+  // 2. Reject if it looks like a markdown document
   if (DOCUMENT_PATTERNS.some((p) => p.test(text))) return false; // Likely a document with a stray code word
+
+  // 3. Detect Mermaid definitions
+  const isMermaid = /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie)\b/m.test(text);
+  if (isMermaid) return true;
+
+  // 4. Detect ASCII Art / Diagrams (box drawing characters, structural arrows with indentation)
+  const hasBoxDrawing = /[─│┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬╭╮╯╰]/.test(text);
+  const hasDiagramArrows = /──►|◄──|-->|<--|==>|<==/.test(text);
+  const hasVerticalAlignment = /^\s{2,}[│▼▲|]/m.test(text) || /\s{4,}/.test(text);
+  
+  if ((hasBoxDrawing || hasDiagramArrows) && hasVerticalAlignment) {
+    return true;
+  }
+
   return matchCount >= 1;
 };
 
@@ -164,10 +182,10 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
 
   const resolvedFontFamily =
     editorFont === "Inter" ? "'Inter', sans-serif" :
-    editorFont === "Georgia" ? "'Georgia', serif" :
-    editorFont === "Lora" ? "'Lora', serif" :
-    editorFont === "JetBrains Mono" ? "'JetBrains Mono', monospace" :
-    "system-ui, sans-serif";
+      editorFont === "Georgia" ? "'Georgia', serif" :
+        editorFont === "Lora" ? "'Lora', serif" :
+          editorFont === "JetBrains Mono" ? "'JetBrains Mono', monospace" :
+            "system-ui, sans-serif";
 
   const placeholderText = React.useMemo(() => {
     const randomIndex = Math.floor(Math.random() * PLACEHOLDERS.length);
@@ -221,31 +239,8 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
         //
         // Manual selection copy → browser puts <pre><code> in clipboard HTML
         // → clipboardHasCodeBlock = true → stripped and inserted as paragraphs.
-        const clipboardHasCodeBlock = /<pre[\s>]/i.test(html);
-        const cursorInCodeBlock = view.state.selection.$anchor.parent.type.name === "codeBlock";
-
-        if (clipboardHasCodeBlock && !cursorInCodeBlock && plainText) {
-          event.preventDefault();
-          const { state, dispatch } = view;
-          const { schema } = state;
-
-          // Blank lines → paragraph breaks; single newlines → space within paragraph
-          const paraTexts = plainText
-            .replace(/\r\n/g, "\n")
-            .split(/\n{2,}/)
-            .map((block) => block.replace(/\n/g, " ").trim())
-            .filter(Boolean);
-
-          if (paraTexts.length === 0) return true;
-
-          const nodes = paraTexts.map((text) =>
-            schema.nodes.paragraph.create({}, [schema.text(text)])
-          );
-
-          const slice = new Slice(Fragment.fromArray(nodes), 0, 0);
-          dispatch(state.tr.replaceSelection(slice).scrollIntoView());
-          return true;
-        }
+        // ── Removed harmful code-block guard ──
+        // Previously, manual selection copies of code blocks were stripped and forced into paragraphs, destroying ASCII art.
 
         // 1. Prioritize native IDE code blocks
         let isVsCodeMarkdown = false;
@@ -404,7 +399,7 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
     if (noteId !== lastNoteIdRef.current) {
       const isSwitching = lastNoteIdRef.current !== undefined && lastNoteIdRef.current !== "new";
       const isInitialMount = lastNoteIdRef.current === undefined;
-      
+
       lastNoteIdRef.current = noteId;
 
       if (isInitialMount || isSwitching) {
@@ -425,13 +420,13 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
       }}
     >
       {editable && aiChat && (
-        <EditorBubbleMenu 
-          editor={editor} 
+        <EditorBubbleMenu
+          editor={editor}
           onAskAi={(selectedText, startLine, endLine) => {
             const lineRange = startLine === endLine ? `line ${startLine}` : `lines ${startLine}-${endLine}`;
             aiChat.setChatInput(`explain this part (${lineRange}):\n"${selectedText}"`);
             usePanelStore.getState().setAiPanelOpen(true);
-            
+
             let attempts = 0;
             const focusTextarea = () => {
               const chatInputEl = document.querySelector(".gc-textarea") as HTMLTextAreaElement;

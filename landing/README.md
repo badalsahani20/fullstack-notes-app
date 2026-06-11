@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# Notesify Landing Page
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the front-facing landing page and marketing site for **Notesify** - the AI-powered note-taking application. 
 
-Currently, two official plugins are available:
+It is designed to be extremely fast, responsive, and visually stunning, featuring modern web design aesthetics, smooth animations, and clear calls-to-action.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tech Stack
 
-## React Compiler
+The landing page is built with a modern, lightweight stack tailored for performance and SEO:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18**: Core UI framework.
+- **Vite**: Ultra-fast build tool and development server.
+- **TypeScript**: For robust, type-safe code.
+- **Tailwind CSS**: Utility-first CSS framework for rapid styling.
+- **Framer Motion**: Used for highly optimized, beautiful scroll and entry animations.
+- **Lucide React**: Beautiful, consistent iconography.
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```text
+landing/
+├── src/
+│   ├── assets/        # Static assets (images, icons)
+│   ├── components/    # Reusable UI components
+│   │   ├── landing/   # Specific landing page sections (Hero, Features, Pricing, etc.)
+│   │   └── ui/        # Shared base components
+│   ├── pages/         # Page-level components (HomePage, PrivacyPage, etc.)
+│   ├── App.tsx        # Root application component and routing
+│   └── main.tsx       # Application entry point
+├── index.html         # HTML template
+├── vite.config.ts     # Vite configuration
+└── tailwind.config.js # Tailwind theme configuration
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Running Locally
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+To run the landing page locally during development:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Navigate to the `landing` directory:
+   ```bash
+   cd landing
+   ```
+
+2. Install dependencies (if you haven't already):
+   ```bash
+   npm install
+   ```
+
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+
+The landing page will be available at `http://localhost:5173` (or the port specified by Vite in the terminal).
+
+## Building for Production
+
+To create a production-ready build:
+
+```bash
+npm run build
 ```
+
+The optimized static assets will be generated in the `dist/` directory, ready to be deployed to Vercel, Netlify, or any static hosting service.
+
+## Architecture & Aesthetics
+
+- **Hero Section**: Designed to capture attention immediately with a sleek dark mode UI and floating dashboard previews.
+- **Features**: Broken down into digestible cards detailing AI summarization, smart quizzes, and markdown support.
+- **Animations**: Driven by `framer-motion` using viewport triggers to create a dynamic, "reveal-on-scroll" experience.
+- **Responsive**: Fully optimized for mobile, tablet, and desktop viewports.

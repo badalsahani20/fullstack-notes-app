@@ -397,9 +397,14 @@ const resolveSession = async (req) => {
     const newSession = await GlobalChatSession.create({
       user: req.user._id,
       messages: [],
+      chatMode: req.body.chatMode || "study",
     });
     activeSessionId = newSession._id;
     activeSession = newSession;
+  } else if (activeSession && req.body.chatMode && activeSession.chatMode !== req.body.chatMode) {
+    // If user changed the mode during an existing session, update it
+    activeSession.chatMode = req.body.chatMode;
+    await activeSession.save();
   }
 
   return {
@@ -597,7 +602,7 @@ const persistToDb = async (
 //  Main chat controller
 
 export const chatWithAiController = catchAsync(async (req, res) => {
-  const { message, imageBase64, pdfContext, stream, useReasoning, enableWeb } =
+  const { message, imageBase64, pdfContext, stream, useReasoning, enableWeb, chatMode } =
     req.body;
 
   if ((!message || !message.trim()) && !imageBase64) {
@@ -658,6 +663,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       stream: isStreaming,
       useReasoning: useReasoning !== false,
       enableWeb: shouldSearchWeb,
+      chatMode: activeSession?.chatMode || chatMode || "study",
     });
   } catch (aiError) {
     console.error("❌ All AI models failed:", aiError.message);
@@ -718,6 +724,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       ],
       sessionId: activeSessionId,
       pdfContext: result.pdfContext,
+      chatMode: activeSession?.chatMode || chatMode || "study",
     },
   });
 });
@@ -746,6 +753,7 @@ export const getChatSessionController = catchAsync(async (req, res) => {
             : undefined,
       })),
       title: cleanSessionTitle(session.title),
+      chatMode: session.chatMode,
     },
   });
 });

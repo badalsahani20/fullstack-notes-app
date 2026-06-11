@@ -165,58 +165,40 @@ export function closeUnfinishedJson(text: string): string {
 }
 
 /**
- * Automatically closes unmatched HTML/XML tags.
+ * Escapes < and > outside of code blocks to prevent react-markdown from swallowing them as HTML tags.
  */
-export function closeHtmlTags(text: string): string {
-  const stack: string[] = [];
-  const tagRegex = /<(\/)?([a-zA-Z0-9:-]+)(?:\s+[^>]*?)?(\/)?>/g;
+export function escapeHtmlTags(text: string): string {
+  let cleanText = "";
   let insideCodeBlock = false;
   let insideInlineCode = false;
 
-  let cleanText = "";
   let i = 0;
   while (i < text.length) {
     if (text.startsWith("```", i)) {
       insideCodeBlock = !insideCodeBlock;
+      cleanText += "```";
       i += 3;
       continue;
     }
+
     if (text[i] === "`" && !insideCodeBlock) {
       insideInlineCode = !insideInlineCode;
+      cleanText += "`";
       i++;
       continue;
     }
+
     if (!insideCodeBlock && !insideInlineCode) {
+      if (text[i] === "<") cleanText += "&lt;";
+      else if (text[i] === ">") cleanText += "&gt;";
+      else cleanText += text[i];
+    } else {
       cleanText += text[i];
     }
     i++;
   }
 
-  let match;
-  tagRegex.lastIndex = 0;
-  while ((match = tagRegex.exec(cleanText)) !== null) {
-    const [_, isClosing, tagName, isSelfClosing] = match;
-    if (isSelfClosing) continue;
-
-    const voidTags = ["img", "br", "hr", "input", "meta", "link"];
-    if (voidTags.includes(tagName.toLowerCase())) continue;
-
-    if (isClosing) {
-      if (stack[stack.length - 1] === tagName.toLowerCase()) {
-        stack.pop();
-      }
-    } else {
-      stack.push(tagName.toLowerCase());
-    }
-  }
-
-  let closing = "";
-  while (stack.length > 0) {
-    const tag = stack.pop();
-    closing += `</${tag}>`;
-  }
-
-  return text + closing;
+  return cleanText;
 }
 
 /**
@@ -227,8 +209,8 @@ export function sanitizeStream(text: string): string {
   
   let sanitized = text;
   
-  // 1. Unfinished HTML tags
-  sanitized = closeHtmlTags(sanitized);
+  // 1. Escape `<` and `>` to prevent Markdown parser from stripping them
+  sanitized = escapeHtmlTags(sanitized);
 
   // 2. Unfinished JSON inside json code blocks
   sanitized = closeUnfinishedJson(sanitized);

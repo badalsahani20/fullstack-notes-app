@@ -23,10 +23,12 @@ Iris AI routes requests dynamically across three providers based on payload type
 
 | Provider | Model | Use Case |
 |---|---|---|
-| OpenRouter | DeepSeek V4 | Primary "Brain" for text, complex reasoning, and logic |
+| OpenRouter | DeepSeek V4 Flash | Primary "Brain" for text, complex reasoning, and logic |
 | OpenRouter | Qwen 3.5 Flash | Dedicated Vision model for image analysis and OCR |
-| Groq | Llama 3.3 70B | High-speed fallback and heavy document comprehension |
-| Google Gemini | 2.0 Flash | Complex content actions (rewrite, summarize, grammar) |
+| OpenRouter | GPT-OSS 120B | Dedicated teaching model and default chat |
+| OpenRouter | Ling 2.6 Flash / Ring 2.6 1T | Quick operations and complex analysis |
+| Groq | Llama 3.3 70B | High-speed fallback |
+| Google Gemini | 3.1 Flash Lite | High-speed summarization fallback and content extraction |
 
 Cascading fallbacks ensure near-zero AI downtime: DeepSeek → Groq (LLaMA 3) on failure, Qwen Vision → Gemini on failure.
 
@@ -45,7 +47,7 @@ Upstash Redis sits in front of all `GET /notes` and `GET /folders` requests, ser
 AI suggestions (Improve, Summarize, Grammar) are cached in MongoDB using a SHA-256 hash of the input text. Identical requests return cached results instantly — eliminating redundant LLM API calls and cutting AI feature costs.
 
 ### Token-Aware Conversation Management
-Chat history beyond 20 messages triggers an automatic AI summarization task, compressing the conversation into a rolling "Context Snapshot." Old messages are purged, the snapshot is injected into the system prompt — preserving conversational memory without blowing token limits.
+Chat history beyond 40 messages triggers an automatic AI summarization task, compressing the conversation into a rolling "Context Snapshot." Old messages are purged, the snapshot is injected into the system prompt — preserving conversational memory without blowing token limits.
 
 ### Hybrid Search
 MongoDB full-text indexing provides high-relevance ranking via linguistic scores. If indexed search returns no results (partial words, special characters), the system falls back to indexed case-insensitive regex — guaranteeing zero zero-result searches.

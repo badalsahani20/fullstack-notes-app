@@ -44,6 +44,7 @@ type GlobalChatStore = {
   imageDisabled: boolean;
   useReasoning: boolean;
   useWebSearch: boolean;
+  chatMode: "study" | "casual";
 
   // Actions
   fetchSessions: () => Promise<void>;
@@ -53,6 +54,7 @@ type GlobalChatStore = {
   setAttachedImage: (img: string | null) => void;
   setUseReasoning: (val: boolean) => void;
   setUseWebSearch: (val: boolean) => void;
+  setChatMode: (mode: "study" | "casual") => void;
   reset: () => void;
 };
 
@@ -67,6 +69,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   imageDisabled: false,
   useReasoning: false, 
   useWebSearch: false,
+  chatMode: "study",
 
   fetchSessions: async () => {
     set({ sessionsLoading: true });
@@ -84,6 +87,12 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
     set({ messagesLoading: true, activeSessionId: sessionId, messages: [] });
     try {
       const { data } = await api.get(`/ai/chat/session/${sessionId}`);
+      
+      // Inherit the chatMode from the loaded session if available
+      if (data.data.chatMode) {
+        set({ chatMode: data.data.chatMode });
+      }
+
       const mapped: ChatMessage[] = data.data.messages.map((m: { role: string; content: string; segments?: IrisSegment[] }) => {
         const imageMatch = m.content.match(/^\[Attached Image\]\((https?:\/\/[^)]+)\)\s*/i);
         const imageUrl = imageMatch?.[1];
@@ -158,6 +167,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
           stream: true,
           useReasoning: get().useReasoning,
           enableWeb: get().useWebSearch,
+          chatMode: get().chatMode,
         }),
       });
 
@@ -256,6 +266,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
   setAttachedImage: (img) => set({ attachedImage: img }),
   setUseReasoning: (val) => set({ useReasoning: val }),
   setUseWebSearch: (val) => set({ useWebSearch: val }),
+  setChatMode: (mode) => set({ chatMode: mode }),
   reset: () => set({
     sessions: [],
     sessionsLoading: false,

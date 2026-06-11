@@ -84,7 +84,18 @@ When you start writing a new note, Iris generates a meaningful title from your c
 
 Iris is Notesify's AI assistant. It is contextually aware of your active note and only activates when you invoke it — it never interrupts your writing.
 
-Under the hood, Iris routes requests across multiple AI providers (DeepSeek, Qwen, Groq LLaMA, Google Gemini) based on the type of request. This routing is completely invisible to you — you always interact with a single, unified Iris persona.
+Under the hood, Iris routes requests dynamically across three providers based on payload type:
+
+| Provider | Model | Use Case |
+|---|---|---|
+| OpenRouter | DeepSeek V4 Flash | Primary "Brain" for text, complex reasoning, and logic |
+| OpenRouter | Qwen 3.5 Flash | Dedicated Vision model for image analysis and OCR |
+| OpenRouter | GPT-OSS 120B | Dedicated teaching model and default chat |
+| OpenRouter | Ling 2.6 Flash / Ring 2.6 1T | Quick operations and complex analysis |
+| Groq | Llama 3.3 70B | High-speed fallback |
+| Google Gemini | 3.1 Flash Lite | High-speed summarization fallback and content extraction |
+
+Cascading fallbacks ensure near-zero AI downtime. This routing is completely invisible to you — you always interact with a single, unified Iris persona.
 
 ### Bubble menu (inline actions)
 
@@ -126,7 +137,7 @@ The chat panel slides in alongside the editor. Iris has full context of your act
 
 **Streaming:** Responses appear token by token in real time. You can see Iris's reasoning process via a live Thinking indicator before the final answer arrives.
 
-**Conversation memory:** Chat history is managed automatically. When a conversation grows long, Iris compresses older messages into a rolling context snapshot — preserving continuity without hitting token limits.
+**Conversation memory:** Chat history is managed automatically. Chat history beyond 40 messages triggers an automatic AI summarization task, compressing older messages into a rolling context snapshot — preserving continuity without hitting token limits.
 
 ### AI suggestion caching
 

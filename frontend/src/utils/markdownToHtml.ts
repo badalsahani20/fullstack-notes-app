@@ -38,13 +38,13 @@ const parseTableRow = (row: string): string[] =>
 export const markdownToHtml = (md: string): string => {
   // Pre-process to split combined inline code block fences into clean separate lines
   let processedMd = md.replace(/\r\n/g, "\n");
-  
+
   // 1. If there's text before a code fence, put the fence on a new line
   processedMd = processedMd.replace(/([^\s`]+)\s*(```)/g, "$1\n$2");
-  
+
   // 2. If there's code on the same line as the opening fence (e.g. ```javascript const x = 5;), put the code on a new line
   processedMd = processedMd.replace(/(```\w*)\s+([^\s].*)/g, "$1\n$2");
-  
+
   // 3. If there's text on the same line after a closing fence (e.g. ``` other text), put the other text on a new line
   processedMd = processedMd.replace(/(```)\s+([^\s`].*)/g, "$1\n$2");
 
@@ -62,12 +62,12 @@ export const markdownToHtml = (md: string): string => {
     }
 
     // ── Fenced code blocks ─────────────────────────────────────────────────
-    const fenceMatch = line.match(/^```(\w*)/);
+    const fenceMatch = line.match(/^\s*```(.*)/);
     if (fenceMatch) {
-      const lang = fenceMatch[1] || "plaintext";
+      const lang = fenceMatch[1].trim();
       i++;
       const codeLines: string[] = [];
-      while (i < lines.length && !lines[i].startsWith("```")) {
+      while (i < lines.length && !lines[i].trim().startsWith("```")) {
         codeLines.push(lines[i]);
         i++;
       }
@@ -77,7 +77,12 @@ export const markdownToHtml = (md: string): string => {
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
-      out.push(`<pre><code class="language-${lang}">${codeContent}</code></pre>`);
+        
+      if (!lang || lang === "text" || lang === "plaintext") {
+        out.push(`<pre><code>${codeContent}</code></pre>`);
+      } else {
+        out.push(`<pre><code class="language-${lang}">${codeContent}</code></pre>`);
+      }
       continue;
     }
 

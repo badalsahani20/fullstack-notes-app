@@ -37,6 +37,11 @@ const globalChatSessionSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    chatMode: {
+      type: String,
+      enum: ["study", "casual"],
+      default: "study",
+    },
   },
   { timestamps: true }
 );

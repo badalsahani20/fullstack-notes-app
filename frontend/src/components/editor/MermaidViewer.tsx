@@ -19,6 +19,7 @@ export const MermaidViewer: React.FC<MermaidViewerProps> = ({ code }) => {
       theme: 'dark',
       securityLevel: 'loose',
       fontFamily: 'inherit',
+      suppressErrorRendering: true,
       themeVariables: {
         darkMode: true,
         background: 'transparent',

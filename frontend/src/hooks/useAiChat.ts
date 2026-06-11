@@ -85,6 +85,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
   const [pdfInjected, setPdfInjected] = useState(false);
   const [useReasoning, setUseReasoning] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [chatMode, setChatMode] = useState<"study" | "casual">("study");
 
   const isNew = noteId === "new" || !noteId;
   // Resolve the effective noteId to send to the API — null signals the backend
@@ -148,6 +149,13 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       setHistoryLoaded(true);
     }
   };
+
+  // If the note has no history initially, mark it as loaded so the button doesn't appear when chatting
+  useEffect(() => {
+    if (!historyLoaded && activeNote?.chatHistory && activeNote.chatHistory.length === 0) {
+      setHistoryLoaded(true);
+    }
+  }, [activeNote?.chatHistory, historyLoaded]);
 
   useEffect(() => {
     setHistoryLoaded(false);
@@ -423,6 +431,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         stream: true,
         useReasoning,
         enableWeb: useWebSearch,
+        chatMode,
       });
 
       let response = await fetch(`${import.meta.env.VITE_API_URL}/ai/chat`, {
@@ -633,7 +642,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     messagesRef.current = nextMessages;
     setMessages(nextMessages);
     setChatHistory([]);
-    setHistoryLoaded(false);
+    setHistoryLoaded(true);
     const latestNote = (queryClient.getQueryData(["note", noteId]) as Note | undefined) ?? activeNote;
     if (latestNote) {
       void updateNoteAsync({ noteId, updates: { chatHistory: [] }, version: latestNote.version });
@@ -710,5 +719,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
     setUseReasoning,
     useWebSearch,
     setUseWebSearch,
+    chatMode,
+    setChatMode,
   };
 };
