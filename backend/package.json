@@ -119,7 +119,7 @@
     "wrappy": "^1.0.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "start": "node -r dotenv/config server.js",
     "dev": "nodemon -r dotenv/config server.js"
   },
@@ -128,6 +128,9 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "jest": "^30.4.2",
+    "mongodb-memory-server": "^11.2.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.2.2"
   }
 }

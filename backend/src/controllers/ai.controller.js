@@ -18,6 +18,7 @@ import { stripHtml } from "../utils/stripHtml.js";
 import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 import getEffectiveDailyLimit from "../utils/getEffectiveDailyLimit.js";
 import { SseStreamParser } from "../utils/sseParser.js";
+import { searchMemories } from "../services/memoryService.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
@@ -612,14 +613,27 @@ export const chatWithAiController = catchAsync(async (req, res) => {
   }
 
   // 1. Resolve session & history
-  const sessionData = await resolveSession(req);
-  const {
+  let sessionData = await resolveSession(req);
+  let {
     isGlobalChat,
     history,
     summary: sessionSummary,
     activeSessionId,
     activeSession,
   } = sessionData;
+
+  // Session Size Guard
+  if (isGlobalChat && activeSession && activeSession.messages.length >= 100) {
+    activeSession.memoryStatus = "PENDING";
+    await activeSession.save();
+    // Force start new session
+    req.body.sessionId = undefined;
+    sessionData = await resolveSession(req);
+    history = sessionData.history;
+    sessionSummary = sessionData.summary;
+    activeSessionId = sessionData.activeSessionId;
+    activeSession = sessionData.activeSession;
+  }
 
   if (isGlobalChat && req.body.sessionId && !sessionData.session) {
     return res
@@ -646,10 +660,16 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     toolUsed: null,
   });
 
-  // 4. Call the AI service
+  // 4. Retrieve Memories and call the AI service
   let result;
   try {
-    const finalSystemPrompt = "";
+    const memories = await searchMemories(req.user._id, message);
+    let memoryContext = "";
+    if (memories.length > 0) {
+      memoryContext = `\n--- LONG-TERM MEMORIES ---\nThese are facts previously explicitly stated by the user. Use them if relevant to the query:\n${memories.map(m => `- [${m.category}] ${m.content}`).join("\n")}\n--- END MEMORIES ---\n`;
+    }
+
+    const finalSystemPrompt = memoryContext;
 
     result = await chatWithAi({
       message,
