@@ -182,6 +182,12 @@ export const markdownToHtml = (md: string): string => {
           i++;
           continue;
         }
+
+        // If the continuation line is the start of another block element, break out of the list
+        if (/^\s*```/.test(cur) || /^(#{1,6})\s+/.test(cur) || /^\s*\d+\.\s/.test(cur) || /^\s*>\s?/.test(cur) || /^---+$/.test(cur)) {
+          break;
+        }
+
         // continuation line — belongs to the previous <li>
         if (listItems.length > 0 && cur.trim() !== "") {
           // Append to the text inside the last <li>'s <p>

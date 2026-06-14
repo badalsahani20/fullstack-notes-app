@@ -54,9 +54,6 @@ const GlobalChatPage = () => {
     });
   }, [fetchSessions]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isSending]);
 
   const handleSend = () => {
     const text = input.trim();

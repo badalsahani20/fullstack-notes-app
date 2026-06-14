@@ -4,7 +4,7 @@ import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
 import { parseIrisResponse } from "@/utils/parseIrisResponse";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getThinkingState } from "@/utils/getThinkingState";
 
 
@@ -99,6 +99,7 @@ export const GlobalChatMessages = ({
   streamingMessageId,
   streamedMessageText,
   isStreaming,
+  isSending,
   sendMessage,
   prompts,
   bottomRef,
@@ -106,6 +107,33 @@ export const GlobalChatMessages = ({
   useReasoning = true,
 }: GlobalChatMessagesProps) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [userHasScrolledUp, setUserHasScrolledUp] = useState(false);
+  const lastMessageCount = useRef(messages.length);
+
+  // Re-enable auto-scroll on new messages
+  useEffect(() => {
+    if (messages.length > lastMessageCount.current || isSending) {
+      setUserHasScrolledUp(false);
+    }
+    lastMessageCount.current = messages.length;
+  }, [messages.length, isSending]);
+
+  // Auto-scroll logic
+  useEffect(() => {
+    if (!userHasScrolledUp) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, streamedMessageText, isStreaming, isSending, userHasScrolledUp, bottomRef]);
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    
+    // Check if user is near the bottom (within 50px)
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    setUserHasScrolledUp(!isNearBottom);
+  };
 
   const handleCopy = (text: string, id: string) => {
     if (!text) return;
@@ -119,7 +147,11 @@ export const GlobalChatMessages = ({
   };
 
   return (
-    <div className={`gc-messages custom-scrollbar${fullWidthAssistant ? " gc-messages-fullwidth-assistant" : ""}`}>
+    <div 
+      className={`gc-messages custom-scrollbar${fullWidthAssistant ? " gc-messages-fullwidth-assistant" : ""}`}
+      ref={scrollContainerRef}
+      onScroll={handleScroll}
+    >
       {messagesLoading ? (
         <div className="gc-loading-wrap">
           <div className="gc-loading-dot" style={{ animationDelay: "0ms" }} />
