@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Search, FileText, CornerDownLeft, X, Folder, Archive } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogHeader } from "@/components/ui/dialog";
-import { useNotesQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
+import { useNotesQuery, useArchivedQuery } from "@/hooks/notes/useNotesQuery";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNavigate } from "react-router-dom";
 import { stripHtml } from "@/utils/stripHtml";

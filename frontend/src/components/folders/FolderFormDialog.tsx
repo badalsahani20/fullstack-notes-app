@@ -42,8 +42,15 @@ export const FolderFormDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="p-0 gap-0 max-w-sm bg-[var(--panel-bg-strong)] border-[var(--divider)] text-[var(--text-strong)] shadow-[0_20px_60px_rgba(0,0,0,0.35)] overflow-hidden">
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && !isSaving) onClose();
+      }}
+    >
+      <DialogContent 
+        className="p-0 gap-0 max-w-sm bg-[var(--panel-bg-strong)] border-[var(--divider)] text-[var(--text-strong)] shadow-[0_20px_60px_rgba(0,0,0,0.35)] overflow-hidden"
+      >
         {/* Top accent */}
         <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 

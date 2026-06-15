@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { X, BookOpen, ClipboardList } from "lucide-react";
-import { useStudy } from "@/hooks/useStudy";
+import { useStudy } from "@/hooks/study/useStudy";
 import FlashcardDeck from "./FlashcardDeck";
 import QuizSession from "./QuizSession";
 import type { ChatHistoryMessage } from "@/components/ai/types";
-import type { QuizType } from "@/hooks/useStudy";
+import type { QuizType } from "@/hooks/study/useStudy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

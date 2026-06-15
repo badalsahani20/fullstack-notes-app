@@ -6,12 +6,12 @@ const FoldersPanel = lazy(() => import("./folders/FolderPanel"));
 import AppHeader from "./header/AppHeader";
 import MobileDrawer from "./header/MobileDrawer";
 import AppLayout from "./AppLayout";
-import { useNotesLayout } from "@/hooks/useNotesLayout";
+import { useNotesLayout } from "@/hooks/notes/useNotesLayout";
 import ActivityBar from "./header/SideBar";
 import { useFolderStore } from "@/store/useFolderStore";
 import { usePanelStore } from "@/store/usePanelStore";
 import { WhatsNewModal } from "@/components/ui/WhatsNewModal";
-import { useWhatsNew } from "@/hooks/useWhatsNew";
+import { useWhatsNew } from "@/hooks/user/useWhatsNew";
 import { SettingsDialog } from "@/components/settings/SettingsDialog";
 import { useSettingsUIStore } from "@/store/useSettingsStore";
 

@@ -5,41 +5,13 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
-import MarkdownCodeBlock from "./MarkdownCodeBlock";
-import MarkdownWritingBlock from "./MarkdownWritingBlock";
+import { sharedMarkdownComponents } from "@/utils/sharedMarkdownComponents";
 import IrisVisualBlock from "./IrisVisualBlock";
 import IrisAskBlock from "./IrisAskBlock";
 import type { IrisSegment } from "@/store/useGlobalChatStore";
 import { sanitizeStream } from "@/utils/streamSanitizer";
 
-// 🔒 Stable markdown components (outside component)
-const markdownComponents = {
-  code({ className, children, ...props }: any) {
-    const rawCode = String(children ?? "").replace(/\n$/, "");
-    const language = className?.replace("language-", "") || "";
-    const isBlock = Boolean(language) || rawCode.includes("\n");
 
-    if (!isBlock) {
-      return <code className={className} {...props}>{children}</code>;
-    }
-
-    if (language === "writing") {
-      return <MarkdownWritingBlock content={rawCode} />;
-    }
-
-    return <MarkdownCodeBlock code={rawCode} language={language} />;
-  },
-  a({ node, ...props }: any) {
-    return (
-      <a
-        {...props}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="iris-link"
-      />
-    );
-  },
-};
 
 interface IrisMessageBodyProps {
   segments: IrisSegment[];
@@ -113,7 +85,7 @@ const MemoizedMarkdown = React.memo(({ content }: MarkdownProps) => {
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath]}
       rehypePlugins={[rehypeRaw, rehypeKatex]}
-      components={markdownComponents}
+      components={sharedMarkdownComponents}
     >
       {sanitized}
     </ReactMarkdown>

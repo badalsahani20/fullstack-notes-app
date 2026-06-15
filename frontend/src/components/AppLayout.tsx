@@ -86,7 +86,10 @@ const AppLayout = ({
       const target = event.target as HTMLElement | null;
       if (
         target?.closest(".folders-drawer-desktop") ||
-        target?.closest(".nav-action-btn")
+        target?.closest(".nav-action-btn") ||
+        target?.closest("[data-radix-popper-content-wrapper]") ||
+        target?.closest("[data-slot='dialog-overlay']") ||
+        target?.closest("[data-slot='dialog-content']")
       ) {
         return;
       }

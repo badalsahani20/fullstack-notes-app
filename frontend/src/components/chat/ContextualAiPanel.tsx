@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
 import { ChatModeSelector } from "@/components/chat/ChatModeSelector";
-import type { useAiChat } from "@/hooks/useAiChat";
+import type { useAiChat } from "@/hooks/ai/useAiChat";
 import type { Message } from "../ai/types";
 
 type ContextualAiPanelProps = {

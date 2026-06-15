@@ -18,7 +18,7 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
-import { useToggleShareMutation } from "@/hooks/useNotesMutations";
+import { useToggleShareMutation } from "@/hooks/notes/useNotesMutations";
 import type { Note } from "@/store/useNoteStore";
 import { toast } from "sonner";
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Clock, ArrowDownAz, ListFilter } from "lucide-react";
@@ -8,11 +8,11 @@ import FolderCard from "../folders/FolderCard";
 import NoteDeleteDialog, { SKIP_NOTE_DELETE_CONFIRM_KEY } from "@/components/notes/NoteDeleteDialog";
 import NotesPanelHeader from "@/components/notes/NotesPanelHeader";
 import NotesPanelSearch from "@/components/notes/NotesPanelSearch";
-import { useNotesFilter } from "@/hooks/useNotesFilter";
+import { useNotesFilter } from "@/hooks/notes/useNotesFilter";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useNoteStore, type Note, type TrashFolder } from "@/store/useNoteStore";
 import { NotesListSkeleton } from "@/components/ui/notesListSkeleton";
-import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
+import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/notes/useNotesQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { 
   useDeleteNoteMutation,
@@ -23,7 +23,7 @@ import {
   usePermanentDeleteFolderMutation,
   useTogglePinMutation,
   useToggleArchiveMutation
-} from "@/hooks/useNotesMutations";
+} from "@/hooks/notes/useNotesMutations";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -449,64 +449,50 @@ const NotesListPanel = () => {
                   : "No notes match this view yet. Create one to start filling the workspace."}
             </motion.div>
           ) : (
-            <motion.div
-              key={`${activeTab}-${location.pathname}-${sortOrder}`}
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.05, delayChildren: 0.02 },
-                },
-              }}
-              initial="hidden"
-              animate="show"
-              className="flex flex-col gap-3"
-            >
-              <AnimatePresence initial={false}>
-                {isTrashRoute
-                  ? combinedTrashItems.map((entry) =>
-                    entry.type === "note" ? (
-                      <NoteCard
-                        key={`trash-note-${entry.item._id}`}
-                        note={entry.item}
-                        isActive={false}
-                        isTrashView
-                        isArchiveView={false}
-                        stableNow={stableNow}
-                        onClick={() => { }}
-                        onRestore={(id: string) => restoreNote(id)}
-                        onPermanentDelete={(id: string) => permanentDeleteNote(id)}
-                      />
-                    ) : (
-                      <FolderCard
-                        key={`trash-folder-${entry.item._id}`}
-                        folder={entry.item as TrashFolder}
-                        isActive={false}
-                        isTrashView
-                        onClick={() => { }}
-                        onRestore={() => void restoreFolder(entry.item._id)}
-                        onPermanentDelete={() => void permanentDeleteFolder(entry.item._id)}
-                      />
-                    )
+            <div key={`${activeTab}-${location.pathname}-${sortOrder}`} className="flex flex-col gap-3">
+              {isTrashRoute
+                ? combinedTrashItems.map((entry) =>
+                  entry.type === "note" ? (
+                    <NoteCard
+                      key={`trash-note-${entry.item._id}`}
+                      note={entry.item}
+                      isActive={false}
+                      isTrashView
+                      isArchiveView={false}
+                      stableNow={stableNow}
+                      onClick={() => { }}
+                      onRestore={(id: string) => restoreNote(id)}
+                      onPermanentDelete={(id: string) => permanentDeleteNote(id)}
+                    />
+                  ) : (
+                    <FolderCard
+                      key={`trash-folder-${entry.item._id}`}
+                      folder={entry.item as TrashFolder}
+                      isActive={false}
+                      isTrashView
+                      onClick={() => { }}
+                      onRestore={() => void restoreFolder(entry.item._id)}
+                      onPermanentDelete={() => void permanentDeleteFolder(entry.item._id)}
+                    />
                   )
-                  : filteredNotes.slice(0, renderLimit).map((note) => (
-                      <NoteCard
-                        key={note._id}
-                        note={note}
-                        isActive={noteId === note._id}
-                        isTrashView={false}
-                        isArchiveView={isArchiveRoute}
-                        stableNow={stableNow}
-                        onClick={() => handleNoteClick(note._id)}
-                        onDelete={handleDeleteNote}
-                        onRestore={handleRestoreStable}
-                        onPermanentDelete={handlePermanentDeleteStable}
-                        onTogglePin={handleTogglePinStable}
-                        onToggleArchive={handleToggleArchiveStable}
-                      />
-                  ))}
-              </AnimatePresence>
-            </motion.div>
+                )
+                : filteredNotes.slice(0, renderLimit).map((note) => (
+                    <NoteCard
+                      key={note._id}
+                      note={note}
+                      isActive={noteId === note._id}
+                      isTrashView={false}
+                      isArchiveView={isArchiveRoute}
+                      stableNow={stableNow}
+                      onClick={() => handleNoteClick(note._id)}
+                      onDelete={handleDeleteNote}
+                      onRestore={handleRestoreStable}
+                      onPermanentDelete={handlePermanentDeleteStable}
+                      onTogglePin={handleTogglePinStable}
+                      onToggleArchive={handleToggleArchiveStable}
+                    />
+                ))}
+            </div>
           )}
         </div>
       </aside>

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Bot, ArrowRight, Globe, Image } from "lucide-react";
-import { CURRENT_VERSION } from "@/hooks/useWhatsNew";
+import { CURRENT_VERSION } from "@/hooks/user/useWhatsNew";
 
 // ─── Feature definitions ─────────────────────────────────────────────────────
 const FEATURES = [

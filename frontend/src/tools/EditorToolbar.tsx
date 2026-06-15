@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { actionMeta } from "@/components/ai/types";
-import type { useAiChat } from "@/hooks/useAiChat";
+import type { useAiChat } from "@/hooks/ai/useAiChat";
 import { Editor } from "@tiptap/react";
 import { cn } from "@/lib/utils";
 import { uploadImage } from "@/utils/uploadImage";

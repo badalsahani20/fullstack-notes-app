@@ -22,7 +22,7 @@ export const useNotesQuery = () => {
     });
 };
 
-const fetchNote = async (noteId: string): Promise<Note> => {
+export const fetchNote = async (noteId: string): Promise<Note> => {
     const res = await api.get(`/notes/${noteId}`);
     return res.data.note || res.data;
 }

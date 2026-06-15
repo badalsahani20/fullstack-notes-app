@@ -148,7 +148,7 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
   },
 }).configure({ lowlight, defaultLanguage: "javascript" });
 
-import { useAiChat } from "@/hooks/useAiChat";
+import { useAiChat } from "@/hooks/ai/useAiChat";
 
 type TipTapProps = {
   noteId?: string;
@@ -225,6 +225,18 @@ const TipTap = ({ noteId, content, onChange, onEditorReady, aiChat, editable = t
     content,
     onUpdate: ({ editor }) => { onChange?.(editor.getHTML()); },
     editorProps: {
+      transformPastedHTML(html) {
+        // Fix for pasting mixed rich text and code blocks (like from AI chat).
+        // Prosemirror's DOMParser splits codeBlocks if it encounters <br> or <p> inside <pre>.
+        // We replace them with \n so the codeBlock remains intact.
+        return html.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, (match, inner) => {
+          let newInner = inner
+            .replace(/[\r\n]*<br\s*\/?>[\r\n]*/gi, "\n")
+            .replace(/<(p|div)[^>]*>/gi, "")
+            .replace(/[\r\n]*<\/(p|div)>[\r\n]*/gi, "\n");
+          return match.replace(inner, newInner);
+        });
+      },
       handlePaste(view, event) {
         const plainText = event.clipboardData?.getData("text/plain") ?? "";
         const html = event.clipboardData?.getData("text/html") ?? "";

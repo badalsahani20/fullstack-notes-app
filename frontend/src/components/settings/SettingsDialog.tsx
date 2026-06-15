@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { User, Type, Info, Keyboard, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 
 // Sub-components
 import { AccountTab } from "./AccountTab";

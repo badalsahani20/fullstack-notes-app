@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Check, RefreshCw, Loader2 } from "lucide-react";
-import type { Flashcard } from "@/hooks/useStudy";
+import type { Flashcard } from "@/hooks/study/useStudy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

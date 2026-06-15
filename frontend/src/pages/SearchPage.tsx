@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import NoteCard from "@/components/notes/NoteCard";
 import NoteDeleteDialog from "@/components/notes/NoteDeleteDialog";
-import { useNotesQuery } from "@/hooks/useNotesQuery";
-import { useDeleteNoteMutation, useTogglePinMutation } from "@/hooks/useNotesMutations";
+import { useNotesQuery } from "@/hooks/notes/useNotesQuery";
+import { useDeleteNoteMutation, useTogglePinMutation } from "@/hooks/notes/useNotesMutations";
 
 const SearchPage = () => {
   const navigate = useNavigate();

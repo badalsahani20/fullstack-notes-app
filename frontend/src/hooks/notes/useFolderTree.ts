@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useFolderStore } from "@/store/useFolderStore";
-import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/useNotesQuery";
+import { useNotesQuery, useTrashQuery, useArchivedQuery } from "@/hooks/notes/useNotesQuery";
 
 /**
  * useFolderTree controls the logic for the sidebar folder navigation.

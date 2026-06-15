@@ -669,7 +669,8 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       memoryContext = `\n--- LONG-TERM MEMORIES ---\nThese are facts previously explicitly stated by the user. Use them if relevant to the query:\n${memories.map(m => `- [${m.category}] ${m.content}`).join("\n")}\n--- END MEMORIES ---\n`;
     }
 
-    const finalSystemPrompt = memoryContext;
+    const userName = req.user?.name ? `You are talking to a user named ${req.user.name}. Address them politely when appropriate.` : "";
+    const finalSystemPrompt = `${userName}${memoryContext}`;
 
     result = await chatWithAi({
       message,

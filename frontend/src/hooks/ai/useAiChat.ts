@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import api, { requestSessionRefresh } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { parseIrisResponse } from "@/utils/parseIrisResponse";
-import { SseStreamParser } from "@/utils/sseParser";
-import { useNoteQuery } from "@/hooks/useNotesQuery";
-import { useUpdateNoteMutation } from "@/hooks/useNotesMutations";
+import { consumeAiChatStream } from "@/utils/consumeAiChatStream";
+import { useNoteQuery } from "@/hooks/notes/useNotesQuery";
+import { useUpdateNoteMutation } from "@/hooks/notes/useNotesMutations";
 import type { AiAction, AssistResult, SelectionRange, Message, ChatHistoryMessage } from "@/components/ai/types";
 import type { Note } from "@/store/useNoteStore";
 import { stripHtml } from "@/utils/stripHtml";
@@ -275,26 +275,13 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           }
         } else {
           // ── Live SSE stream path ─────────────────────────────────────────
-          const reader = response.body.getReader();
-          const parser = new SseStreamParser();
-          let fullSuggestion = "";
           let dialogOpened = false;
-
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-
-            const events = parser.processChunk(value);
-
-            for (const data of events) {
-              if (data.type === "error" || data.error) {
-                throw new Error(data.message || data.error?.message || "AI service error");
-              }
-
-              const token = data.choices?.[0]?.delta?.content || "";
-              if (!token) continue;
-              fullSuggestion += token;
-
+          
+          await consumeAiChatStream(response.body, {
+            throttleMs: 40,
+            onUpdate: ({ fullText }) => {
+              if (!fullText) return;
+              
               if (!dialogOpened) {
                 setSelectionRange(targetRange);
                 dialogOpened = true;
@@ -302,13 +289,13 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
 
               setResult({
                 action,
-                suggestion: fullSuggestion,
+                suggestion: fullText,
                 errors: [],
                 sourceType: selectedText ? "selection" : "note",
                 isStreaming: true,
               });
             }
-          }
+          });
 
           // Mark streaming done
           setResult((prev) => prev ? { ...prev, isStreaming: false } : prev);
@@ -465,16 +452,8 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       if (!response.ok) throw new Error("Failed to connect to AI");
       if (!response.body) throw new Error("No response body");
 
-      const reader = response.body.getReader();
-      let fullText = "";
-      let fullThought = "";
-      let lastUpdateTime = 0;
-      const THROTTLE_MS = 40;
-      let thinkingEndTime = 0;
-
       // Add assistant message with isThinking:true — same as global chat store
       const aiMsgId = crypto.randomUUID();
-      const streamStartTime = Date.now();
       const initialAssistantMsg: Message = {
         id: aiMsgId,
         role: "assistant",
@@ -484,79 +463,40 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       setMessages((prev) => [...prev, initialAssistantMsg]);
       messagesRef.current = [...messagesRef.current, initialAssistantMsg];
 
-      // Activate streaming UI — same as global chat store
+      // Activate streaming UI
       setStreamingMessageId(aiMsgId);
       setStreamedMessageText("");
       setIsStreaming(true);
 
-      const parser = new SseStreamParser();
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const events = parser.processChunk(value);
-
-        for (const data of events) {
-          if (data.type === "error") {
-            throw new Error(data.message || "AI service error");
-          }
-
-          // ── Tool activity event from controller ─────────────────────
-          if (data.type === "tool_call" && data.tool) {
+      const { fullText, fullThought, thinkingTime: finalThinkingTime } =
+        await consumeAiChatStream(response.body, {
+          throttleMs: 40,
+          onToolCall: ({ tool }) => {
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === aiMsgId
-                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool: data.tool }] }
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool }] }
                   : m
               )
             );
-            continue;
-          }
-
-          // ── Metadata event (for persisting extracted PDF context) ────
-          if (data.type === "metadata" && data.pdfContext) {
-            setPdfContext(data.pdfContext);
-            continue;
-          }
-
-          // ── Regular text & reasoning tokens ────────────────────────────────
-          const content = data.choices?.[0]?.delta?.content || "";
-          const reasoning = data.choices?.[0]?.delta?.reasoning || "";
-
-          if (!content && !reasoning) continue;
-
-          if (content && fullText.length === 0) {
-            // First content token arrived — thinking is done
-            thinkingEndTime = Date.now();
-          }
-
-          fullText += content;
-          fullThought += reasoning;
-
-          const now = Date.now();
-          if (now - lastUpdateTime > THROTTLE_MS) {
-            const currentThinkingTime = thinkingEndTime
-              ? Math.floor((thinkingEndTime - streamStartTime) / 1000)
-              : Math.floor((now - streamStartTime) / 1000);
-
+          },
+          onMetadata: ({ pdfContext }) => {
+            if (pdfContext) setPdfContext(pdfContext);
+          },
+          onUpdate: ({ fullText, fullThought, isThinking, thinkingTime }) => {
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === aiMsgId
-                  ? { ...m, isThinking: fullText.length === 0, thought: fullThought, thinkingTime: currentThinkingTime }
+                  ? { ...m, isThinking, thought: fullThought, thinkingTime }
                   : m
               )
             );
             setStreamedMessageText(fullText);
-            lastUpdateTime = now;
-          }
-        }
-      }
+          },
+        });
 
       // Stream done — finalise
       const segments = parseIrisResponse(fullText);
-      const finalThinkingTime = thinkingEndTime
-        ? Math.floor((thinkingEndTime - streamStartTime) / 1000)
-        : (fullThought ? Math.floor((Date.now() - streamStartTime) / 1000) : 0);
 
       setStreamingMessageId(null);
       setStreamedMessageText("");

@@ -1,14 +1,11 @@
-import { Suspense, useCallback, useEffect, useMemo, useState, useRef, lazy } from "react";
+import { Suspense, useCallback, useEffect, useState, useRef, lazy } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import debounce from "lodash.debounce";
 import type { Editor } from "@tiptap/react";
-import { Wand2, Loader2 } from "lucide-react";
 import { useFolderStore } from "@/store/useFolderStore";
-import { useNoteQuery } from "@/hooks/useNotesQuery";
-import { setLazyCreatedNoteId } from "@/hooks/useNotesLayout";
+import { useNoteQuery } from "@/hooks/notes/useNotesQuery";
 import { usePanelStore } from "@/store/usePanelStore";
-import { useUpdateNoteMutation, useToggleArchiveMutation, useTogglePinMutation, useCreateNoteMutation } from "@/hooks/useNotesMutations";
+import { useToggleArchiveMutation, useTogglePinMutation } from "@/hooks/notes/useNotesMutations";
 import TipTap from "@/components/editor/TipTap";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,19 +16,16 @@ import EmptyEditorState from "@/components/editor/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
 import { GenerateNotesDialog } from "@/components/editor/GenerateNotesDialog";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { useAiChat } from "@/hooks/useAiChat";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
+import { useAiChat } from "@/hooks/ai/useAiChat";
 import EditorToolbar from "@/tools/EditorToolbar";
 import AiResultDialog from "@/components/ai/AiResultDialog";
 import { NoteEditorSkeleton } from "@/components/ui/noteEditorSkeleton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { actionMeta } from "@/components/ai/types";
 import { KeyboardShortcutsModal } from "@/components/editor/KeyboardShortcutsModal";
+import { useKeyboardOffset } from "@/hooks/ui/useKeyboardOffset";
+import { useNoteSync } from "@/hooks/notes/useNoteSync";
+import { FloatingScrollButtons } from "@/components/editor/FloatingScrollButtons";
+import { MobileAiActions } from "@/components/editor/MobileAiActions";
 
 const preloadAiPanel = () => import("@/components/chat/ContextualAiPanel");
 
@@ -62,23 +56,18 @@ const NoteEditor = () => {
   const navigate = useNavigate();
   const { mutateAsync: togglePinning } = useTogglePinMutation();
   const { mutateAsync: toggleArchiveMut } = useToggleArchiveMutation();
-  const { mutateAsync: createNoteAsync } = useCreateNoteMutation();
   const { folders, hasFetched: hasFetchedFolders } = useFolderStore();
   const queryClient = useQueryClient();
 
   const { data: fetchedNote, isLoading: isNoteLoading } = useNoteQuery(isNew ? "" : (noteId || ""));
-  const { mutateAsync: updateNoteAsync, isPending: isSavingNote } = useUpdateNoteMutation();
 
-  const [isCreating, setIsCreating] = useState(false);
-  const [draftTitle, setDraftTitle] = useState("");
-  const prevTitleRef = useRef("");
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
   const createdNoteIdRef = useRef<string | null>(null);
   const [isGenerateNotesOpen, setIsGenerateNotesOpen] = useState(false);
 
   const cachedNote = noteId ? queryClient.getQueryData<any>(["note", noteId]) : undefined;
   const note = isNew
-    ? { _id: "new", title: draftTitle, content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
+    ? { _id: "new", title: "Untitled Note", content: "", folder: folderId, pinned: false, isArchived: false, version: 1, updatedAt: new Date().toISOString() } as any
     : (fetchedNote || cachedNote);
 
   const folder = folders.find((item) => item._id === (note?.folder || folderId));
@@ -107,26 +96,23 @@ const NoteEditor = () => {
     }
   }, [focusModeDefault, noteId, isNew, location.search, location.pathname, navigate]);
 
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const keyboardOffset = useKeyboardOffset();
+
+  const editorScrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [showScrollBottom, setShowScrollBottom] = useState(false);
+
+  const handleEditorScroll = useCallback(() => {
+    if (!editorScrollRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = editorScrollRef.current;
+    
+    setShowScrollTop(scrollTop > 300);
+    setShowScrollBottom(scrollHeight > clientHeight && (scrollHeight - scrollTop - clientHeight > 300));
+  }, []);
 
   useEffect(() => {
-    if (!isMobile || !window.visualViewport) return;
-
-    const handler = () => {
-      if (!window.visualViewport) return;
-      const viewport = window.visualViewport;
-      // Calculate how much the bottom is obscured by the keyboard
-      const offset = window.innerHeight - viewport.height - viewport.offsetTop;
-      setKeyboardOffset(Math.max(0, offset));
-    };
-
-    window.visualViewport.addEventListener("resize", handler);
-    window.visualViewport.addEventListener("scroll", handler);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", handler);
-      window.visualViewport?.removeEventListener("scroll", handler);
-    };
-  }, [isMobile]);
+    handleEditorScroll();
+  }, [note?.content, handleEditorScroll]);
 
   useEffect(() => {
     if (isAiPanelOpen) {
@@ -136,110 +122,20 @@ const NoteEditor = () => {
 
   const aiChat = useAiChat(noteId || "", note?.content || "", editorInstance);
 
-  const noteRef = useRef(note);
-  useEffect(() => {
-    noteRef.current = note;
-  }, [note]);
-
-  const debouncedUpdate = useMemo(
-    () =>
-      debounce((id: string, content: string) => {
-        const latestNote = noteRef.current;
-        if (latestNote && latestNote._id === id && id !== "new") {
-          updateNoteAsync({
-            noteId: id,
-            updates: { content },
-            version: latestNote.version
-          }).catch(() => { }); // Conflict handled in mutation hook
-        }
-      }, 1000),
-    [updateNoteAsync]
-  );
-
-  useEffect(() => {
-    return () => {
-      debouncedUpdate.flush();
-    };
-  }, [debouncedUpdate]);
-
-  useEffect(() => {
-    if (isNew || !note) return;
-
-    const newTitle = note.title ?? "";
-    const oldTitle = prevTitleRef.current;
-    prevTitleRef.current = newTitle;
-
-    // Detect if the title transitioned from a default "Untitled" title to an AI-generated one
-    const isTransitionFromDefault =
-      ["", "Untitled", "Untitled Note"].includes(oldTitle) &&
-      !["", "Untitled", "Untitled Note"].includes(newTitle);
-
-    if (isTransitionFromDefault) {
-      let currentIndex = 0;
-      setDraftTitle(""); // Start typing from empty
-      const timer = setInterval(() => {
-        currentIndex++;
-        setDraftTitle(newTitle.slice(0, currentIndex));
-        if (currentIndex >= newTitle.length) {
-          clearInterval(timer);
-        }
-      }, 45); // ms per character
-      return () => clearInterval(timer);
-    } else {
-      setDraftTitle(newTitle);
-    }
-  }, [isNew, note?._id, note?.title]);
-
-  const handleCreateOnEdit = useCallback(async (initialTitle: string, initialContent: string) => {
-    if (isCreating) return null;
-    setIsCreating(true);
-    try {
-      const newNote = await createNoteAsync({
-        title: initialTitle || "Untitled Note",
-        content: initialContent,
-        folderId: folderId
-      });
-      if (newNote?._id) {
-        createdNoteIdRef.current = newNote._id;
-        setLazyCreatedNoteId(newNote._id);
-        const path = folderId ? `/folders/${folderId}/note/${newNote._id}` : `/note/${newNote._id}`;
-        navigate(`${path}${location.search}`, { replace: true });
-        return newNote;
-      }
-    } catch (err) {
-      console.error("Lazy creation failed:", err);
-    } finally {
-      setIsCreating(false);
-    }
-    return null;
-  }, [createNoteAsync, folderId, isCreating, location.search, navigate]);
-
-  const handleContentChange = useCallback((html: string) => {
-    if (isNew) {
-      handleCreateOnEdit(draftTitle, html);
-    } else if (note) {
-      debouncedUpdate(note._id, html);
-    }
-  }, [isNew, note, draftTitle, handleCreateOnEdit, debouncedUpdate]);
-
-  const commitTitle = useCallback(() => {
-    if (!note) return;
-    if (isNew) {
-      if (draftTitle.trim()) {
-        const content = editorInstance?.getHTML() || "";
-        handleCreateOnEdit(draftTitle, content);
-      }
-      return;
-    }
-    const currentNote = noteRef.current || note;
-    if (draftTitle !== currentNote.title) {
-      updateNoteAsync({
-        noteId: currentNote._id,
-        updates: { title: draftTitle },
-        version: currentNote.version
-      }).catch(() => { });
-    }
-  }, [note, isNew, draftTitle, editorInstance, handleCreateOnEdit, updateNoteAsync]);
+  const {
+    isSavingNote,
+    isCreating,
+    draftTitle,
+    setDraftTitle,
+    handleContentChange,
+    commitTitle,
+  } = useNoteSync({
+    note,
+    isNew,
+    folderId,
+    editorInstance,
+    createdNoteIdRef,
+  });
 
   const handleToggleArchive = useCallback(async (id: string) => {
     if (!note || isNew) return;
@@ -321,7 +217,11 @@ const NoteEditor = () => {
           onOpenGenerateNotes={() => setIsGenerateNotesOpen(true)}
         />
 
-        <div className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4">
+        <div 
+          ref={editorScrollRef}
+          onScroll={handleEditorScroll}
+          className="editor-workspace custom-scrollbar flex-1 overflow-y-auto px-8 pb-8 pt-4"
+        >
           <TipTap
             noteId={note?._id}
             content={isNew ? "" : note.content}
@@ -330,6 +230,13 @@ const NoteEditor = () => {
             aiChat={aiChat}
           />
         </div>
+
+        <FloatingScrollButtons
+          showScrollTop={showScrollTop}
+          showScrollBottom={showScrollBottom}
+          onScrollTop={() => editorScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+          onScrollBottom={() => editorScrollRef.current?.scrollTo({ top: editorScrollRef.current.scrollHeight, behavior: "smooth" })}
+        />
 
         {editorInstance && (!isMobile || !isAiPanelOpen) && (
           <EditorToolbar
@@ -415,52 +322,7 @@ const NoteEditor = () => {
       )}
 
       {isMobile && !isAiPanelOpen ? (
-        <div className="mobile-ai-fab-stack">
-          {/* Actions dropdown — replaces single Summarize button */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="mobile-ai-fab mobile-ai-fab-sm mobile-ai-fab-secondary disabled:opacity-80 disabled:cursor-not-allowed"
-                aria-label="AI Actions"
-                disabled={aiChat.loadingAction !== null}
-              >
-                {aiChat.loadingAction ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Wand2 size={14} />
-                )}
-                <span>{aiChat.loadingAction ? "Thinking..." : "Actions"}</span>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              sideOffset={8}
-              className="assistant-actions-menu w-44 shadow-md z-[99999]"
-            >
-              {(Object.keys(actionMeta) as (keyof typeof actionMeta)[]).map((action) => (
-                <DropdownMenuItem
-                  key={action}
-                  onClick={() => void aiChat.runAction(action)}
-                  className="assistant-actions-menu-item cursor-pointer text-sm py-1.5 transition-colors"
-                >
-                  {actionMeta[action].label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Primary Ask AI button */}
-          <button
-            type="button"
-            className="mobile-ai-fab mobile-ai-fab-secondary"
-            onClick={() => setAiPanelOpen(true)}
-            aria-label="Ask AI"
-          >
-            <div className="iris-orb shrink-0" style={{ width: "12px", height: "12px", borderWidth: "1px", boxShadow: "none" }} />
-            <span>Ask AI</span>
-          </button>
-        </div>
+        <MobileAiActions aiChat={aiChat} onOpenAiPanel={() => setAiPanelOpen(true)} />
       ) : null}
 
       <AiResultDialog

@@ -13,7 +13,7 @@ RULES:
 4. Ignore temporary thoughts, one-off tasks, or speculation.
 5. Provide a 1-2 sentence high-level summary of the session.
 
-Return ONLY a valid JSON object matching this schema exactly:
+Return ONLY a valid JSON object matching this schema exactly. DO NOT include markdown code blocks (\`\`\`json). DO NOT include any conversational text like "Here is the JSON". Output ONLY the raw curly braces:
 {
   "summary": "Session summary...",
   "memories": [
@@ -40,10 +40,11 @@ export const extractMemories = async (messages) => {
             2000
         );
 
-        // Strip Markdown formatting if the model wrapped it in ```json ... ```
-        const cleanJson = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+        // Extract JSON robustly using regex to ignore conversational filler
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON object found in response");
         
-        const data = JSON.parse(cleanJson);
+        const data = JSON.parse(jsonMatch[0]);
         return {
             summary: data.summary || "",
             memories: Array.isArray(data.memories) ? data.memories : []

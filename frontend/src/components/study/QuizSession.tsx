@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, X, Loader2, RefreshCw, RotateCcw } from "lucide-react";
-import type { QuizQuestion, QuizAttempt, QuizType } from "@/hooks/useStudy";
+import type { QuizQuestion, QuizAttempt, QuizType } from "@/hooks/study/useStudy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

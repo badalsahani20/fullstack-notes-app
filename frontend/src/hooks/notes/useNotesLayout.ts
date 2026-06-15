@@ -1,5 +1,5 @@
 import { useLocation, useParams } from "react-router-dom";
-import { useMediaQuery } from "./useMediaQuery";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 import { usePanelStore } from "@/store/usePanelStore";
 
 let lazyCreatedNoteId: string | null = null;

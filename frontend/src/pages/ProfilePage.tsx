@@ -9,7 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
-import { useUserStats } from "@/hooks/useUserStats";
+import { useUserStats } from "@/hooks/user/useUserStats";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

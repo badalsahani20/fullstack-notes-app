@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import type { Note } from "@/store/useNoteStore";
 import { getRelativeUpdatedLabel } from "@/utils/getRelativeUpdatedLabel";
-import { useNoteQuery } from "@/hooks/useNotesQuery";
+import { fetchNote } from "@/hooks/notes/useNotesQuery";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +54,7 @@ const NoteCard = ({
     hoverTimeoutRef.current = setTimeout(() => {
       queryClient.prefetchQuery({
         queryKey: ["note", noteId],
-        queryFn: () => useNoteQuery(noteId),
+        queryFn: () => fetchNote(noteId),
       });
     }, 150);
   }, [queryClient]);

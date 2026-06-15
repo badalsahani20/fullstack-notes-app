@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGlobalChatStore } from "@/store/useGlobalChatStore";
-import { useTypewriter } from "@/hooks/useTypewriter";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useTypewriter } from "@/hooks/ui/useTypewriter";
+import { useMediaQuery } from "@/hooks/ui/useMediaQuery";
 import type { Message } from "@/components/ai/types";
 import { STUDENT_PROMPTS, DEV_PROMPTS } from "@/lib/constants";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";

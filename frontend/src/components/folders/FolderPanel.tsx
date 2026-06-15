@@ -11,7 +11,7 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import type { Folder as FolderType } from "@/store/useFolderStore";
-import { useFolderTree } from "@/hooks/useFolderTree";
+import { useFolderTree } from "@/hooks/notes/useFolderTree";
 import { useFolderStore } from "@/store/useFolderStore";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMoveNoteToFolderMutation } from "@/hooks/useNotesMutations";
+import { useMoveNoteToFolderMutation } from "@/hooks/notes/useNotesMutations";
 import { FolderFormDialog } from "./FolderFormDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -153,23 +153,21 @@ const FolderRow = ({
             <MoreHorizontal size={14} />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent 
+          align="end" 
+          className="w-40"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DropdownMenuItem
             className="cursor-pointer"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRename();
-            }}
+            onSelect={() => onRename()}
           >
             <Pencil size={14} />
             Rename
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer text-red-500 focus:text-red-500"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete();
-            }}
+            onSelect={() => onDelete()}
           >
             <Trash2 size={14} />
             Delete
@@ -208,7 +206,12 @@ type FolderDeleteDialogProps = {
 };
 
 const FolderDeleteDialog = ({ folder, isDeleting, onCancel, onConfirm }: FolderDeleteDialogProps) => (
-  <Dialog open={folder !== null} onOpenChange={(nextOpen) => !nextOpen && onCancel()}>
+  <Dialog
+    open={folder !== null}
+    onOpenChange={(nextOpen) => {
+      if (!nextOpen && !isDeleting) onCancel();
+    }}
+  >
     <DialogContent className="desktop-dialog">
       <DialogHeader>
         <DialogTitle>Delete Notebook?</DialogTitle>

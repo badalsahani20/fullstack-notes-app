@@ -10,26 +10,10 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
-import MarkdownCodeBlock from "@/components/chat/MarkdownCodeBlock";
 import { sanitizeStream } from "@/utils/streamSanitizer";
+import { sharedMarkdownComponents } from "@/utils/sharedMarkdownComponents";
 
-const markdownComponents = {
-  code({ className, children, ...props }: any) {
-    const rawCode = String(children ?? "").replace(/\n$/, "");
-    const language = className?.replace("language-", "") || "";
-    const isBlock = Boolean(language) || rawCode.includes("\n");
 
-    if (!isBlock) {
-      return (
-        <code className={className} {...props}>
-          {children}
-        </code>
-      );
-    }
-
-    return <MarkdownCodeBlock code={rawCode} language={language} />;
-  },
-};
 
 type AiResultDialogProps = {
   result: AssistResult | null;
@@ -115,7 +99,7 @@ const AiResultDialog = ({ result, onApply, onClose }: AiResultDialogProps) => {
                <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeRaw, rehypeKatex]}
-                components={markdownComponents}
+                components={sharedMarkdownComponents}
                >
                  {sanitizeStream(result.suggestion)}
                </ReactMarkdown>

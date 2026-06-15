@@ -4,7 +4,7 @@ import MainLayout from "./components/MainLayout";
 import { Toaster } from "sonner";
 import PrivateRoute from "./components/PrivateRoute";
 import AuthLayout from "./components/AuthLayout";
-import { Loader } from "lucide-react";
+
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -22,11 +22,9 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const GlobalChatPage = lazy(() => import("./pages/GlobalChatPage"));
 const SharedNotePage = lazy(() => import("./pages/SharedNotePage"));
 
-const RouteLoader = () => (
-  <div className="flex h-screen w-full items-center justify-center bg-[#121212]">
-    <Loader className="size-8 text-emerald-500 animate-spin" />
-  </div>
-);
+import WelcomeLoader from "./components/ui/WelcomeLoader";
+
+const RouteLoader = () => <WelcomeLoader />;
 
 function App() {
   return (
