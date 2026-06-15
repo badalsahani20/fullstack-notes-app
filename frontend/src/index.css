@@ -7995,3 +7995,24 @@ html:not(.dark) .dock-btn-active {
 }
 
 
+
+
+/* Desktop Electron Window Controls Overlay Spacing */
+.desktop-editor-header {
+  -webkit-app-region: drag;
+  padding-right: calc(env(titlebar-area-width, 0px) + 1rem) !important;
+}
+.desktop-editor-header button,
+.desktop-editor-header input,
+.editor-meta-stack {
+  -webkit-app-region: no-drag;
+}
+
+.assistant-rail-header {
+  -webkit-app-region: drag;
+  padding-right: calc(env(titlebar-area-width, 0px) + 1rem) !important;
+}
+.assistant-rail-header button {
+  -webkit-app-region: no-drag;
+}
+

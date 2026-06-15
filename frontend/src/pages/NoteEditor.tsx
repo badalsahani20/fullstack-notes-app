@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useState, useRef, lazy } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Editor } from "@tiptap/react";
@@ -9,8 +9,8 @@ import { useToggleArchiveMutation, useTogglePinMutation } from "@/hooks/notes/us
 import TipTap from "@/components/editor/TipTap";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { useQueryClient } from "@tanstack/react-query";
-const ContextualAiPanel = lazy(() => import("@/components/chat/ContextualAiPanel"));
-const StudyPanel = lazy(() => import("@/components/study/StudyPanel"));
+import ContextualAiPanel from "@/components/chat/ContextualAiPanel";
+import StudyPanel from "@/components/study/StudyPanel";
 
 import EmptyEditorState from "@/components/editor/EmptyEditorState";
 import EditorHeader from "@/components/editor/EditorHeader";
@@ -27,27 +27,6 @@ import { useNoteSync } from "@/hooks/notes/useNoteSync";
 import { FloatingScrollButtons } from "@/components/editor/FloatingScrollButtons";
 import { MobileAiActions } from "@/components/editor/MobileAiActions";
 
-const preloadAiPanel = () => import("@/components/chat/ContextualAiPanel");
-
-const AiPanelSkeleton = ({ mobileMode = false }: { mobileMode?: boolean }) => (
-  <aside className={`assistant-rail ${mobileMode ? "assistant-rail-mobile" : "flex"}`}>
-    <div className="assistant-rail-header assistant-rail-header-row">
-      <div className="assistant-panel-heading">
-        <h3 className="assistant-panel-title">AI Assistant</h3>
-      </div>
-    </div>
-
-    <div className="flex-1 space-y-4 p-4">
-      <div className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
-      <div className="h-24 rounded-2xl bg-white/[0.04] animate-pulse" />
-      <div className="h-24 rounded-2xl bg-white/[0.04] animate-pulse" />
-    </div>
-
-    <div className="p-4">
-      <div className="h-28 rounded-2xl bg-white/[0.04] animate-pulse" />
-    </div>
-  </aside>
-);
 
 const NoteEditor = () => {
   const { noteId, folderId } = useParams();
@@ -115,9 +94,7 @@ const NoteEditor = () => {
   }, [note?.content, handleEditorScroll]);
 
   useEffect(() => {
-    if (isAiPanelOpen) {
-      void preloadAiPanel();
-    }
+    // Panel preload removed
   }, [isAiPanelOpen]);
 
   const aiChat = useAiChat(noteId || "", note?.content || "", editorInstance);
@@ -194,7 +171,7 @@ const NoteEditor = () => {
           onTogglePin={handleTogglePin}
           onToggleArchive={handleToggleArchive}
           onAskAi={() => setAiPanelOpen(!isAiPanelOpen)}
-          onAskAiHover={() => void preloadAiPanel()}
+          onAskAiHover={() => {}}
           isAiOpen={isAiPanelOpen}
           onStudy={() => {
             const nextOpen = !isStudyPanelOpen;
@@ -257,15 +234,13 @@ const NoteEditor = () => {
           {editorPane}
           {isAiPanelOpen && (
             <div className="assistant-mobile-overlay">
-              <Suspense fallback={<AiPanelSkeleton mobileMode />}>
-                <ContextualAiPanel
-                  aiChat={aiChat}
-                  noteTitle={draftTitle || note?.title}
-                  isNewNote={isNew}
-                  onClose={() => setAiPanelOpen(false)}
-                  mobileMode
-                />
-              </Suspense>
+              <ContextualAiPanel
+                aiChat={aiChat}
+                noteTitle={draftTitle || note?.title}
+                isNewNote={isNew}
+                onClose={() => setAiPanelOpen(false)}
+                mobileMode
+              />
             </div>
           )}
         </>
@@ -280,13 +255,11 @@ const NoteEditor = () => {
                 maxSize="40%"
                 className="h-full"
               >
-                <Suspense fallback={<div className="study-skeleton h-full" />}>
-                  <StudyPanel
-                    noteId={noteId || ""}
-                    chatHistory={aiChat.chatHistory ?? []}
-                    onClose={() => setStudyPanelOpen(false)}
-                  />
-                </Suspense>
+                <StudyPanel
+                  noteId={noteId || ""}
+                  chatHistory={aiChat.chatHistory ?? []}
+                  onClose={() => setStudyPanelOpen(false)}
+                />
               </ResizablePanel>
               <ResizableHandle className="assistant-resize-handle" />
             </>
@@ -307,14 +280,12 @@ const NoteEditor = () => {
                 maxSize="55%"
                 className="assistant-panel-shell h-full"
               >
-                <Suspense fallback={<AiPanelSkeleton />}>
-                  <ContextualAiPanel
-                    aiChat={aiChat}
-                    noteTitle={draftTitle || note?.title}
-                    isNewNote={isNew}
-                    onClose={() => setAiPanelOpen(false)}
-                  />
-                </Suspense>
+                <ContextualAiPanel
+                  aiChat={aiChat}
+                  noteTitle={draftTitle || note?.title}
+                  isNewNote={isNew}
+                  onClose={() => setAiPanelOpen(false)}
+                />
               </ResizablePanel>
             </>
           )}

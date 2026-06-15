@@ -3,6 +3,7 @@ import { LandingPage } from './pages/LandingPage';
 import { DocsPage } from './pages/DocsPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { DownloadPage } from './pages/DownloadPage';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
       <Route path="/docs" element={<DocsPage />} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/download/:os" element={<DownloadPage />} />
     </Routes>
   );
 }

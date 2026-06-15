@@ -1,6 +1,6 @@
 {
   "name": "fullstack-notes-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "main": "desktop/main.js",
@@ -32,6 +32,11 @@
         "portable"
       ],
       "icon": "build/icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "badalsahani20",
+      "repo": "fullstack-notes-app"
     },
     "nsis": {
       "oneClick": false,

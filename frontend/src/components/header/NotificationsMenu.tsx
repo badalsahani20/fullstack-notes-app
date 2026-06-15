@@ -54,13 +54,13 @@ export default function NotificationsMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="nav-action-btn"
+          className="nav-action-btn transition-all duration-300 ease-out hover:bg-white/10 hover:scale-105"
           style={{ "--highlight-color": "#6366f1" } as any}
           aria-label="Notifications"
         >
           <Bell size={18} className="nav-icon" />
           {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-[var(--panel-bg)] shadow-[0_0_10px_rgba(244,63,94,0.5)] z-20">
+            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-[var(--panel-bg)] shadow-[0_0_10px_rgba(244,63,94,0.5)] z-20 transition-transform duration-300 hover:scale-110">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -68,10 +68,10 @@ export default function NotificationsMenu() {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="w-80 md:w-96 p-0 mt-1 border-zinc-200 dark:border-white/10 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-xl shadow-xl dark:shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden"
+        className="w-80 md:w-96 p-0 mt-1 border-zinc-200 dark:border-white/10 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-xl shadow-xl dark:shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden rounded-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 duration-300"
         align="end"
       >
-        <DropdownMenuLabel className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 border-b border-zinc-200 dark:border-white/5">
+        <DropdownMenuLabel className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 border-b border-zinc-200 dark:border-white/5 rounded-none">
           <div className="flex items-center gap-2">
             <span className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">Notifications</span>
             {unreadCount > 0 && (
@@ -85,7 +85,7 @@ export default function NotificationsMenu() {
               variant="ghost"
               size="sm"
               onClick={handleMarkAllAsRead}
-              className="h-auto p-0 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-transparent transition-colors"
+              className="h-auto p-0 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-transparent transition-colors rounded-none"
             >
               Mark all read
             </Button>
@@ -105,7 +105,7 @@ export default function NotificationsMenu() {
               {notifications.map((notification) => (
                 <DropdownMenuItem
                   key={notification.id}
-                  className={`flex flex-col items-start gap-1 p-4 cursor-default transition-all border-b border-zinc-100 dark:border-white/5 last:border-0 ${
+                  className={`rounded-none flex flex-col items-start gap-1 p-4 cursor-default transition-all duration-300 border-b border-zinc-100 dark:border-white/5 last:border-0 ${
                     !notification.isRead
                       ? "bg-zinc-50 hover:bg-zinc-100 dark:bg-white/5 dark:hover:bg-white/10 focus:bg-zinc-100 dark:focus:bg-white/10"
                       : "opacity-80 hover:bg-zinc-50 dark:hover:bg-white/5 hover:opacity-100 focus:bg-zinc-50 dark:focus:bg-white/5"

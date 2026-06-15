@@ -1,9 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Bot, ArrowRight, Globe, Image } from "lucide-react";
+import { Share2, Bot, ArrowRight, Globe, Image, Sparkles } from "lucide-react";
 import { CURRENT_VERSION } from "@/hooks/user/useWhatsNew";
 
 // ─── Feature definitions ─────────────────────────────────────────────────────
 const FEATURES = [
+  {
+    icon: Sparkles,
+    iconClass: "bg-amber-500/10 text-amber-400",
+    label: "AI Note Generation",
+    description:
+      "Instantly generate comprehensive, beautifully structured notes on any topic using our advanced AI assistant.",
+    badge: "New",
+    badgeClass: "text-amber-400 bg-amber-500/10 border border-amber-500/20",
+  },
   {
     icon: Bot,
     iconClass: "bg-emerald-500/10 text-emerald-400",
@@ -77,14 +86,15 @@ export const WhatsNewModal = ({ isOpen, onDismiss }: WhatsNewModalProps) => {
               aria-modal="true"
               aria-labelledby="whats-new-title"
             >
-              {/* ── Card shell — solid, no blur ── */}
-              <div className="bg-[#111116] border border-white/[0.07] rounded-2xl overflow-hidden shadow-[0_40px_120px_rgba(0,0,0,0.9)]">
+              {/* ── Card shell — glassmorphic with blur ── */}
+              <div className="text-left bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm relative">
+                <div className="absolute top-0 right-0 p-32 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none"></div>
 
                 {/* Rainbow top accent */}
-                <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent" />
+                <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent relative z-10" />
 
                 {/* ── Header ── */}
-                <div className="px-6 pt-6 pb-5">
+                <div className="px-6 pt-6 pb-5 relative z-10">
                   <div className="flex items-center gap-2.5 mb-4">
                     <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full">
                       ✦ What's New
@@ -107,7 +117,7 @@ export const WhatsNewModal = ({ isOpen, onDismiss }: WhatsNewModalProps) => {
                 </div>
 
                 {/* ── Feature list ── */}
-                <div className="px-3 pb-2">
+                <div className="px-3 pb-2 relative z-10">
                   {FEATURES.map((feature, i) => {
                     const Icon = feature.icon;
                     return (
@@ -147,7 +157,7 @@ export const WhatsNewModal = ({ isOpen, onDismiss }: WhatsNewModalProps) => {
                 </div>
 
                 {/* ── Footer ── */}
-                <div className="px-4 pt-3 pb-4 border-t border-white/[0.05] mt-1">
+                <div className="px-4 pt-3 pb-4 border-t border-white/[0.05] mt-1 relative z-10">
                   <button
                     id="whats-new-continue"
                     onClick={onDismiss}

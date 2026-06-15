@@ -21,7 +21,7 @@ function createWindow() {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
     },
-    title: "Notesify",
+    title: "Notesify - AI Powered Notes & Learning",
     backgroundColor: '#0f0f11', // Match premium dark theme background
     show: false, // Don't show until ready
     autoHideMenuBar: true, // Hide the default menu bar
@@ -51,6 +51,7 @@ function createWindow() {
   });
 
   mainWindow.once('ready-to-show', () => {
+    mainWindow.maximize();
     mainWindow.show();
   });
 

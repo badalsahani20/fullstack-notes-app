@@ -80,9 +80,9 @@ const ContextualAiPanel = ({
 
   return (
     <motion.aside
-      initial={mobileMode ? { x: "100%" } : { x: 40, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      initial={mobileMode ? { x: "100%" } : { opacity: 0 }}
+      animate={mobileMode ? { x: 0 } : { opacity: 1 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       className={`assistant-rail relative overflow-hidden ${mobileMode ? "assistant-rail-mobile" : "flex"}`}
     >
       <div className="relative z-10 flex items-center justify-between px-4 py-2 border-b border-white/5 shrink-0">

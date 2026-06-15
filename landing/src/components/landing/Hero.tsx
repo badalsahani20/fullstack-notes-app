@@ -55,13 +55,17 @@ export const Hero = () => {
                 </div>
               </span>
             </a>
-            
+
             <a 
-              href="#features"
+              href="/download/windows"
               className="group inline-flex items-center justify-center rounded-2xl px-8 py-4 text-base font-bold bg-white/5 hover:bg-white/10 transition-all duration-300 text-white border border-white/10 hover:border-white/20 w-full sm:w-auto"
             >
-              Learn more ↓
+              <svg className="size-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download for Windows
             </a>
+            
           </div>
           <p className="mt-6 text-xs text-stone-300 font-medium">Free during public preview · No credit card · Early access</p>
         </FadeIn>
@@ -103,6 +107,19 @@ export const Hero = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[1px] bg-gradient-to-r from-transparent via-white/80 to-transparent rotate-[-15deg] blur-[1px]"></div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1px] h-[500px] bg-gradient-to-b from-transparent via-white/80 to-transparent rotate-[-15deg] blur-[1px]"></div>
          </div>
+      </div>
+
+      {/* Bouncing Scroll Indicator */}
+      <div className="absolute bottom-20 sm:bottom-36 left-1/2 -translate-x-1/2 z-30">
+        <a 
+          href="#features" 
+          className="flex h-10 w-10 sm:h-10 sm:w-10 items-center justify-center rounded-full border border-white/10 bg-[#050505]/50 backdrop-blur-sm text-stone-400 hover:text-white hover:border-white/20 hover:bg-white/5 transition-all duration-300 animate-bounce cursor-pointer shadow-lg"
+          aria-label="Scroll down"
+        >
+          <svg className="h-4 w-4 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </a>
       </div>
 
       {/* --- Global Atmospheric Bottom Fade --- */}
