@@ -8000,7 +8000,6 @@ html:not(.dark) .dock-btn-active {
 /* Desktop Electron Window Controls Overlay Spacing */
 .desktop-editor-header {
   -webkit-app-region: drag;
-  padding-right: calc(env(titlebar-area-width, 0px) + 1rem) !important;
 }
 .desktop-editor-header button,
 .desktop-editor-header input,
@@ -8010,9 +8009,27 @@ html:not(.dark) .dock-btn-active {
 
 .assistant-rail-header {
   -webkit-app-region: drag;
-  padding-right: calc(env(titlebar-area-width, 0px) + 1rem) !important;
 }
 .assistant-rail-header button {
   -webkit-app-region: no-drag;
+}
+
+/* ── Thin scrollbars ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 

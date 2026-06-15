@@ -86,12 +86,9 @@ export const WhatsNewModal = ({ isOpen, onDismiss }: WhatsNewModalProps) => {
               aria-modal="true"
               aria-labelledby="whats-new-title"
             >
-              {/* ── Card shell — glassmorphic with blur ── */}
-              <div className="text-left bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm relative">
-                <div className="absolute top-0 right-0 p-32 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-
-                {/* Rainbow top accent */}
-                <div className="h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent relative z-10" />
+              {/* ── Card shell — matches DownloadPage ── */}
+              <div className="text-left bg-[#161618] border border-white/10 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-sm relative">
+                {/* Removed top accent to match DownloadPage */}
 
                 {/* ── Header ── */}
                 <div className="px-6 pt-6 pb-5 relative z-10">

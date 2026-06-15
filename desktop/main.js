@@ -10,6 +10,14 @@ let mainWindow;
 const isDev = !app.isPackaged;
 const PRODUCTION_URL = 'https://app.notesify.in';
 
+const THIN_SCROLLBAR_CSS = `
+  ::-webkit-scrollbar { width: 4px !important; height: 4px !important; }
+  ::-webkit-scrollbar-track { background: transparent !important; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15) !important; border-radius: 999px !important; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.28) !important; }
+  ::-webkit-scrollbar-corner { background: transparent !important; }
+`;
+
 function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
@@ -22,18 +30,17 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
     },
     title: "Notesify - AI Powered Notes & Learning",
-    backgroundColor: '#0f0f11', // Match premium dark theme background
-    show: false, // Don't show until ready
-    autoHideMenuBar: true, // Hide the default menu bar
-    titleBarStyle: 'hidden', // Modern title bar
-    titleBarOverlay: { // Integrated window controls
-      color: '#00000000', // Transparent
-      symbolColor: '#ffffff', // White icons for dark mode
+    backgroundColor: '#0f0f11',
+    show: false,
+    autoHideMenuBar: true,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#00000000',
+      symbolColor: '#ffffff',
       height: 35
     },
   });
 
-  // Remove the default menu entirely
   mainWindow.setMenuBarVisibility(false);
 
   if (isDev) {
@@ -43,7 +50,12 @@ function createWindow() {
     mainWindow.loadURL(PRODUCTION_URL);
   }
 
-  // Handle loading failures (e.g. offline state) by loading a beautiful local fallback screen
+  // Inject thin scrollbars after every page load (dev + prod)
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.insertCSS(THIN_SCROLLBAR_CSS);
+  });
+
+  // Handle loading failures (offline fallback)
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     if (!isDev && validatedURL.startsWith(PRODUCTION_URL)) {
       mainWindow.loadFile(path.join(__dirname, 'offline.html'));
@@ -73,4 +85,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
