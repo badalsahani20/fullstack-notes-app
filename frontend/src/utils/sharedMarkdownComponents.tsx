@@ -31,4 +31,11 @@ export const sharedMarkdownComponents = {
       />
     );
   },
+  table({ children, ...props }: any) {
+    return (
+      <div className="tableWrapper">
+        <table {...props}>{children}</table>
+      </div>
+    );
+  },
 };

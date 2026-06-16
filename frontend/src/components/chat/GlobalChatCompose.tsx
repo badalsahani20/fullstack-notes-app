@@ -1,8 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { ReactNode, RefObject } from "react";
-import { X, ImageIcon, Square, ArrowUp, Plus, FileText, Lightbulb, Globe } from "lucide-react";
+import { X, FileText, Lightbulb, Globe, Search, BrainCircuit, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { AnimatedAIChat } from "@/components/ui/animated-ai-chat";
+import { motion } from "framer-motion";
+import { useGlobalChatStore } from "@/store/useGlobalChatStore";
 
 interface GlobalChatComposeProps {
   input: string;
@@ -17,7 +20,6 @@ interface GlobalChatComposeProps {
   topSlot?: ReactNode;
   placeholder?: string;
   onStop?: () => void;
-  disclaimerText?: string;
   useReasoning?: boolean;
   setUseReasoning?: (val: boolean) => void;
   useWebSearch?: boolean;
@@ -37,40 +39,14 @@ export const GlobalChatCompose = ({
   topSlot,
   placeholder = "Ask Iris anything...",
   onStop,
-  disclaimerText = "Iris can make mistakes. Double-check important info.",
   useReasoning = true,
   setUseReasoning,
   useWebSearch = false,
   setUseWebSearch,
 }: GlobalChatComposeProps) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { chatMode, setChatMode } = useGlobalChatStore();
   const [fileAccept, setFileAccept] = useState("image/*,.pdf");
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const attachMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    const handlePointerDown = (event: PointerEvent) => {
-      if (
-        attachMenuRef.current &&
-        !attachMenuRef.current.contains(event.target as Node)
-      ) {
-        setIsMenuOpen(false);
-      }
-    };
-    window.addEventListener("pointerdown", handlePointerDown);
-    return () => window.removeEventListener("pointerdown", handlePointerDown);
-  }, [isMenuOpen]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      if (input) {
-        textareaRef.current.style.height =
-          Math.min(textareaRef.current.scrollHeight, 160) + "px";
-      }
-    }
-  }, [input, textareaRef]);
 
   // Close lightbox on Escape
   useEffect(() => {
@@ -110,198 +86,128 @@ export const GlobalChatCompose = ({
 
   const isPdf = attachedImage?.startsWith("data:application/pdf");
 
+  const renderAttachments = () => {
+    if (!attachedImage) return null;
+    
+    return (
+      <motion.div 
+        className="flex gap-2 flex-wrap"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <div className="relative group inline-flex items-center gap-2 text-xs bg-white/[0.05] border border-white/10 py-1.5 px-3 rounded-lg text-white/90">
+          {isPdf ? (
+            <FileText size={14} className="text-white/60" />
+          ) : (
+            <img
+              src={attachedImage}
+              alt="Attached"
+              className="w-5 h-5 rounded object-cover cursor-zoom-in"
+              onClick={() => setLightboxOpen(true)}
+            />
+          )}
+          <span>{isPdf ? "PDF Document" : "Image"}</span>
+          <button 
+            onClick={() => setAttachedImage(null)}
+            className="ml-1 text-white/40 hover:text-white transition-colors"
+          >
+            <X size={12} />
+          </button>
+        </div>
+      </motion.div>
+    );
+  };
+
+  const renderExtraButtons = () => {
+    return (
+      <>
+        {setUseWebSearch && (
+          <button
+            type="button"
+            onClick={() => setUseWebSearch(!useWebSearch)}
+            className={`p-2 rounded-lg transition-colors flex items-center justify-center ${useWebSearch ? 'text-primary bg-primary/10' : 'text-white/40 hover:text-white/90'}`}
+            title={useWebSearch ? "Disable Web Search" : "Enable Web Search"}
+          >
+            <Globe className="w-4 h-4" />
+          </button>
+        )}
+        
+        {setUseReasoning && (
+          <button
+            type="button"
+            onClick={() => setUseReasoning(!useReasoning)}
+            className={`p-2 rounded-lg transition-colors flex items-center justify-center ${useReasoning ? 'text-primary bg-primary/10' : 'text-white/40 hover:text-white/90'}`}
+            title={useReasoning ? "Disable Thinking" : "Enable Thinking"}
+          >
+            <Lightbulb className="w-4 h-4" />
+          </button>
+        )}
+      </>
+    );
+  };
+
   return (
-    <div className="gc-compose-wrap">
-      <div className="gc-compose">
+    <div className="absolute bottom-0 left-0 w-full z-20 bg-gradient-to-t from-background via-background/95 to-transparent pt-12 pb-2 px-4 flex flex-col justify-end pointer-events-none">
+      <div className="pointer-events-auto flex flex-col w-full max-w-3xl mx-auto">
         {topSlot}
 
-        {attachedImage && (
-          <div className="gc-img-preview-wrap">
-            <div className="gc-img-preview">
-              {isPdf ? (
-                <div className="gc-pdf-thumb">
-                  <FileText size={18} />
-                  <span className="gc-pdf-thumb-label">PDF</span>
-                </div>
-              ) : (
-                <img
-                  src={attachedImage}
-                  alt="Attached"
-                  className="gc-img-thumb"
-                  onClick={() => setLightboxOpen(true)}
-                  style={{ cursor: "zoom-in" }}
-                  title="Click to preview"
-                />
-              )}
-              <button
-                className="gc-img-remove"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setAttachedImage(null);
-                  setLightboxOpen(false);
-                }}
-                title="Remove"
-              >
-                <X size={9} />
-              </button>
-            </div>
-          </div>
-        )}
+      <input
+        type="file"
+        ref={fileRef}
+        accept={fileAccept}
+        className="hidden"
+        onChange={handleFileChange}
+      />
 
-        <div className="gc-compose-footer">
-          <div className="relative" ref={attachMenuRef}>
-            <button
-              type="button"
-              className="gc-icon-btn gc-compose-plus"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              title="Attach"
-            >
-              <Plus size={18} />
-            </button>
-
-            {isMenuOpen && (
-              <div className="gc-attach-menu">
-                <button
-                  type="button"
-                  className={`gc-attach-option ${imageDisabled ? "gc-attach-option-disabled" : ""}`}
-                  onClick={() => {
-                    if (imageDisabled) {
-                      handleImageClick();
-                    } else {
-                      openFilePicker("image/*");
-                    }
-                    setIsMenuOpen(false);
-                  }}
-                  title={imageDisabled ? "Image unavailable" : "Attach image"}
-                >
-                  <span className="gc-attach-option-icon gc-attach-option-image">
-                    <ImageIcon size={16} />
-                  </span>
-                  <span className="gc-attach-option-copy">
-                    <span>Image</span>
-                    <small>PNG, JPG, WebP</small>
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  className="gc-attach-option"
-                  onClick={() => {
-                    openFilePicker(".pdf,application/pdf");
-                    setIsMenuOpen(false);
-                  }}
-                  title="Attach PDF"
-                >
-                  <span className="gc-attach-option-icon gc-attach-option-pdf">
-                    <FileText size={16} />
-                  </span>
-                  <span className="gc-attach-option-copy">
-                    <span>PDF</span>
-                    <small>Documents up to 15 MB</small>
-                  </span>
-                </button>
-
-                {setUseReasoning && (
-                  <button
-                    type="button"
-                    className="gc-attach-option"
-                    onClick={() => {
-                      setUseReasoning(!useReasoning);
-                      setIsMenuOpen(false);
-                    }}
-                    title={useReasoning ? "Turn off reasoning" : "Turn on reasoning"}
-                  >
-                    <span className="gc-attach-option-icon" style={{ color: useReasoning ? "var(--primary-color)" : "inherit" }}>
-                      <Lightbulb size={16} />
-                    </span>
-                    <span className="gc-attach-option-copy">
-                      <span>Thinking</span>
-                      <small>{useReasoning ? "Active (Higher quality)" : "Off (Faster)"}</small>
-                    </span>
-                  </button>
-                )}
-
-                {setUseWebSearch && (
-                  <button
-                    type="button"
-                    className="gc-attach-option"
-                    onClick={() => {
-                      setUseWebSearch(!useWebSearch);
-                      setIsMenuOpen(false);
-                    }}
-                    title={useWebSearch ? "Turn off web search" : "Turn on web search"}
-                  >
-                    <span className="gc-attach-option-icon" style={{ color: useWebSearch ? "var(--primary-color)" : "inherit" }}>
-                      <Globe size={16} />
-                    </span>
-                    <span className="gc-attach-option-copy">
-                      <span>Web Search</span>
-                      <small>{useWebSearch ? "Active (Live data)" : "Off (Faster)"}</small>
-                    </span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <input
-            type="file"
-            ref={fileRef}
-            accept={fileAccept}
-            className="hidden"
-            onChange={handleFileChange}
-          />
-
-          <textarea
-            ref={textareaRef}
-            className="gc-textarea custom-scrollbar"
-            placeholder={placeholder}
-            rows={1}
-            value={input}
-            disabled={isSending}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-
-          <div className="flex items-center gap-1.5 mr-2" style={{ marginBottom: "9px" }}>
-            {useWebSearch && (
-              <div className="gc-reasoning-status" title="Web Search is active" style={{ color: "var(--primary-color)", opacity: 0.8, display: "flex", alignItems: "center" }}>
-                <Globe size={14} />
-              </div>
-            )}
-            {useReasoning && (
-              <div className="gc-reasoning-status" title="Thinking is active" style={{ color: "var(--primary-color)", opacity: 0.8, display: "flex", alignItems: "center" }}>
-                <Lightbulb size={14} />
-              </div>
-            )}
-          </div>
-
-          {isSending ? (
-            <button
-              type="button"
-              className="gc-send-btn gc-send-btn-stop"
-              onClick={onStop}
-            >
-              <Square size={13} fill="currentColor" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="gc-send-btn"
-              disabled={!input.trim() && !attachedImage}
-              onClick={handleSend}
-            >
-              <ArrowUp size={17} />
-            </button>
-          )}
-        </div>
-      </div>
-      <p className="gc-disclaimer">{disclaimerText}</p>
+      <AnimatedAIChat 
+        value={input}
+        onChange={setInput}
+        onSubmit={handleSend}
+        isTyping={isSending}
+        onStop={onStop}
+        placeholder={placeholder}
+        textareaRef={textareaRef as any}
+        showHeading={false}
+        attachments={renderAttachments()}
+        onAttachClick={() => {
+          if (imageDisabled) {
+            handleImageClick();
+          } else {
+            openFilePicker("image/*,.pdf,application/pdf");
+          }
+        }}
+        extraActionButtons={renderExtraButtons()}
+        commands={[
+          {
+            icon: chatMode === "study" ? <MessageSquare className="w-4 h-4" /> : <BrainCircuit className="w-4 h-4" />,
+            label: chatMode === "study" ? "Switch to Casual Chat" : "Switch to Study Mode",
+            description: `Currently in ${chatMode} mode`,
+            prefix: chatMode === "study" ? "/casual" : "/study",
+            onSelect: () => {
+              setChatMode(chatMode === "study" ? "casual" : "study");
+              toast.success(`Switched to ${chatMode === "study" ? "Casual" : "Study"} Mode`);
+            }
+          },
+          { 
+              icon: <FileText className="w-4 h-4" />, 
+              label: "Summarize", 
+              description: "Summarize the current note", 
+              prefix: "/summarize" 
+          },
+          { 
+              icon: <BrainCircuit className="w-4 h-4" />, 
+              label: "Create Quiz", 
+              description: "Generate a quiz from your notes", 
+              prefix: "/quiz" 
+          },
+          { 
+              icon: <Search className="w-4 h-4" />, 
+              label: "Search", 
+              description: "Search globally across all notes", 
+              prefix: "/search" 
+          }
+        ]}
+      />
 
       {/* Lightbox — portal-rendered outside compose box */}
       {lightboxOpen &&
@@ -309,25 +215,26 @@ export const GlobalChatCompose = ({
         !isPdf &&
         createPortal(
           <div
-            className="gc-lightbox-overlay"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm pointer-events-auto"
             onClick={() => setLightboxOpen(false)}
           >
             <div
-              className="gc-lightbox-inner"
+              className="relative max-w-[90vw] max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              <img src={attachedImage} alt="Preview" className="gc-lightbox-img" />
+              <img src={attachedImage} alt="Preview" className="max-w-full max-h-[90vh] rounded-lg shadow-2xl" />
               <button
-                className="gc-lightbox-close"
+                className="absolute -top-10 right-0 p-2 text-white/70 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all"
                 onClick={() => setLightboxOpen(false)}
                 title="Close (Esc)"
               >
-                <X size={16} />
+                <X size={20} />
               </button>
             </div>
           </div>,
           document.body
         )}
+      </div>
     </div>
   );
 };

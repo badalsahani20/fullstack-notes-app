@@ -497,7 +497,6 @@
      The library handles active resizing. */
 }
 
-
 .desktop-main-panel {
   display: flex;
   flex-direction: column;
@@ -2057,7 +2056,6 @@
   flex-shrink: 0;
 }
 
-
 .assistant-mobile-actions {
   display: flex;
   gap: 0.4rem;
@@ -2989,7 +2987,8 @@ span[data-ai-ghost] {
   margin: 0;
 }
 
-.editor-content-shell .ProseMirror table {
+.editor-content-shell .ProseMirror table,
+.gc-markdown table {
   border-collapse: collapse;
   margin: 0;
   table-layout: auto;
@@ -2998,7 +2997,9 @@ span[data-ai-ghost] {
 }
 
 .editor-content-shell .ProseMirror table td,
-.editor-content-shell .ProseMirror table th {
+.editor-content-shell .ProseMirror table th,
+.gc-markdown table td,
+.gc-markdown table th {
   border: none;
   border-bottom: 1px solid var(--divider);
   border-right: 1px solid var(--divider);
@@ -3010,22 +3011,29 @@ span[data-ai-ghost] {
 }
 
 .editor-content-shell .ProseMirror table td:last-child,
-.editor-content-shell .ProseMirror table th:last-child {
+.editor-content-shell .ProseMirror table th:last-child,
+.gc-markdown table td:last-child,
+.gc-markdown table th:last-child {
   border-right: none;
 }
 
 .editor-content-shell .ProseMirror table tr:last-child td,
-.editor-content-shell .ProseMirror table tr:last-child th {
+.editor-content-shell .ProseMirror table tr:last-child th,
+.gc-markdown table tr:last-child td,
+.gc-markdown table tr:last-child th {
   border-bottom: none;
 }
 
 .editor-content-shell .ProseMirror table td > p,
-.editor-content-shell .ProseMirror table th > p {
+.editor-content-shell .ProseMirror table th > p,
+.gc-markdown table td > p,
+.gc-markdown table th > p {
   min-width: max-content;
   margin: 0;
 }
 
-.editor-content-shell .ProseMirror table th {
+.editor-content-shell .ProseMirror table th,
+.gc-markdown table th {
   background: var(--surface-muted);
   font-weight: 700;
   font-size: 0.9em;
@@ -3035,12 +3043,12 @@ span[data-ai-ghost] {
 }
 
 /* First column row-label treatment */
-.editor-content-shell .ProseMirror table td:first-child {
+.editor-content-shell .ProseMirror table td:first-child,
+.gc-markdown table td:first-child {
   font-weight: 500;
   color: color-mix(in srgb, var(--text-strong) 80%, transparent);
   background: color-mix(in srgb, var(--surface-muted) 40%, transparent);
 }
-
 
 /* Mobile Editor Toolbar */
 .editor-toolbar-mobile {
@@ -3540,7 +3548,6 @@ span[data-ai-ghost] {
   margin-bottom: 0.75rem;
 }
 
-
 .gc-session-empty {
   font-size: 0.78rem;
   color: var(--muted-text);
@@ -3886,49 +3893,9 @@ span[data-ai-ghost] {
   color: #cbd5e1;
 }
 
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Tables Ã¢â€â‚¬Ã¢â€â‚¬ */
-.gc-markdown table {
-  display: block;
-  width: fit-content;
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-  margin: 0.75rem 0;
-  border-radius: 0.55rem;
-  border: 1px solid var(--divider);
-  white-space: nowrap;
-}
+/* ── Tables ── */
+/* .gc-markdown table styles are shared with .editor-content-shell .ProseMirror table above */
 
-.gc-markdown th {
-  background: color-mix(in srgb, var(--surface-muted) 80%, #6366f1 8%);
-  color: var(--text-strong);
-  font-weight: 600;
-  padding: 0.65rem 0.85rem;
-  text-align: left;
-  border-bottom: 1px solid var(--divider);
-  font-size: 0.8rem;
-  letter-spacing: 0.01em;
-}
-
-.gc-markdown td {
-  padding: 0.55rem 0.85rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--divider) 60%, transparent);
-  color: inherit;
-  vertical-align: top;
-  line-height: 1.5;
-  min-width: 120px;
-  white-space: normal;
-}
-
-.gc-markdown tr:last-child td {
-  border-bottom: none;
-}
-
-.gc-markdown tbody tr:nth-child(even) td {
-  background: color-mix(in srgb, var(--surface-ghost) 40%, transparent);
-}
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Horizontal rule (section divider) Ã¢â€â‚¬Ã¢â€â‚¬ */
 .gc-markdown hr {
@@ -4412,230 +4379,6 @@ span[data-ai-ghost] {
   }
 }
 
-
-
-/* Ã¢â€â‚¬Ã¢â€â‚¬ Compose Ã¢â€â‚¬Ã¢â€â‚¬ */
-
-
-.note-ai-header {
-  border-bottom: 1px solid var(--divider);
-}
-
-.note-ai-context-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.7rem 0.8rem 0.35rem;
-}
-
-.note-ai-context-left {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-
-.note-ai-context-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 999px;
-  padding: 0.28rem 0.55rem;
-  background: color-mix(in srgb, var(--accent-strong) 14%, transparent);
-  color: var(--text-strong);
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.note-ai-context-note {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted-text);
-  font-size: 0.75rem;
-}
-
-.note-ai-actions-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px solid var(--divider);
-  border-radius: 0.75rem;
-  padding: 0.4rem 0.65rem;
-  background: var(--surface-ghost);
-  color: var(--text-strong);
-  font-size: 0.75rem;
-  font-weight: 600;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
-}
-
-.note-ai-actions-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--surface-ghost) 82%, white 18%);
-}
-
-.note-ai-actions-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.gc-compose:focus-within {
-  border-color: color-mix(in srgb, #6366f1 55%, var(--divider));
-  box-shadow: 0 0 0 3px color-mix(in srgb, #6366f1 12%, transparent);
-}
-
-.gc-img-preview-wrap {
-  padding: 0.65rem 0.75rem 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.gc-img-preview {
-  position: relative;
-  display: inline-block;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.gc-img-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.gc-pdf-thumb {
-  width: 100%;
-  height: 100%;
-  background: #252525;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  color: var(--muted-text);
-}
-
-.gc-pdf-thumb-label {
-  font-size: 0.58rem;
-  font-weight: 700;
-  color: var(--muted-text);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.gc-img-remove {
-  position: absolute;
-  top: 0.22rem;
-  right: 0.22rem;
-  width: 1.15rem;
-  height: 1.15rem;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.72);
-  color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-  z-index: 1;
-  cursor: pointer;
-}
-
-.gc-img-remove:hover {
-  background: rgba(0, 0, 0, 0.92);
-  color: #fff;
-}
-
-/* ── Lightbox ── */
-.gc-lightbox-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.82);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: gc-lb-in 0.18s ease;
-}
-
-@keyframes gc-lb-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.gc-lightbox-inner {
-  position: relative;
-  max-width: 90vw;
-  max-height: 85vh;
-  border-radius: 1rem;
-  overflow: hidden;
-  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.7);
-  animation: gc-lb-scale 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes gc-lb-scale {
-  from { transform: scale(0.93); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
-}
-
-.gc-lightbox-img {
-  display: block;
-  max-width: 90vw;
-  max-height: 85vh;
-  object-fit: contain;
-  border-radius: 1rem;
-}
-
-.gc-lightbox-close {
-  position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, transform 0.15s;
-  z-index: 1;
-}
-
-.gc-lightbox-close:hover {
-  background: rgba(220, 38, 38, 0.8);
-  color: #fff;
-  transform: scale(1.08);
-}
-
-.gc-textarea {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 0.75rem 1rem 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  color: var(--text-strong);
-  min-height: 2.5rem;
-  max-height: 160px;
-}
-
-.gc-textarea::placeholder {
-  color: var(--muted-text);
-}
 
 /* ── Segmented Chat Mode Toggle (Header) ── */
 .gc-mode-selector-btn {
@@ -5250,13 +4993,13 @@ span[data-ai-ghost] {
     box-shadow: 20px 0 50px rgba(0, 0, 0, 0.4);
     background: #0d0d12;
   }
-  
+
   .gc-sidebar-mobile-closed {
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
   }
-  
+
   .gc-sidebar-mobile-open {
     transform: translateX(0);
     opacity: 1;
@@ -6603,8 +6346,6 @@ html:not(.dark) [data-state="open"].dock-fontsize-btn {
   color: #059669;
 }
 
-
-
 /* ═══════════════════════════════════════════════════════════════
    LIGHT THEME OPTIMIZATIONS
    ═══════════════════════════════════════════════════════════════ */
@@ -6660,7 +6401,6 @@ html:not(.dark) .dock-btn-active {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
-
 .editor-star-toggle {
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
@@ -6702,7 +6442,6 @@ html:not(.dark) .dock-btn-active {
     box-shadow: none;
   }
 }
-
 
 /* Smooth transition for Resizable Panels when toggled */
 .panel-transition {
@@ -7011,7 +6750,6 @@ html:not(.dark) .dock-btn-active {
   text-align: center;
   gap: 0.4rem;
 }
-
 
 .flashcard-face-back {
   transform: rotateY(180deg);
@@ -7411,7 +7149,6 @@ html:not(.dark) .dock-btn-active {
   align-items: center;
   text-align: center;
 }
-
 
 .quiz-score-value {
   font-size: 1.4rem;
@@ -7870,10 +7607,6 @@ html:not(.dark) .dock-btn-active {
   background: #212124 !important;
 }
 
-
-
-
-
 /* ═══════════════════════════════════════════════════════════════
    IRIS COMPARISON BLOCK (Sleek UI Tables)
    ═══════════════════════════════════════════════════════════════ */
@@ -7994,9 +7727,6 @@ html:not(.dark) .dock-btn-active {
   cursor: pointer !important;
 }
 
-
-
-
 /* Desktop Electron Window Controls Overlay Spacing */
 .desktop-header {
   -webkit-app-region: drag;
@@ -8029,3 +7759,10 @@ html:not(.dark) .dock-btn-active {
   background: transparent;
 }
 
+
+
+.dark .gc-msg-bubble-user {
+    color: rgb(255 255 255 / 95%);
+    background: #00000000;
+    border-color: rgba(255, 255, 255, 0.08);
+}

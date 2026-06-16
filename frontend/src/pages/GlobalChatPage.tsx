@@ -9,7 +9,6 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { GlobalChatSidebar } from "@/components/chat/GlobalChatSidebar";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
-import { ChatModeSelector } from "@/components/chat/ChatModeSelector";
 
 const GlobalChatPage = () => {
   const {
@@ -19,7 +18,6 @@ const GlobalChatPage = () => {
     fetchSessions, loadSession, startNewChat, sendMessage, setAttachedImage,
     useReasoning, setUseReasoning,
     useWebSearch, setUseWebSearch,
-    chatMode, setChatMode,
   } = useGlobalChatStore();
 
   const [input, setInput] = useState("");
@@ -79,29 +77,22 @@ const GlobalChatPage = () => {
       />
 
       {/* ── Main chat area ── */}
-      <div className="gc-main">
-        {/* Header */}
-        <div className="gc-header">
-          {/* Sidebar toggle */}
-          <button
-            className="gc-icon-btn"
-            onClick={() => setSidebarOpen((o) => !o)}
-            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-          >
-            {sidebarOpen ? <PanelLeftClose size={16} /> : <PanelLeftOpen size={16} />}
-          </button>
-
-          <div className="gc-header-avatar ai-rail-button ai-rail-button-active cursor-default">
-            <div className="iris-orb" />
-          </div>
-          <div className="flex-1 flex items-center gap-2">
-            <div>
-              <p className="gc-header-name">Iris</p>
-              <p className="gc-header-sub">Your AI Study Partner</p>
-            </div>
-            <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} />
-          </div>
+      <div className="gc-main relative">
+        {/* Dim moving purplish gradient background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[10%] left-[10%] w-[300px] h-[300px] rounded-full bg-violet-600/10 blur-[80px] animate-blob-drift" style={{ animationDuration: '8s' }} />
+          <div className="absolute top-[40%] right-[10%] w-[250px] h-[250px] rounded-full bg-fuchsia-600/10 blur-[80px] animate-blob-drift" style={{ animationDuration: '10s', animationDelay: '1s' }} />
+          <div className="absolute bottom-[10%] left-[30%] w-[350px] h-[350px] rounded-full bg-indigo-600/10 blur-[80px] animate-blob-drift" style={{ animationDuration: '12s', animationDelay: '2s' }} />
         </div>
+
+        {/* Floating Sidebar Toggle */}
+        <button
+          className="absolute top-4 left-4 z-50 p-2 text-white/50 hover:text-white/90 hover:bg-white/10 rounded-lg transition-colors"
+          onClick={() => setSidebarOpen((o) => !o)}
+          title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+        >
+          {sidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+        </button>
 
         <GlobalChatMessages
           messages={messages as Message[]}

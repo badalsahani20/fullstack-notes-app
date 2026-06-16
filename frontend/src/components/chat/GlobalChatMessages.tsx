@@ -307,6 +307,8 @@ export const GlobalChatMessages = ({
         })
       )}
 
+      {/* Spacer to allow scrolling past the floating input box */}
+      <div className="h-48 shrink-0" />
       <div ref={bottomRef} />
     </div>
   );

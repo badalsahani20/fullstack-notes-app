@@ -3,7 +3,6 @@ import { FileText, Type, X, RefreshCcw, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
-import { ChatModeSelector } from "@/components/chat/ChatModeSelector";
 import type { useAiChat } from "@/hooks/ai/useAiChat";
 import type { Message } from "../ai/types";
 
@@ -44,8 +43,6 @@ const ContextualAiPanel = ({
     setUseReasoning,
     useWebSearch,
     setUseWebSearch,
-    chatMode,
-    setChatMode,
   } = aiChat;
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -54,29 +51,7 @@ const ContextualAiPanel = ({
 
   const prompts = useMemo(() => ({ students: [], devs: [] }), []);
 
-  const contextSlot = (
-    <div className="note-ai-context-bar">
-      <div className="note-ai-context-left">
-        {isNewNote ? (
-          <span className="note-ai-context-chip" style={{ color: "var(--amber-text, #d97706)", borderColor: "color-mix(in srgb, #d97706 25%, transparent)" }}>
-            <Pencil size={12} />
-            No note yet · General chat
-          </span>
-        ) : selectionRange ? (
-          <span className="note-ai-context-chip">
-            <Type size={12} />
-            Selection
-          </span>
-        ) : (
-          <span className="note-ai-context-chip">
-            <FileText size={12} />
-            Note context
-          </span>
-        )}
-        {!isNewNote && noteTitle ? <span className="note-ai-context-note">{noteTitle}</span> : null}
-      </div>
-    </div>
-  );
+  // Context indicator moved to header
 
   return (
     <motion.aside
@@ -85,9 +60,31 @@ const ContextualAiPanel = ({
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       className={`assistant-rail relative overflow-hidden ${mobileMode ? "assistant-rail-mobile" : "flex"}`}
     >
-      <div className="relative z-10 flex items-center justify-between px-4 py-2 border-b border-white/5 shrink-0">
-        <div className="flex items-center gap-2">
-          <ChatModeSelector chatMode={chatMode} setChatMode={setChatMode} />
+      {/* Dim moving purplish gradient background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[10%] left-[10%] w-[200px] h-[200px] rounded-full bg-violet-600/10 blur-[60px] animate-blob-drift" style={{ animationDuration: '8s' }} />
+        <div className="absolute top-[40%] right-[10%] w-[180px] h-[180px] rounded-full bg-fuchsia-600/10 blur-[60px] animate-blob-drift" style={{ animationDuration: '10s', animationDelay: '1s' }} />
+        <div className="absolute bottom-[10%] left-[30%] w-[220px] h-[220px] rounded-full bg-indigo-600/10 blur-[60px] animate-blob-drift" style={{ animationDuration: '12s', animationDelay: '2s' }} />
+      </div>
+      <div className="relative z-10 flex items-center justify-between px-4 py-2 border-b border-white/5 shrink-0 bg-background/80 backdrop-blur-md">
+        <div className="flex items-center gap-2 overflow-hidden">
+          {isNewNote ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 whitespace-nowrap">
+              <Pencil size={10} />
+              General chat
+            </span>
+          ) : selectionRange ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold bg-primary/10 text-primary border border-primary/20 whitespace-nowrap">
+              <Type size={10} />
+              Selection
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] uppercase tracking-wider font-semibold bg-white/5 text-white/60 border border-white/10 whitespace-nowrap">
+              <FileText size={10} />
+              Note
+            </span>
+          )}
+          {!isNewNote && noteTitle ? <span className="text-xs font-medium text-white/80 truncate">{noteTitle}</span> : null}
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -148,7 +145,6 @@ const ContextualAiPanel = ({
         handleSend={() => void sendChatMessage()}
         textareaRef={textareaRef}
         fileRef={fileRef}
-        topSlot={contextSlot}
         placeholder="Ask about this note or anything..."
         onStop={stopRequest}
         useReasoning={useReasoning}
