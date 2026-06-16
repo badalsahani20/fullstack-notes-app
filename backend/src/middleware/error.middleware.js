@@ -4,6 +4,15 @@ const errorMiddleware = (err, req, res, next) => {
     console.error(err.stack);
   }
 
+  // If a streaming (SSE) response was already started, we cannot set headers or
+  // call res.json() — that's what causes ERR_HTTP_HEADERS_SENT.
+  // Destroy the socket to close the connection cleanly and bail out.
+  if (res.headersSent) {
+    console.error("  → headers already sent (likely mid-stream); destroying socket.");
+    req.socket?.destroy();
+    return;
+  }
+
   // 2. Default error state
   let statusCode = err.statusCode || 500;
   let message = err.message || "Server Error";

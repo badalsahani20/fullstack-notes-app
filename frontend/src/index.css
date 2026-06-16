@@ -7998,22 +7998,18 @@ html:not(.dark) .dock-btn-active {
 
 
 /* Desktop Electron Window Controls Overlay Spacing */
-.desktop-editor-header {
+.desktop-header {
   -webkit-app-region: drag;
 }
-.desktop-editor-header button,
-.desktop-editor-header input,
-.editor-meta-stack {
+.desktop-header button,
+.desktop-header input,
+.desktop-header a,
+.desktop-header [role="button"],
+.desktop-brand,
+.desktop-header-search-slot,
+.desktop-header-actions {
   -webkit-app-region: no-drag;
 }
-
-.assistant-rail-header {
-  -webkit-app-region: drag;
-}
-.assistant-rail-header button {
-  -webkit-app-region: no-drag;
-}
-
 /* ── Thin scrollbars ── */
 ::-webkit-scrollbar {
   width: 4px;

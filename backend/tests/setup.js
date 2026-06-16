@@ -2,6 +2,9 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { jest } from '@jest/globals';
 
+process.env.ACCESS_SECRET = 'test_access_secret';
+process.env.REFRESH_SECRET = 'test_refresh_secret';
+process.env.JWT_SECRET = 'test_jwt_secret';
 let mongod;
 
 // Start in-memory MongoDB before all tests

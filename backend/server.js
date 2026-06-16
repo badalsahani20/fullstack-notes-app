@@ -16,6 +16,7 @@ import publicRoute from "./src/routes/public.route.js";
 import studyRoute from "./src/routes/study.route.js";
 import userRoute from "./src/routes/user.route.js";
 import { processInactiveSessions } from "./src/services/memoryService.js";
+import errorMiddleware from "./src/middleware/error.middleware.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -82,20 +83,4 @@ runMemoryCron();
 setInterval(runMemoryCron, 5 * 60 * 1000);
 
 
-app.use((err, req, res, next) => {
-    console.error("GLOBAL ERROR: ", err.message);
-
-    // If a streaming (SSE) response was already started, we cannot set headers or
-    // call res.json() — that's what causes ERR_HTTP_HEADERS_SENT.
-    // Destroy the socket to close the connection cleanly and bail out.
-    if (res.headersSent) {
-        console.error("  → headers already sent (likely mid-stream); destroying socket.");
-        req.socket?.destroy();
-        return;
-    }
-
-    res.status(err.statusCode || 500).json({
-        success: false,
-        message: err.message || "Internal Server Error"
-    });
-});
+app.use(errorMiddleware);
