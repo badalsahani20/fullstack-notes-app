@@ -1156,9 +1156,25 @@ export const chatWithAi = async ({
     .filter(Boolean)
     .join("\n\n");
 
-  const tools = enableWeb
-    ? [{ type: "openrouter:web_search" }, { type: "openrouter:web_fetch" }]
-    : null;
+  const tools = [];
+  if (enableWeb) {
+    tools.push({ type: "openrouter:web_search" }, { type: "openrouter:web_fetch" });
+  }
+  tools.push({
+    type: "function",
+    function: {
+      name: "save_memory",
+      description: "Save a fact, preference, or goal about the user to their long-term memory. Only use this when the user explicitly asks you to remember something, or if they share an important, persistent fact about themselves.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: { type: "string", enum: ["PROFILE", "PREFERENCE", "GOAL", "PROJECT", "SKILL", "OTHER"] },
+          content: { type: "string", description: "The concise fact to remember" }
+        },
+        required: ["category", "content"]
+      }
+    }
+  });
 
   const reply = await getAiReply(
     finalMessage,

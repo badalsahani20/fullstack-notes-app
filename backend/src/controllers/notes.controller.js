@@ -6,6 +6,7 @@ import { sanitizeNoteHtml } from "../utils/sanitizeNoteHtml.js";
 import { generateTitle } from "../services/ai.service.js";
 import Notes from "../models/notes.model.js";
 import { stripHtml } from "../utils/stripHtml.js";
+import { generateEmbedding } from "../services/embeddingService.js";
 
 const clearNoteCaches = async (userId) =>
   Promise.all([
@@ -15,6 +16,24 @@ const clearNoteCaches = async (userId) =>
 
 const clearSharedNoteCache = async (slug) => {
   if (slug) await redis.del(`shared_note:${slug}`);
+};
+
+const queueNoteEmbedding = (note, userId) => {
+  if (!note || !note.content) return;
+
+  const plainText = stripHtml(note.content).trim();
+  if (plainText.length < 10) return;
+
+  generateEmbedding(plainText)
+    .then(async (embedding) => {
+      if (embedding) {
+        await Notes.updateOne(
+          { _id: note._id, user: userId },
+          { $set: { embedding, lastEmbeddedAt: new Date() } }
+        ).exec();
+      }
+    })
+    .catch((err) => console.error("[AutoEmbed] failed:", err));
 };
 
 const DEFAULT_NOTE_TITLES = ["Untitled Note", "Untitled"];
@@ -139,6 +158,7 @@ export const createNote = catchAsync(async (req, res) => {
     await clearNoteCaches(req.user._id);
 
     queueAutoTitleGeneration(note, req.user._id);
+    queueNoteEmbedding(note, req.user._id);
 
     res.status(201).json(note);
 });
@@ -194,6 +214,7 @@ export const updateNote = catchAsync(async (req, res) => {
     if (result.updatedNote?.shareSlug) await clearSharedNoteCache(result.updatedNote.shareSlug);
 
     queueAutoTitleGeneration(result.updatedNote, req.user._id);
+    queueNoteEmbedding(result.updatedNote, req.user._id);
 
     res.status(200).json(result.updatedNote);
 });

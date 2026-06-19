@@ -75,6 +75,14 @@ const notesSchema = new mongoose.Schema({
         original: String,
         suggestion: String
     }],
+    embedding: {
+        type: [Number],
+        default: []
+    },
+    lastEmbeddedAt: {
+        type: Date,
+        default: null
+    },
     chatHistory: {
         type: [chatHistoryEntrySchema],
         default: []

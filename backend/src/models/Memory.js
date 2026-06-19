@@ -31,9 +31,6 @@ const memorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// We don't define the vector search index here directly since Atlas Vector Search
-// indexes are created and managed via the MongoDB Atlas UI or Atlas Admin API.
-
 const Memory = mongoose.model("Memory", memorySchema);
 
 export default Memory;

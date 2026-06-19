@@ -1,16 +1,15 @@
 import Memory from "../models/Memory.js";
 import GlobalChatSession from "../models/globalChatSession.model.js";
 import { generateEmbedding } from "./embeddingService.js";
-import { extractMemories } from "./MemoryExtractor.js";
 
 const MAX_MEMORIES = 1000;
 const DEDUPLICATION_THRESHOLD = 0.95;
 // Default to 0.75, can be configured via env
 const RETRIEVAL_THRESHOLD = process.env.MEMORY_SIMILARITY_THRESHOLD ? parseFloat(process.env.MEMORY_SIMILARITY_THRESHOLD) : 0.75;
 
-export const searchMemories = async (userId, queryText) => {
+export const searchMemories = async (userId, queryText, precomputedEmbedding = null) => {
     try {
-        const queryEmbedding = await generateEmbedding(queryText);
+        const queryEmbedding = precomputedEmbedding || await generateEmbedding(queryText);
         if (!queryEmbedding) return [];
 
         // Atlas Vector Search aggregation pipeline
@@ -92,11 +91,14 @@ export const saveMemory = async (userId, memoryObj) => {
             return existingMemory;
         }
 
+        const validCategories = ["PROFILE", "PREFERENCE", "GOAL", "PROJECT", "SKILL", "OTHER"];
+        const finalCategory = validCategories.includes(memoryObj.category) ? memoryObj.category : "OTHER";
+
         // Create new memory
         const newMemory = await Memory.create({
             user: userId,
             content: memoryObj.content,
-            category: memoryObj.category || "OTHER",
+            category: finalCategory,
             embedding: embedding
         });
 
@@ -121,57 +123,3 @@ export const saveMemory = async (userId, memoryObj) => {
     }
 };
 
-export const processInactiveSessions = async () => {
-    console.log("Starting Memory Extraction Cron Job...");
-    
-    // Find sessions older than 15 minutes that are PENDING
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-
-    // We process one at a time using atomic claiming to prevent race conditions
-    while (true) {
-        const session = await GlobalChatSession.findOneAndUpdate(
-            {
-                updatedAt: { $lt: fifteenMinutesAgo },
-                memoryStatus: { $in: ["PENDING", "FAILED"] },
-                memoryRetryCount: { $lt: 3 },
-                "messages.0": { $exists: true } // Ensure it has messages
-            },
-            { memoryStatus: "PROCESSING" },
-            { new: true }
-        );
-
-        if (!session) {
-            // No more sessions to process
-            break;
-        }
-
-        try {
-            console.log(`Processing session ${session._id} for user ${session.user}`);
-            
-            const extractionResult = await extractMemories(session.messages);
-            
-            if (extractionResult.summary) {
-                session.summary = extractionResult.summary;
-            }
-
-            for (const memory of extractionResult.memories) {
-                if (memory.content && memory.category) {
-                    await saveMemory(session.user, memory);
-                }
-            }
-
-            // Mark as completed
-            session.memoryStatus = "EXTRACTED";
-            await session.save();
-            console.log(`Successfully extracted memories for session ${session._id}`);
-
-        } catch (err) {
-            console.error(`Failed to process session ${session._id}:`, err);
-            // Revert or mark as failed, and increment retry count
-            await GlobalChatSession.findByIdAndUpdate(session._id, {
-                memoryStatus: "FAILED",
-                $inc: { memoryRetryCount: 1 }
-            });
-        }
-    }
-};

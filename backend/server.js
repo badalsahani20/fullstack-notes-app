@@ -15,7 +15,7 @@ import { fileURLToPath } from "url";
 import publicRoute from "./src/routes/public.route.js";
 import studyRoute from "./src/routes/study.route.js";
 import userRoute from "./src/routes/user.route.js";
-import { processInactiveSessions } from "./src/services/memoryService.js";
+
 import errorMiddleware from "./src/middleware/error.middleware.js";
 
 
@@ -60,27 +60,7 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
 
-let isProcessing = false;
 
-async function runMemoryCron() {
-    if (isProcessing) return;
-
-    try {
-        isProcessing = true;
-        await processInactiveSessions();
-    } catch (err) {
-        console.error(
-            "Memory extraction cron failed:",
-            err
-        );
-    } finally {
-        isProcessing = false;
-    }
-}
-
-runMemoryCron();
-
-setInterval(runMemoryCron, 5 * 60 * 1000);
 
 
 app.use(errorMiddleware);

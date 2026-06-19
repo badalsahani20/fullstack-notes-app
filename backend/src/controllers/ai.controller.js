@@ -19,6 +19,7 @@ import { parseIrisResponse } from "../utils/parseIrisResponse.js";
 import getEffectiveDailyLimit from "../utils/getEffectiveDailyLimit.js";
 import { SseStreamParser } from "../utils/sseParser.js";
 import { searchMemories } from "../services/memoryService.js";
+import { generateEmbedding } from "../services/embeddingService.js";
 
 const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
 
@@ -496,10 +497,12 @@ const openSseConnection = (res, activeSessionId) => {
 };
 
 // Pipe OpenRouter SSE chunks to the client and accumulate the full reply
-const streamAiResponse = async (stream, res, noteFetched) => {
+const streamAiResponse = async (stream, res, noteFetched, userId) => {
   const decoder = new TextDecoder();
   let finalReply = "";
   const parser = new SseStreamParser();
+  let memoryToolArgs = "";
+  let memoryToolIndex = -1;
 
   if (noteFetched) {
     res.write(
@@ -529,6 +532,15 @@ const streamAiResponse = async (stream, res, noteFetched) => {
             res.write(
               `data: ${JSON.stringify({ type: "tool_call", tool: normTool })}\n\n`,
             );
+          } else if (toolName === "save_memory") {
+              memoryToolIndex = tc.index;
+              if (tc.function?.arguments) {
+                  memoryToolArgs += tc.function.arguments;
+              }
+          } else if (memoryToolIndex !== -1 && tc.index === memoryToolIndex) {
+              if (tc.function?.arguments) {
+                  memoryToolArgs += tc.function.arguments;
+              }
           }
         }
       }
@@ -540,6 +552,30 @@ const streamAiResponse = async (stream, res, noteFetched) => {
         data.text ||
         "";
     }
+  }
+
+  // Execute memory save if triggered
+  if (memoryToolIndex !== -1 && memoryToolArgs) {
+      try {
+          const args = JSON.parse(memoryToolArgs);
+          // Only save if we have both
+          if (args.category && args.content && userId) {
+              // we need to dynamically import or require saveMemory to avoid circular deps
+              import("../services/memoryService.js").then(({ saveMemory }) => {
+                  saveMemory(userId, args).catch(console.error);
+              });
+              res.write(`data: ${JSON.stringify({ type: "tool_call", tool: "save_memory" })}\n\n`);
+              
+              // If the AI didn't stream any text alongside the tool call, provide a default response
+              if (!finalReply.trim()) {
+                  const fallbackMsg = "Got it! I've saved that to my memory.";
+                  finalReply = fallbackMsg;
+                  res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: fallbackMsg } }] })}\n\n`);
+              }
+          }
+      } catch (err) {
+          console.error(`Failed to parse save_memory arguments: ${err.message}. Raw args:`, memoryToolArgs);
+      }
   }
 
   return finalReply;
@@ -624,8 +660,6 @@ export const chatWithAiController = catchAsync(async (req, res) => {
 
   // Session Size Guard
   if (isGlobalChat && activeSession && activeSession.messages.length >= 100) {
-    activeSession.memoryStatus = "PENDING";
-    await activeSession.save();
     // Force start new session
     req.body.sessionId = undefined;
     sessionData = await resolveSession(req);
@@ -660,17 +694,71 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     toolUsed: null,
   });
 
-  // 4. Retrieve Memories and call the AI service
+  // 4. Retrieve Memories and Notes
   let result;
   try {
-    const memories = await searchMemories(req.user._id, message);
+    let memories = [];
+    let retrievedNotesContext = "";
+    
+    if (message) {
+      try {
+        const queryEmbedding = await generateEmbedding(message);
+        
+        if (queryEmbedding) {
+          // Run both vector searches in parallel
+          const notesPipeline = [
+            {
+                $vectorSearch: {
+                    index: "notes_vector_index", 
+                    path: "embedding",
+                    queryVector: queryEmbedding,
+                    numCandidates: 20,
+                    limit: 3,
+                    filter: { user: req.user._id, isDeleted: false }
+                }
+            },
+            {
+                $project: { title: 1, content: 1, score: { $meta: "vectorSearchScore" } }
+            },
+            {
+                $match: { score: { $gte: 0.6 } }
+            }
+          ];
+
+          const [memoriesResult, retrievedNotes] = await Promise.all([
+             searchMemories(req.user._id, message, queryEmbedding),
+             Notes.aggregate(notesPipeline).catch(err => {
+                 console.warn("Note vector search failed:", err.message);
+                 return [];
+             })
+          ]);
+          
+          memories = memoriesResult;
+
+          if (retrievedNotes.length > 0) {
+             retrievedNotesContext = `\n--- RELEVANT NOTES RETRIEVED FROM USER'S BRAIN ---\n${retrievedNotes.map(n => `Title: ${n.title}\nContent:\n${stripHtml(n.content).slice(0, 1000)}`).join("\n\n")}\n--- END RETRIEVED NOTES ---\n`;
+          }
+          
+          if (isStreaming && (retrievedNotes.length > 0 || memories.length > 0)) {
+            res.write(
+              `data: ${JSON.stringify({ type: "tool_call", tool: "search_notes" })}\n\n`,
+            );
+          }
+        }
+      } catch (err) {
+         console.warn("Embedding generation failed:", err.message);
+         // Fallback to text-only memory search if embedding fails
+         memories = await searchMemories(req.user._id, message);
+      }
+    }
+
     let memoryContext = "";
     if (memories.length > 0) {
       memoryContext = `\n--- LONG-TERM MEMORIES ---\nThese are facts previously explicitly stated by the user. Use them if relevant to the query:\n${memories.map(m => `- [${m.category}] ${m.content}`).join("\n")}\n--- END MEMORIES ---\n`;
     }
 
     const userName = req.user?.name ? `You are talking to a user named ${req.user.name}. Address them politely when appropriate.` : "";
-    const finalSystemPrompt = `${userName}${memoryContext}`;
+    const finalSystemPrompt = `${userName}${memoryContext}${retrievedNotesContext}`;
 
     result = await chatWithAi({
       message,
@@ -702,7 +790,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
 
   if (isStreaming) {
     try {
-      finalReply = await streamAiResponse(result.stream, res, noteFetched);
+      finalReply = await streamAiResponse(result.stream, res, noteFetched, req.user._id);
       // Send metadata (like extracted PDF text) after the stream completes
       if (result.pdfContext) {
         res.write(

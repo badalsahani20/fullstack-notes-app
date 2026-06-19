@@ -189,6 +189,12 @@ export const GlobalChatMessages = ({
                           } else if (tc.tool === "get_note_content") {
                             label = "Reading note...";
                             icon = <FileText size={14} className="iris-search-indicator-icon animate-pulse" />;
+                          } else if (tc.tool === "search_notes") {
+                            label = "Searching notes & memories...";
+                            icon = <Search size={14} className="iris-search-indicator-icon animate-pulse" />;
+                          } else if (tc.tool === "save_memory") {
+                            label = "Saving to memory...";
+                            icon = <Check size={14} className="iris-search-indicator-icon animate-pulse text-emerald-500" />;
                           }
                           return (
                             <div key={idx} className="iris-search-indicator-pulse">
@@ -218,6 +224,12 @@ export const GlobalChatMessages = ({
                             } else if (tc.tool === "get_note_content") {
                               label = "Read note";
                               icon = <FileText size={12} className="text-emerald-500" />;
+                            } else if (tc.tool === "search_notes") {
+                              label = "Searched notes & memories";
+                              icon = <Search size={12} className="text-emerald-500" />;
+                            } else if (tc.tool === "save_memory") {
+                              label = "Saved to memory";
+                              icon = <Check size={12} className="text-emerald-500" />;
                             }
                             return (
                               <div key={idx} className="iris-search-complete-badge">

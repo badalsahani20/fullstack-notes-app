@@ -42,15 +42,7 @@ const globalChatSessionSchema = new mongoose.Schema(
       enum: ["study", "casual"],
       default: "study",
     },
-    memoryStatus: {
-      type: String,
-      enum: ["PENDING", "PROCESSING", "EXTRACTED", "FAILED"],
-      default: "PENDING"
-    },
-    memoryRetryCount: {
-      type: Number,
-      default: 0
-    },
+
   },
   { timestamps: true }
 );
