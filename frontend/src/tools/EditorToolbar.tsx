@@ -83,6 +83,13 @@ const EditorToolbar = ({ editor, isMobile, yOffset = 0, aiChat }: Props) => {
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file.");
+      event.target.value = "";
+      return;
+    }
+
     const toastId = toast.loading("Uploading image...");
     try {
       const url = await uploadImage(file);
