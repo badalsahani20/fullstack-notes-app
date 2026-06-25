@@ -11,6 +11,12 @@ A production-grade, full-stack notes application built on the MERN stack — fea
 
 ---
 
+## 🚀 What's New in v1.0.2
+- **Enterprise-Grade Desktop Security (PKCE):** We've completely overhauled the Electron authentication flow. Google OAuth now bypasses embedded webviews and opens natively in your OS default browser. The app uses a memory-resident PKCE challenge and securely encrypts tokens to the disk using Electron's `safeStorage` via an isolated IPC bridge.
+- **AI Quiz State Persistence:** Fixed an issue where interactive AI-generated quizzes (tool calls) would disappear upon refreshing the page or switching sessions. Quizzes are now deeply integrated into the Mongoose schemas and safely hydrated from the database on both Note Chat and Global Chat.
+
+---
+
 ## Architecture Highlights
 
 These are the non-trivial engineering decisions behind Notesify — the things that separate it from a tutorial CRUD app.
