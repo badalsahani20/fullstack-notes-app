@@ -22,6 +22,7 @@
   "build": {
     "appId": "com.fullstack-notes.app",
     "productName": "Notesify",
+    "artifactName": "Notesify-Setup.exe",
     "protocols": {
       "name": "Notesify Protocol",
       "schemes": [
