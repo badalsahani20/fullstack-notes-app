@@ -20,6 +20,10 @@ const chatHistoryEntrySchema = new mongoose.Schema(
         segments: {
             type: [irisSegmentSchema],
             default: undefined
+        },
+        toolCalls: {
+            type: [mongoose.Schema.Types.Mixed],
+            default: undefined
         }
     },
     { _id: false }

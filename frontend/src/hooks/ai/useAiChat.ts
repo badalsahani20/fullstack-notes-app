@@ -44,6 +44,7 @@ const getPersistedHistoryFromMessages = (messages: Message[]) =>
       role: message.role as "user" | "assistant",
       content: message.text,
       ...(message.role === "assistant" && message.segments ? { segments: message.segments } : {}),
+      ...(message.role === "assistant" && message.toolCalls ? { toolCalls: message.toolCalls } : {}),
     }))
     .slice(-50);
 
@@ -122,6 +123,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
           role: m.role,
           text: m.content as string,
           segments: m.segments,
+          toolCalls: m.toolCalls,
           skipAnimation: true,
         }))
         .filter((m: any) => !existingIds.has(m.id));
@@ -404,7 +406,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       abortControllerRef.current = new AbortController();
       setIsSendingChat(true);
 
-      const { history: chatHist, message, noteContext, hasSelection } = buildChatHistory(textToSend);
+      const { history: chatHist, message, noteContext, hasSelection, contextChanged } = buildChatHistory(textToSend);
       const { accessToken } = useAuthStore.getState();
 
       const fetchBody = JSON.stringify({
@@ -413,6 +415,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
         noteId: effectiveNoteId,
         noteContext,
         hasSelection,
+        contextChanged,
         imageBase64: sentImage,
         pdfContext: pdfInjected ? null : pdfContext,
         stream: true,
@@ -471,11 +474,11 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
       const { fullText, fullThought, thinkingTime: finalThinkingTime } =
         await consumeAiChatStream(response.body, {
           throttleMs: 40,
-          onToolCall: ({ tool }) => {
+          onToolCall: ({ tool, quizData }) => {
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === aiMsgId
-                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool }] }
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool, quizData }] }
                   : m
               )
             );
@@ -531,6 +534,7 @@ export const useAiChat = (noteId: string, noteContent: string, editor: Editor | 
               role: m.role,
               content: m.content,
               ...(m.segments ? { segments: m.segments } : {}),
+              ...(m.toolCalls ? { toolCalls: m.toolCalls } : {}),
             }))
           : [];
         const dbHistory = [...existingDbHistory, ...newDbHistory].slice(-50);

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import Google from "../../assets/google.svg";
 import { toast } from "sonner";
+import { generatePkceChallenge } from "../../utils/pkce";
 
 const SignupForm = () => {
   const [name, setName] = useState("");
@@ -42,8 +43,22 @@ const SignupForm = () => {
     }
   };
 
-  const handleGoogleSignup = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/users/google`;
+  const isDesktop = !!(window as any).electronAPI?.auth;
+
+  const handleGoogleSignup = async () => {
+    if (isDesktop) {
+      const { challenge } = await generatePkceChallenge();
+      const authUrl = new URL(`${import.meta.env.VITE_API_URL}/users/google`);
+      authUrl.searchParams.set("code_challenge", challenge);
+      authUrl.searchParams.set("redirect_uri", "notesify://callback");
+      authUrl.searchParams.set("clientId", "notesify-desktop");
+      authUrl.searchParams.set("clientType", "desktop");
+      
+      // Open in system browser, via IPC
+      (window as any).electronAPI.auth.openExternal(authUrl.toString());
+    } else {
+      window.location.href = `${import.meta.env.VITE_API_URL}/users/google`;
+    }
   };
 
   return (

@@ -12,12 +12,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemma-4-26b-a4b-it" });
 
 export const PRIMARY_MODEL = "deepseek/deepseek-v4-flash";
-export const TEACHING_MODEL = "openai/gpt-oss-120b";
-export const DEFAULT_CHAT_MODEL = "openai/gpt-oss-120b";
+export const TEACHING_MODELS = [
+  "inclusionai/ling-2.6-1t",
+  "deepseek/deepseek-v4-flash"
+];
+export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v4-flash";
 export const QUICK_MODEL = "inclusionai/ling-2.6-flash";
-export const NOTES_GENERATION_MODEL = "inclusionai/ling-2.6-flash";
-export const COMPLEX_ANALYSIS_MODEL = "inclusionai/ring-2.6-1t";
+export const COMPLEX_ANALYSIS_MODEL = "inclusionai/ling-2.6-1t";
 export const VISUALIZATION_MODEL = "qwen/qwen3.5-flash-02-23";
+export const NOTES_GENERATION_MODEL = "inclusionai/ling-2.6-flash";
 
 const FALLBACK_MODEL = "llama-3.3-70b-versatile";
 
@@ -81,18 +84,10 @@ export const executeOpenRouter = async (
     bodyPayload.tools = tools;
   }
 
-  // OpenRouter reasoning parameters are only supported by specific models (DeepSeek v4/Qwen).
-  // For GPT and Ring models, we cannot disable/configure reasoning via this parameter,
-  // so we omit it from the request body to avoid API validation errors.
-  const isGptOrRing =
-    modelId.toLowerCase().includes("gpt") || modelId.toLowerCase().includes("ring");
-
-  if (!isGptOrRing) {
-    if (isQwenModel || !includeReasoning) {
-      bodyPayload.reasoning = { effort: "none", exclude: true };
-    } else {
-      bodyPayload.reasoning = { effort: "medium", exclude: false };
-    }
+  if (isQwenModel || !includeReasoning) {
+    bodyPayload.reasoning = { effort: "none", exclude: true };
+  } else {
+    bodyPayload.reasoning = { effort: "medium", exclude: false };
   }
 
   const response = await fetch(
@@ -378,7 +373,11 @@ export const classifyChatIntent = (
     /\b(explain|teach|tutorial|how to|why does|concept|explain the difference|step by step|study help|tutor)\b/.test(
       msg,
     );
-  if (isTeaching) return TEACHING_MODEL;
+  if (isTeaching) {
+    // Intelligently route teaching requests based on complexity
+    const isComplexTeaching = msg.length > 300 || /\b(advanced|complex|architecture|algorithm|system|optimize|scale|theory|difference between|under the hood|internals|lifecycle)\b/.test(msg);
+    return isComplexTeaching ? TEACHING_MODELS[0] : TEACHING_MODELS[1];
+  }
 
   // Default chat model
   return DEFAULT_CHAT_MODEL;
@@ -441,7 +440,7 @@ const getAiReply = async (
       // All three models support thinking/reasoning
       const isThinkingSupportedModel =
         activeModel === DEFAULT_CHAT_MODEL ||
-        activeModel === TEACHING_MODEL ||
+        TEACHING_MODELS.includes(activeModel) ||
         activeModel === PRIMARY_MODEL ||
         activeModel === COMPLEX_ANALYSIS_MODEL;
 
@@ -1033,6 +1032,7 @@ export const chatWithAi = async ({
   useReasoning = false,
   enableWeb = true,
   chatMode = "study",
+  tools = [],
 }) => {
   ensureAiApiKey(); // Only requires Gemini or OpenRouter — Groq is a fallback, not a prerequisite
 
@@ -1156,15 +1156,15 @@ export const chatWithAi = async ({
     .filter(Boolean)
     .join("\n\n");
 
-  const tools = [];
+  const finalTools = tools ? [...tools] : [];
   if (enableWeb) {
-    tools.push({ type: "openrouter:web_search" }, { type: "openrouter:web_fetch" });
+    finalTools.push({ type: "openrouter:web_search" }, { type: "openrouter:web_fetch" });
   }
-  tools.push({
+  finalTools.push({
     type: "function",
     function: {
       name: "save_memory",
-      description: "Save a fact, preference, or goal about the user to their long-term memory. Only use this when the user explicitly asks you to remember something, or if they share an important, persistent fact about themselves.",
+      description: "Save a fact, preference, or goal about the user to their long-term memory. Only use this when the user explicitly asks you to remember something, or if they share an important, persistent fact about themselves. CRITICAL: Before calling this tool, you MUST write a short introductory conversational message (e.g. 'Got it! I will remember that.'). After calling the tool, DO NOT output any more text.",
       parameters: {
         type: "object",
         properties: {
@@ -1183,7 +1183,7 @@ export const chatWithAi = async ({
     trimmedHistory,
     stream,
     useReasoning,
-    tools,
+    finalTools,
     enableWeb,
     selectedModel,
   );
@@ -1311,67 +1311,34 @@ export const getDynamicPrompts = async () => {
 // PROMPT SECTIONS (each is a self-contained string)
 
 const P_BASE = `
-You are Iris, an Agentic AI Assistant built into Notesify. Notesify was created by Badal Sahani. Today: ${new Date().toDateString()}.
+You are Iris, Notesify's AI assistant (built by Badal Sahani). Today: ${new Date().toDateString()}.
 
-# Safety & Rules
-Never fabricate information.
-When uncertain:
-- State the uncertainty.
-- Explain what is known.
-- Explain what is unknown.
-- Ask for clarification if needed.
-Distinguish facts from assumptions and speculation.
+# Rules
+Never fabricate. If uncertain, say what's known/unknown and ask if needed. Keep facts, assumptions, and speculation distinct.
 
-# Formatting & Structure
-- Use Markdown for lists, tables, and styling.
-- Format file names, paths, and function names with \`inline code\` backticks.
-- Use \`\`\`code fences\`\`\` for all code blocks.
-- Use \`\`\`text\`\`\` for:
-    - Social media posts
-    - Emails
-    - README files
-    - Blog posts
-    - Documentation
-    - Resumes
-    - Cover letters
-    - Privacy policies
-    - Formal written artifacts
-Do not use Writing Blocks for explanations, analysis, debugging, tutoring, brainstorming, or conversational responses.
-
-# Citations & Tools
-- For time-sensitive, real-time, or rapidly changing information, use web search when available.
-- If web search is unavailable, clearly state that you may not have the latest information.
-- If web search is enabled, cite inline as [Source: domain.com](URL) and include a Sources section at the end.
+# Formatting
+- Markdown for lists/tables/styling. \`inline code\` for files, paths, function names. \`\`\`code fences\`\`\` for all code.
+- \`\`\`text\`\`\` blocks for long-form formal writing (emails, posts, README, resumes, cover letters, docs) — never for explanations, debugging, tutoring, or conversation.
+# Quizzing
+Call \`generate_quiz\` when understanding seems shaky, on request, or after a long explanation. Acknowledge the topic in text first, then call it, then close with encouragement.
+# Tools
+Use web search for time-sensitive info; if unavailable, say so. When citing, use [Source: domain.com](URL) inline + a Sources section.
 
 # Behavior
-- Clear, practical, precise, intellectually honest.
-- Adapt to user's skill level and intent.
-- Prioritize understanding over jargon; avoid redundancy and filler.
-- Preserve exact values when accuracy matters; avoid unnecessary float precision.
-- Prefer headings and bullet points over tables.
-- Use tables only when comparing structured information or when tabular presentation improves clarity.
-- Avoid large tables for tutorials or step-by-step learning content.
+Clear, precise, intellectually honest. Match the user's skill level. Cut jargon and filler. Preserve exact values, avoid float noise. Prefer headings/bullets over tables — tables only for structured comparisons, not tutorials.
 `;
 
 const P_STUDY = `
-# Role & Tone
-You are in STUDY MODE. Help users learn faster, understand deeply, revise efficiently, and stay engaged.
-Use a learning-focused, academic, or structured teaching methodology when explaining concepts.
+# Study mode
+Help the user learn faster and retain more, using structured, academic-style teaching.
 
-# Code Explanation Guidelines
-When explaining code:
-- Explain at the appropriate level.
-- Use line-by-line explanations for beginners, small snippets, or when explicitly requested.
-- Use block-by-block explanations for larger code samples.
-- Focus on intent, flow, invariants, and important details.
-- Do not create large "Line | Explanation" tables unless the user specifically requests tabular format.
-- Prefer placing explanations directly beneath the relevant code snippet.
+# Code explanations
+Match depth to context: line-by-line for beginners/small snippets, block-by-block for larger code. Focus on intent, flow, invariants. Explain beneath the snippet — no Line|Explanation tables unless asked.
 `;
 
 const P_CASUAL = `
-# Role & Tone
-You are in CASUAL CHAT MODE. Engage in natural, friendly, and concise conversation.
-Do NOT force academic formatting, extensive Markdown, or structured teaching unless explicitly asked.
+# Casual mode
+Friendly, concise, natural conversation. Skip academic structure and heavy Markdown unless asked.
 `;
 
 const P_VIZ = `Use visualizations only when they genuinely help. Format: [IRIS_VIZ type="mermaid|chart|math" title="Title"]content[/IRIS_VIZ] — opening tag has NO slash, only closing does.
@@ -1379,15 +1346,6 @@ const P_VIZ = `Use visualizations only when they genuinely help. Format: [IRIS_V
 - chart: JSON data for charts. math: LaTeX formulas.
 - Bar chart example: [IRIS_VIZ type="mermaid" title="My Chart"]\nxychart-beta\n    title "My Chart"\n    x-axis ["A", "B", "C"]\n    y-axis "Count" 0 --> 10\n    bar [2, 5, 8]\n[/IRIS_VIZ]`;
 
-// QUIZ: add only when user explicitly asks to be tested.
-const P_QUIZ = `For quizzes or If the request is broad or ambiguous, ask ONE clarifying question, use chained [IRIS_ASK] blocks (one per question, revealed sequentially):
-[IRIS_ASK prompt="Question?"]
-A) option
-B) option
-C) option
-D) option
-[/IRIS_ASK]
-Follow each answered question with brief feedback explaining why the answer is correct, then the next block.`;
 
 const P_WEB_PROMPT = `Web Search Recommendation:
 - If the user asks for latest news, documentation, or current/real-time information, and the Web Search tool is disabled, you MUST kindly and clearly ask the user to turn on the Web Search tool (using the toggle in the UI) so you can fetch up-to-date and accurate information to help them.
@@ -1399,8 +1357,6 @@ const buildIrisPrompt = ({
   chatMode = "study",
 }) => {
   const msg = message.toLowerCase();
-
-  const wantsQuiz = /quiz|ask me|test me|mcq/.test(msg);
 
   const wantsViz = /diagram|flowchart|visualize|graph|chart|mermaid|plot/.test(
     msg,
@@ -1417,7 +1373,6 @@ const buildIrisPrompt = ({
     chatMode === "study" ? P_STUDY : P_CASUAL
   ];
 
-  if (wantsQuiz) parts.push(P_QUIZ);
   if (wantsViz) parts.push(P_VIZ);
   if (wantsWeb) parts.push(P_WEB_PROMPT);
 

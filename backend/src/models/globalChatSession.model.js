@@ -14,6 +14,10 @@ const chatMessageSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    toolCalls: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
   },
   { _id: false, timestamps: { createdAt: true, updatedAt: false } }
 );

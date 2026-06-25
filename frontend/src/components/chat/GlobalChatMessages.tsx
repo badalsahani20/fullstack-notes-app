@@ -3,6 +3,7 @@ import { ChevronRight, FileText, Search, Globe, Check, Copy } from "lucide-react
 import { GlobalChatEmptyState } from "@/components/chat/GlobalChatEmptyState";
 import type { Message } from "@/components/ai/types";
 import IrisMessageBody from "./IrisMessageBody";
+import { InlineQuizManager } from "./InlineQuizManager";
 import { parseIrisResponse } from "@/utils/parseIrisResponse";
 import { useEffect, useState, useRef } from "react";
 import { getThinkingState } from "@/utils/getThinkingState";
@@ -21,8 +22,8 @@ const ThinkingWidget = ({ isThinking, thinkingTime, thought, isReasoningOff }: T
   // If we have thought text, show it in a collapsible detail block
   const [thinking, setThinking] = useState(getThinkingState());
 
-  useEffect(() => { 
-    if(!isThinking) return;
+  useEffect(() => {
+    if (!isThinking) return;
 
     const interval = setInterval(() => {
       setThinking(getThinkingState());
@@ -129,7 +130,7 @@ export const GlobalChatMessages = ({
   const handleScroll = () => {
     const container = scrollContainerRef.current;
     if (!container) return;
-    
+
     // Check if user is near the bottom (within 50px)
     const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
     setUserHasScrolledUp(!isNearBottom);
@@ -147,7 +148,7 @@ export const GlobalChatMessages = ({
   };
 
   return (
-    <div 
+    <div
       className={`gc-messages custom-scrollbar${fullWidthAssistant ? " gc-messages-fullwidth-assistant" : ""}`}
       ref={scrollContainerRef}
       onScroll={handleScroll}
@@ -162,8 +163,13 @@ export const GlobalChatMessages = ({
         <GlobalChatEmptyState onChipClick={sendMessage} prompts={prompts} />
       ) : (
         messages.map((msg) => {
+          // Hide system messages from the UI (e.g. hidden quiz submission prompts)
+          if (msg.role === "user" && msg.text.startsWith("[System:")) {
+            return null;
+          }
+
           const isActiveStream = msg.id === streamingMessageId;
-          const displayText = isActiveStream ? streamedMessageText : msg.text;
+          const displayText = (isActiveStream ? streamedMessageText : msg.text) || "";
           const isThinking = (msg as any).isThinking ?? false;
           const thinkingTime = (msg as any).thinkingTime as number | undefined;
           const thought = (msg as any).thought as string | undefined;
@@ -175,9 +181,9 @@ export const GlobalChatMessages = ({
                 <>
                   {/* ── Pure waiting state: pill only, no bubble wrapper ── */}
                   {isThinking && !displayText && !thought ? (
-                    toolCalls && toolCalls.length > 0 ? (
-                      <div className="flex flex-col gap-2">
-                        {toolCalls.map((tc, idx) => {
+                    toolCalls && toolCalls.filter(tc => !["search_notes", "render_quiz"].includes(tc.tool)).length > 0 ? (
+                      <div className="flex flex-col gap-2 mb-2">
+                        {toolCalls.filter(tc => !["search_notes", "render_quiz"].includes(tc.tool)).map((tc, idx) => {
                           let label = "Working...";
                           let icon = <Globe size={14} className="iris-search-indicator-icon" />;
                           if (tc.tool === "search_web") {
@@ -189,9 +195,6 @@ export const GlobalChatMessages = ({
                           } else if (tc.tool === "get_note_content") {
                             label = "Reading note...";
                             icon = <FileText size={14} className="iris-search-indicator-icon animate-pulse" />;
-                          } else if (tc.tool === "search_notes") {
-                            label = "Searching notes & memories...";
-                            icon = <Search size={14} className="iris-search-indicator-icon animate-pulse" />;
                           } else if (tc.tool === "save_memory") {
                             label = "Saving to memory...";
                             icon = <Check size={14} className="iris-search-indicator-icon animate-pulse text-emerald-500" />;
@@ -210,9 +213,9 @@ export const GlobalChatMessages = ({
                   ) : (
                     <div className="gc-msg-bubble gc-msg-bubble-ai">
                       {/* 1. Premium completed tool badges (Top) */}
-                      {toolCalls && toolCalls.length > 0 && (
+                      {toolCalls && toolCalls.filter(tc => !["search_notes", "render_quiz"].includes(tc.tool)).length > 0 && (
                         <div className="flex flex-col gap-1.5 mb-2">
-                          {toolCalls.map((tc, idx) => {
+                          {toolCalls.filter(tc => !["search_notes", "render_quiz"].includes(tc.tool)).map((tc, idx) => {
                             let label = tc.tool;
                             let icon = <Globe size={12} className="text-emerald-500" />;
                             if (tc.tool === "search_web") {
@@ -224,9 +227,6 @@ export const GlobalChatMessages = ({
                             } else if (tc.tool === "get_note_content") {
                               label = "Read note";
                               icon = <FileText size={12} className="text-emerald-500" />;
-                            } else if (tc.tool === "search_notes") {
-                              label = "Searched notes & memories";
-                              icon = <Search size={12} className="text-emerald-500" />;
                             } else if (tc.tool === "save_memory") {
                               label = "Saved to memory";
                               icon = <Check size={12} className="text-emerald-500" />;
@@ -260,6 +260,24 @@ export const GlobalChatMessages = ({
                           onAnswer={sendMessage}
                         />
                       </div>
+
+                      {/* 4. Tools (Inline rendering) */}
+                      {msg.toolCalls?.map((tc, idx) => {
+                        if (tc.tool === "search_web" || tc.tool === "crawl_url" || tc.tool === "save_memory") return null;
+                        if (tc.tool === "render_quiz" && tc.quizData) {
+                          return (
+                            <InlineQuizManager
+                              key={`quiz-${idx}`}
+                              questions={tc.quizData}
+                              isHistorical={msg.id !== messages[messages.length - 1].id}
+                              onComplete={(formattedAnswers) => {
+                                sendMessage(formattedAnswers);
+                              }}
+                            />
+                          );
+                        }
+                        return null;
+                      })}
 
                       {/* Copy response button once generation completes */}
                       {!(isActiveStream && isStreaming) && (

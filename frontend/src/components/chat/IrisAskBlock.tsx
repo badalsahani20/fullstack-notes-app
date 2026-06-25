@@ -57,13 +57,16 @@ const IrisAskBlock = ({ segment, onAnswer, answered = false, chosenAnswer: contr
 
       if (e.key === "ArrowDown") {
         e.preventDefault();
+        e.stopImmediatePropagation();
         setActiveIndex((i) => (i + 1) % (len + 1)); // +1 for input row
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        e.stopImmediatePropagation();
         setActiveIndex((i) => (i <= 0 ? len : i - 1));
       } else if (e.key === "Enter") {
         if (activeIndex >= 0 && activeIndex < len) {
           e.preventDefault();
+          e.stopImmediatePropagation();
           pickOption(segment.options[activeIndex]);
         }
         // Enter on input row is handled by the input's own onKeyDown
@@ -72,8 +75,8 @@ const IrisAskBlock = ({ segment, onAnswer, answered = false, chosenAnswer: contr
       }
     };
 
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true });
   }, [isAnswered, activeIndex, segment.options, pickOption, skipDialog]);
 
   // ── Collapsed answered state ──────────────────────────────────────────────

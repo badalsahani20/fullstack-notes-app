@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import Google from "../assets/google.svg";
 import { toast } from "sonner";
+import { generatePkceChallenge, getCodeVerifier, clearCodeVerifier } from "../utils/pkce";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -16,23 +17,105 @@ const Login = () => {
   const { setAuth } = useAuthStore();
   const nav = useNavigate();
 
+  const isDesktop = !!(window as any).electronAPI?.auth;
+
+  useEffect(() => {
+    if (isDesktop) {
+      (window as any).electronAPI.auth.onOAuthCallback(async (code: string) => {
+        try {
+          setLoading(true);
+          const code_verifier = getCodeVerifier();
+          if (!code_verifier) {
+             toast.error("Invalid state: no verifier");
+             return;
+          }
+
+          const res = await api.post("/users/exchange-code", { code, code_verifier });
+          
+          if (res.data?.refreshToken) {
+            await (window as any).electronAPI.auth.setRefreshToken(res.data.refreshToken);
+          }
+
+          setAuth(
+            {
+              id: res.data.user.id || res.data.user._id,
+              name: res.data.user.name,
+              email: res.data.user.email,
+              avatar: res.data.user.avatar,
+              isVerified: res.data.user.isVerified,
+            },
+            res.data.accessToken
+          );
+          clearCodeVerifier();
+          nav("/");
+        } catch (error: any) {
+          toast.error("Google authentication failed");
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      });
+    }
+  }, [isDesktop, nav, setAuth]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.post("/users/login", { email, password });
-      if (res.data) {
+      if (isDesktop) {
+        // Desktop PKCE Flow
+        const { challenge } = await generatePkceChallenge();
+        
+        // 1. Authenticate & get Authorization Code
+        const authRes = await api.post("/users/desktop/login", {
+          email,
+          password,
+          code_challenge: challenge,
+          redirect_uri: "notesify://callback",
+          clientId: "notesify-desktop",
+          clientType: "desktop"
+        });
+
+        const authCode = authRes.data.authorizationCode;
+
+        // 2. Exchange Authorization Code for tokens
+        const exchangeRes = await api.post("/users/exchange-code", {
+          code: authCode,
+          code_verifier: getCodeVerifier()
+        });
+
+        if (exchangeRes.data?.refreshToken) {
+          await (window as any).electronAPI.auth.setRefreshToken(exchangeRes.data.refreshToken);
+        }
+
         setAuth(
           {
-            id: res.data.user._id || res.data.user.id,
-            name: res.data.user.name,
-            email: res.data.user.email,
-            avatar: res.data.user.avatar,
-            isVerified: res.data.user.isVerified,
+            id: exchangeRes.data.user.id || exchangeRes.data.user._id,
+            name: exchangeRes.data.user.name,
+            email: exchangeRes.data.user.email,
+            avatar: exchangeRes.data.user.avatar,
+            isVerified: exchangeRes.data.user.isVerified,
           },
-          res.data.accessToken
+          exchangeRes.data.accessToken
         );
+        clearCodeVerifier();
         nav("/");
+      } else {
+        // Standard Web Flow
+        const res = await api.post("/users/login", { email, password });
+        if (res.data) {
+          setAuth(
+            {
+              id: res.data.user.id || res.data.user._id,
+              name: res.data.user.name,
+              email: res.data.user.email,
+              avatar: res.data.user.avatar,
+              isVerified: res.data.user.isVerified,
+            },
+            res.data.accessToken
+          );
+          nav("/");
+        }
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -42,8 +125,20 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/users/google`;
+  const handleGoogleLogin = async () => {
+    if (isDesktop) {
+      const { challenge } = await generatePkceChallenge();
+      const authUrl = new URL(`${import.meta.env.VITE_API_URL}/users/google`);
+      authUrl.searchParams.set("code_challenge", challenge);
+      authUrl.searchParams.set("redirect_uri", "notesify://callback");
+      authUrl.searchParams.set("clientId", "notesify-desktop");
+      authUrl.searchParams.set("clientType", "desktop");
+      
+      // Open in system browser, via IPC
+      (window as any).electronAPI.auth.openExternal(authUrl.toString());
+    } else {
+      window.location.href = `${import.meta.env.VITE_API_URL}/users/google`;
+    }
   };
 
   return (

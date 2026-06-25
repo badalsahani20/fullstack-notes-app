@@ -135,23 +135,25 @@ const ContextualAiPanel = ({
         useReasoning={useReasoning}
       />
 
-      <GlobalChatCompose
-        input={chatInput}
-        setInput={setChatInput}
-        attachedImage={attachedImage}
-        setAttachedImage={setAttachedImage}
-        isSending={isSendingChat}
-        imageDisabled={false}
-        handleSend={() => void sendChatMessage()}
-        textareaRef={textareaRef}
-        fileRef={fileRef}
-        placeholder="Ask about this note or anything..."
-        onStop={stopRequest}
-        useReasoning={useReasoning}
-        setUseReasoning={setUseReasoning}
-        useWebSearch={useWebSearch}
-        setUseWebSearch={setUseWebSearch}
-      />
+      <div className="relative">
+        <GlobalChatCompose
+          input={chatInput}
+          setInput={setChatInput}
+          attachedImage={attachedImage}
+          setAttachedImage={setAttachedImage}
+          isSending={isSendingChat}
+          imageDisabled={false}
+          handleSend={() => void sendChatMessage()}
+          textareaRef={textareaRef}
+          fileRef={fileRef}
+          placeholder="Ask about this note or anything..."
+          onStop={stopRequest}
+          useReasoning={useReasoning}
+          setUseReasoning={setUseReasoning}
+          useWebSearch={useWebSearch}
+          setUseWebSearch={setUseWebSearch}
+        />
+      </div>
     </motion.aside>
   );
 };

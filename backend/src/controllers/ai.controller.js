@@ -28,63 +28,16 @@ const normalizeForHash = (text = "") => text.replace(/\s+/g, " ").trim();
  * First turn always fetches. Follow-ups fetch on broad note-related keywords.
  * Clearly off-topic messages (greetings, math, general questions) are skipped.
  */
-const shouldFetchNote = (message = "", history = []) => {
+const shouldFetchNote = (message = "", history = [], contextChanged = false) => {
+  // If the frontend explicitly tells us the editor content changed, we must include it!
+  if (contextChanged) return true;
+  
+  // If this is the very first message of the chat, always fetch the note context.
   if (!history || history.length === 0) return true;
 
-  const lower = message.toLowerCase();
-  const noteKeywords = [
-    // Direct references
-    "note",
-    "this",
-    "content",
-    "text",
-    "document",
-    // Action verbs
-    "summarize",
-    "summary",
-    "explain",
-    "rewrite",
-    "improve",
-    "fix",
-    "check",
-    "review",
-    "analyze",
-    "analyse",
-    "translate",
-    "continue",
-    "expand",
-    "shorten",
-    "simplify",
-    "edit",
-    "update",
-    "help me",
-    "help with",
-    "work on",
-    "look at",
-    // Structure references
-    "bullet",
-    "point",
-    "section",
-    "paragraph",
-    "heading",
-    "title",
-    "step",
-    "part",
-    "line",
-    "chapter",
-    // Question patterns
-    "what does",
-    "what is in",
-    "tell me",
-    "read",
-    "above",
-    "wrote",
-    "written",
-    "about",
-    "based on",
-    "from my",
-  ];
-  return noteKeywords.some((kw) => lower.includes(kw));
+  // Otherwise, we rely on the LLM's vast context window history. 
+  // We no longer use arbitrary regex keywords that trigger false positives!
+  return false;
 };
 
 const mightNeedWeb = (msg) => {
@@ -455,14 +408,14 @@ const resolveNoteContext = async (
   req,
   { isGlobalChat, noteId, history, toolUsed },
 ) => {
-  const { noteContext: reqNoteContext, hasSelection, message } = req.body;
+  const { noteContext: reqNoteContext, hasSelection, message, contextChanged } = req.body;
   let noteContext = "";
   let noteFetched = false;
 
   // Only fetch note context if the message is actually about the note/editor context.
   // We allow this even if a tool was used, so you can compare web data with note data.
   const isNoteQuery =
-    noteId && (hasSelection || shouldFetchNote(message, history));
+    noteId && (hasSelection || shouldFetchNote(message, history, contextChanged));
   const shouldIncludeContext = !!isNoteQuery;
 
   if (shouldIncludeContext) {
@@ -503,6 +456,9 @@ const streamAiResponse = async (stream, res, noteFetched, userId) => {
   const parser = new SseStreamParser();
   let memoryToolArgs = "";
   let memoryToolIndex = -1;
+  let quizToolArgs = "";
+  let quizToolIndex = -1;
+  const toolCalls = [];
 
   if (noteFetched) {
     res.write(
@@ -532,6 +488,11 @@ const streamAiResponse = async (stream, res, noteFetched, userId) => {
             res.write(
               `data: ${JSON.stringify({ type: "tool_call", tool: normTool })}\n\n`,
             );
+          }else if(toolName === "generate_quiz"){
+            quizToolIndex = tc.index;
+            if(tc.function?.arguments){
+              quizToolArgs += tc.function.arguments;
+            }
           } else if (toolName === "save_memory") {
               memoryToolIndex = tc.index;
               if (tc.function?.arguments) {
@@ -541,6 +502,8 @@ const streamAiResponse = async (stream, res, noteFetched, userId) => {
               if (tc.function?.arguments) {
                   memoryToolArgs += tc.function.arguments;
               }
+          }else if (quizToolIndex !== -1 && tc.index === quizToolIndex) { 
+            if (tc.function?.arguments) quizToolArgs += tc.function.arguments;
           }
         }
       }
@@ -565,20 +528,25 @@ const streamAiResponse = async (stream, res, noteFetched, userId) => {
                   saveMemory(userId, args).catch(console.error);
               });
               res.write(`data: ${JSON.stringify({ type: "tool_call", tool: "save_memory" })}\n\n`);
-              
-              // If the AI didn't stream any text alongside the tool call, provide a default response
-              if (!finalReply.trim()) {
-                  const fallbackMsg = "Got it! I've saved that to my memory.";
-                  finalReply = fallbackMsg;
-                  res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: fallbackMsg } }] })}\n\n`);
-              }
           }
       } catch (err) {
           console.error(`Failed to parse save_memory arguments: ${err.message}. Raw args:`, memoryToolArgs);
       }
   }
 
-  return finalReply;
+  if (quizToolIndex !== -1 && quizToolArgs) {
+      try {
+          const args = JSON.parse(quizToolArgs);
+          if (args.questions && args.questions.length > 0) {
+              res.write(`data: ${JSON.stringify({ type: "tool_call", tool: "render_quiz", quizData: args.questions })}\n\n`);
+              toolCalls.push({ tool: "render_quiz", quizData: args.questions });
+          }
+      } catch (err) {
+          console.error(`Failed to parse generate_quiz arguments: ${err.message}. Raw args:`, quizToolArgs);
+      }
+  }
+
+  return { finalReply, toolCalls };
 };
 
 // Save the completed turn to the global-chat session in MongoDB
@@ -589,6 +557,7 @@ const persistToDb = async (
   activeSessionId,
   activeSession,
   summary = "",
+  toolCalls = [],
 ) => {
   const isImageUrl =
     typeof imageBase64 === "string" && /^https?:\/\//i.test(imageBase64);
@@ -600,16 +569,16 @@ const persistToDb = async (
     activeSession || (await GlobalChatSession.findById(activeSessionId));
   if (!sessionToUpdate) return;
 
-  if (!finalReply?.trim()) {
+  if (!finalReply?.trim() && toolCalls.length === 0) {
     console.warn(
-      "Skipping chat persistence because assistant reply was empty.",
+      "Skipping chat persistence because assistant reply and tool calls were both empty.",
     );
     return;
   }
 
   sessionToUpdate.messages.push(
     { role: "user", content: safeUserContent },
-    { role: "assistant", content: finalReply },
+    { role: "assistant", content: finalReply, toolCalls },
   );
   if (summary) sessionToUpdate.summary = summary;
   await sessionToUpdate.save();
@@ -758,7 +727,45 @@ export const chatWithAiController = catchAsync(async (req, res) => {
     }
 
     const userName = req.user?.name ? `You are talking to a user named ${req.user.name}. Address them politely when appropriate.` : "";
-    const finalSystemPrompt = `${userName}${memoryContext}${retrievedNotesContext}`;
+    let finalSystemPrompt = `${userName}${memoryContext}${retrievedNotesContext}`;
+
+    const currentMode = activeSession?.chatMode || chatMode || "study";
+    const tools = currentMode === "study" ? [{
+      type: "function",
+      function: {
+        name: "generate_quiz",
+        description: `Generate a multiple-choice quiz based on the user's request and context.
+CRITICAL: Before calling this tool, you MUST generate a conversational message (e.g. 'Here is a quick quiz to test your knowledge:'). After calling the tool, DO NOT output any more text. DO NOT include the correct answer or explanation in the tool call.
+
+MCQ GENERATION RULES:
+- Ask exactly one concept per question.
+- Question: 20-60 words (hard limit: 75).
+- Options: exactly 4.
+- Option length: 2-10 words (hard limit: 12).
+- Distractors should be plausible but clearly incorrect.
+- Prefer direct or scenario-based questions.
+- Avoid unnecessary context and filler.
+- The entire card should be readable in under 15 seconds.`,
+        parameters: {
+          type: "object",
+          properties: {
+            questions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string", description: "A unique identifier for this question (e.g. q1)" },
+                  question: { type: "string", description: "The quiz question" },
+                  options: { type: "array", items: { type: "string" }, description: "4 possible answers" },
+                },
+                required: ["id", "question", "options"]
+              }
+            }
+          },
+          required: ["questions"]
+        }
+      }
+    }] : null;
 
     result = await chatWithAi({
       message,
@@ -773,6 +780,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       useReasoning: useReasoning !== false,
       enableWeb: shouldSearchWeb,
       chatMode: activeSession?.chatMode || chatMode || "study",
+      tools: tools,
     });
   } catch (aiError) {
     console.error("❌ All AI models failed:", aiError.message);
@@ -788,9 +796,13 @@ export const chatWithAiController = catchAsync(async (req, res) => {
   // 6. Stream or return the response
   let finalReply = "";
 
+  let toolCalls = [];
+
   if (isStreaming) {
     try {
-      finalReply = await streamAiResponse(result.stream, res, noteFetched, req.user._id);
+      const responseObj = await streamAiResponse(result.stream, res, noteFetched, req.user._id);
+      finalReply = responseObj.finalReply;
+      toolCalls = responseObj.toolCalls;
       // Send metadata (like extracted PDF text) after the stream completes
       if (result.pdfContext) {
         res.write(
@@ -815,6 +827,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       activeSessionId,
       activeSession,
       result.summary,
+      toolCalls
     );
   }
 
@@ -829,7 +842,7 @@ export const chatWithAiController = catchAsync(async (req, res) => {
       history: [
         ...history,
         { role: "user", content: message },
-        { role: "assistant", content: finalReply },
+        { role: "assistant", content: finalReply, toolCalls },
       ],
       sessionId: activeSessionId,
       pdfContext: result.pdfContext,

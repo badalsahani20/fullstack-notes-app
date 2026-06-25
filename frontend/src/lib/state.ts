@@ -17,4 +17,9 @@ export const clearAllLocalState = () => {
 
   // 2. Clear React Query cache
   queryClient.clear();
+
+  // 3. Clear Desktop IPC Tokens
+  if (!!(window as any).electronAPI?.auth) {
+    (window as any).electronAPI.auth.clearRefreshToken().catch(console.error);
+  }
 };

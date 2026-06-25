@@ -16,20 +16,34 @@ let refreshPromise: Promise<string> | null = null;
 
 export const requestSessionRefresh = async () => {
   if (!refreshPromise) {
-    refreshPromise = axios
-      .post(
-        `${import.meta.env.VITE_API_URL}/users/refresh`,
-        {},
-        { withCredentials: true }
-      )
-      .then((res) => {
-        const { user, accessToken } = res.data;
-        useAuthStore.getState().setAuth(user, accessToken);
-        return accessToken;
-      })
-      .finally(() => {
-        refreshPromise = null;
-      });
+    refreshPromise = (async () => {
+      const config: any = { withCredentials: true, headers: {} };
+      if (!!(window as any).electronAPI?.auth) {
+        const desktopToken = await (window as any).electronAPI.auth.getRefreshToken();
+        if (desktopToken) {
+          config.headers["X-Refresh-Token"] = desktopToken;
+        }
+      }
+
+      return axios
+        .post(
+          `${import.meta.env.VITE_API_URL}/users/refresh`,
+          {},
+          config
+        )
+        .then((res) => {
+          const { user, accessToken, refreshToken } = res.data;
+          // If a new refresh token is issued and we're on desktop, save it securely
+          if (!!(window as any).electronAPI?.auth && refreshToken) {
+            (window as any).electronAPI.auth.setRefreshToken(refreshToken).catch(console.error);
+          }
+          useAuthStore.getState().setAuth(user, accessToken);
+          return accessToken;
+        })
+        .finally(() => {
+          refreshPromise = null;
+        });
+    })();
   }
 
   return refreshPromise;

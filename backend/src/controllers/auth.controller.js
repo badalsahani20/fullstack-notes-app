@@ -4,6 +4,10 @@ import catchAsync from "../utils/catchAsync.js";
 import crypto from "crypto";
 import * as MailService from "../services/mail.service.js";
 import { redis } from "../../config/redis.js";
+import passport from "passport";
+
+const hashRefreshToken = (token) =>
+  crypto.createHash("sha256").update(token).digest("hex");
 
 const getRefreshCookieOptions = () => ({
   httpOnly: true,
@@ -123,9 +127,9 @@ export const getShowcaseUsers = catchAsync(async (req, res, next) => {
 
 
 export const refreshToken = catchAsync(async (req, res, next) => {
-  const refreshTokenFromCookie = req.cookies.refreshToken;
+  const clientRefreshToken = req.cookies.refreshToken ?? req.get("X-Refresh-Token");
 
-  const { accessToken, refreshToken, user } = await AuthService.refreshAccessToken(refreshTokenFromCookie);
+  const { accessToken, refreshToken, user } = await AuthService.refreshAccessToken(clientRefreshToken);
 
   res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
 
@@ -143,9 +147,9 @@ export const refreshToken = catchAsync(async (req, res, next) => {
 })
 
 export const logoutUser = catchAsync(async (req, res, next) => {
-  const refreshTokenFromCookie = req.cookies.refreshToken;
+  const clientRefreshToken = req.cookies.refreshToken ?? req.get("X-Refresh-Token");
   
-  await AuthService.logoutUser(refreshTokenFromCookie);
+  await AuthService.logoutUser(clientRefreshToken);
   res.clearCookie("refreshToken", getRefreshCookieClearOptions());
 
   res.json({ message: "Logged out successfully" });
@@ -166,75 +170,332 @@ export const getMe = catchAsync(async (req, res, next) => {
   });
 });
 
-export const googleCallback = catchAsync(async (req, res) => {
-  const user = req.user;
-  
-  // 1. Generate a secure, short-lived temporary code
-  const tempCode = crypto.randomBytes(32).toString("hex");
-  
-  // 2. Store in Redis (valid for 60 seconds)
-  // Mapping code -> userId
-  await redis.set(`oauth_code:${tempCode}`, user._id.toString(), { ex: 60 });
+export const desktopLogin = catchAsync(async (req, res) => {
+    const {
+        email,
+        password,
+        code_challenge,
+        redirect_uri,
+        clientId,
+        clientType,
+    } = req.body;
 
-  // 3. Redirect with the code
-  res.redirect(
-    `${process.env.FRONTEND_URL}/oauth-success?code=${tempCode}`
-  );
+    const emailVal = email?.trim();
+    const passwordVal = password;
+    const codeChallenge = code_challenge?.trim();
+    const redirectUri = redirect_uri?.trim();
+    const clientIdVal = clientId?.trim();
+    const clientTypeVal = clientType?.trim();
+
+    if (!emailVal || !passwordVal || !codeChallenge || !redirectUri) {
+        return res.status(400).json({
+            message: "All fields are required.",
+        });
+    }
+
+    const clientIdFinal = clientIdVal || "notesify-desktop";
+    const clientTypeFinal = clientTypeVal || "desktop";
+
+    if (!ALLOWED_CLIENT_TYPES.includes(clientTypeFinal)) {
+        return res.status(400).json({
+            message: "Invalid client type.",
+        });
+    }
+
+    if (!ALLOWED_DESKTOP_REDIRECTS.includes(redirectUri)) {
+        return res.status(400).json({
+            message: "Invalid redirect URI.",
+        });
+    }
+
+    // Authenticate credentials.
+    // Tokens are issued only after the authorization code exchange.
+    const user = await AuthService.verifyCredentials(
+        emailVal,
+        passwordVal
+    );
+
+    const authorizationCode =
+        crypto.randomBytes(32).toString("hex");
+
+    const authorizationCodeData = {
+        userId: user._id.toString(),
+        clientId: clientIdFinal,
+        clientType: clientTypeFinal,
+        codeChallenge,
+        redirectUri,
+    };
+
+    await redis.set(
+        `authorization_code:${authorizationCode}`,
+        JSON.stringify(authorizationCodeData),
+        { ex: 60 }
+    );
+
+    return res.status(200).json({
+        success: true,
+        authorizationCode,
+        redirectUri
+    });
+});
+
+const ALLOWED_DESKTOP_REDIRECTS = [
+  "notesify://callback",
+  "https://localhost:5500/oauth-success",
+  
+];
+
+export const initiateGoogleAuth = catchAsync(async (req, res, next) => {
+    const { code_challenge, redirect_uri, clientId, clientType } = req.query;
+
+    const codeChallenge = code_challenge?.trim();
+    const redirectUri = redirect_uri?.trim();
+    const clientIdValue = clientId?.trim();
+    const clientTypeValue = clientType?.trim();
+
+    let oauthState;
+
+    // Determine whether this request is initiating a PKCE flow
+    const isPkceFlow =
+        codeChallenge !== undefined || redirectUri !== undefined;
+
+    if(isPkceFlow) {
+        // Both parameters are required for PKCE
+        if(!codeChallenge || !redirectUri) {
+            return res.status(400).json({
+                message: "Both code_challenge and redirect_uri are required.",
+            });
+        }
+
+        const clientIdFinal = clientIdValue || "notesify-desktop";
+        const clientTypeFinal = clientTypeValue || "desktop";
+
+        const allowedClientTypes = ["desktop", "mobile"];
+
+        if(!allowedClientTypes.includes(clientTypeFinal)) {
+            return res.status(400).json({
+                message: "Invalid client type.",
+            });
+        }
+
+        // Prevent open redirect attacks
+        if(!ALLOWED_DESKTOP_REDIRECTS.includes(redirectUri)) {
+            return res.status(400).json({
+                message: "Invalid redirect URI.",
+            });
+        }
+
+        oauthState = crypto.randomBytes(16).toString("hex");
+
+        const oauthStateData = {
+            codeChallenge: codeChallenge,
+            redirectUri: redirectUri,
+            clientId: clientIdFinal,
+            clientType: clientTypeFinal,
+        };
+
+        await redis.set(
+            `oauth_state:${oauthState}`,
+            JSON.stringify(oauthStateData),
+            { ex: 300 }
+        );
+    }
+
+    passport.authenticate("google", {
+        scope: ["profile", "email"],
+        state: oauthState,
+        session: false,
+    })(req, res, next);
+});
+
+
+export const googleCallback = catchAsync(async (req, res) => {
+    const user = req.user;
+    const { state } = req.query;
+
+    let oauthStateData = null;
+
+    // PKCE/Desktop flow
+    if (state) {
+        const rawState = await redis.get(`oauth_state:${state}`);
+        if (rawState) await redis.del(`oauth_state:${state}`);
+
+        if (!rawState) {
+          return res.redirect(`${process.env.FRONTEND_URL}/login?error=Invalid+or+expired+OAuth+state`);
+        }
+
+        oauthStateData = typeof rawState === "string" ? JSON.parse(rawState) : rawState;
+    }
+
+    const authorizationCode = crypto.randomBytes(32).toString("hex");
+
+    let authCodeData;
+    let targetRedirectUri;
+
+    if (oauthStateData) {
+        authCodeData = {
+            userId: user._id.toString(),
+            clientId: oauthStateData.clientId,
+            clientType: oauthStateData.clientType,
+            codeChallenge: oauthStateData.codeChallenge,
+            redirectUri: oauthStateData.redirectUri,
+        };
+
+        const redirectUrl = new URL(oauthStateData.redirectUri);
+        redirectUrl.searchParams.set("code", authorizationCode);
+
+        targetRedirectUri = redirectUrl.toString();
+    } else {
+        // Standard web OAuth flow
+        authCodeData = {
+            userId: user._id.toString(),
+            clientId: "notesify-web",
+            clientType: "web",
+        };
+
+        const redirectUrl = new URL(
+            `${process.env.FRONTEND_URL}/oauth-success`
+        );
+        redirectUrl.searchParams.set("code", authorizationCode);
+
+        targetRedirectUri = redirectUrl.toString();
+    }
+
+    await redis.set(
+        `authorization_code:${authorizationCode}`,
+        JSON.stringify(authCodeData),
+        { ex: 60 }
+    );
+
+    res.redirect(targetRedirectUri);
 });
 
 export const exchangeCode = catchAsync(async (req, res) => {
-  const { code } = req.body;
-  if (!code) {
-    return res.status(400).json({ message: "No exchange code provided" });
-  }
+    const code = req.body.code?.trim();
+    const codeVerifier = req.body.code_verifier?.trim();
 
-  // 1. Verify code in Redis
-  const userId = await redis.get(`oauth_code:${code}`);
-  if (!userId) {
-    return res.status(400).json({ message: "Invalid or expired exchange code" });
-  }
+    if (!code) {
+        return res.status(400).json({
+            message: "Authorization code is required.",
+        });
+    }
 
-  // 2. Consume the code (delete it so it can't be reused)
-  await redis.del(`oauth_code:${code}`);
+    // 1. Consume the authorization code
+    const rawAuthorizationCodeData = await redis.get(`authorization_code:${code}`);
+    if (rawAuthorizationCodeData) await redis.del(`authorization_code:${code}`);
 
-  // 3. Generate real tokens
-  const user = await User.findById(userId);
-  if (!user) {
-    return res.status(404).json({ message: "User not found" });
-  }
+    if (!rawAuthorizationCodeData) {
+        return res.status(400).json({
+            message: "Invalid or expired authorization code.",
+        });
+    }
 
-  const accessToken = user.generateAccessToken();
-  const refreshToken = user.generateRefreshToken();
+    const authorizationCodeData = typeof rawAuthorizationCodeData === "string" 
+        ? JSON.parse(rawAuthorizationCodeData) 
+        : rawAuthorizationCodeData;
 
-  // 4. Store the refresh token in DB (Rotation logic)
-  const hashedRefreshToken = crypto.createHash("sha256").update(refreshToken).digest("hex");
-  await User.updateOne(
-    { _id: user._id },
-    {
-      $push: {
-        refreshToken: {
-          $each: [{ token: hashedRefreshToken }],
-          $slice: -5,
+    // 2. PKCE Verification (Desktop / Mobile only)
+    const isPkceFlow = Boolean(authorizationCodeData.codeChallenge);
+
+    if (isPkceFlow) {
+        if (!codeVerifier) {
+            return res.status(400).json({
+                message: "code_verifier is required.",
+            });
+        }
+
+        const computedChallenge = crypto
+            .createHash("sha256")
+            .update(codeVerifier)
+            .digest("base64url");
+
+        const expected = Buffer.from(authorizationCodeData.codeChallenge);
+        const actual = Buffer.from(computedChallenge);
+
+        if (
+            expected.length !== actual.length ||
+            !crypto.timingSafeEqual(expected, actual)
+        ) {
+            return res.status(401).json({
+                message: "Invalid code_verifier.",
+            });
+        }
+    }
+
+    // 3. Lookup authenticated user
+    const user = await User.findById(authorizationCodeData.userId);
+
+    if (!user) {
+        return res.status(404).json({
+            message: "User not found.",
+        });
+    }
+
+    // 4. Generate tokens
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    // 5. Store hashed refresh token
+    const hashedRefreshToken = hashRefreshToken(refreshToken);
+
+    const MAX_ACTIVE_SESSIONS = 5;
+
+    await User.updateOne(
+        { _id: user._id },
+        {
+            $push: {
+                refreshToken: {
+                    $each: [{ token: hashedRefreshToken }],
+                    $slice: -MAX_ACTIVE_SESSIONS,
+                },
+            },
+        }
+    );
+
+    // 6. Session creation (temporary until AuthSession is implemented)
+    const userAgent = req.get("User-Agent") || "Unknown Device";
+
+    // TODO:
+    // await AuthSessionService.create({
+    //     userId: user._id,
+    //     clientId: authorizationCodeData.clientId,
+    //     clientType: authorizationCodeData.clientType,
+    //     refreshToken,
+    //     userAgent,
+    //     ip: req.ip,
+    // });
+
+    // 7. Common response payload
+    const responsePayload = {
+        success: true,
+        accessToken,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            isVerified: user.isVerified,
         },
-      },
-    }
-  );
+    };
 
-  // 5. Set cookie and return access token
-  res.cookie("refreshToken", refreshToken, getRefreshCookieOptions());
-  
-  res.status(200).json({
-    success: true,
-    accessToken,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-      isVerified: user.isVerified,
+    // 8. Deliver refresh token according to client type
+    if (
+        ["desktop", "mobile"].includes(
+            authorizationCodeData.clientType
+        )
+    ) {
+        responsePayload.refreshToken = refreshToken;
+    } else {
+        res.cookie(
+            "refreshToken",
+            refreshToken,
+            getRefreshCookieOptions()
+        );
     }
-  });
+
+    return res.status(200).json(responsePayload);
 });
+
 
 export const forgotPassword = catchAsync(async(req, res) => {
   const { email } = req.body;

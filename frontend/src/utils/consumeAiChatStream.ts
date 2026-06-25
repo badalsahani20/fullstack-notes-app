@@ -2,6 +2,7 @@ import { SseStreamParser } from "@/utils/sseParser";
 
 type ToolCallEvent = {
   tool: string;
+  quizData?: any;
 };
 
 type MetadataEvent = {
@@ -61,7 +62,7 @@ export const consumeAiChatStream = async (
       }
 
       if (data.type === "tool_call" && data.tool) {
-        onToolCall?.({ tool: data.tool });
+        onToolCall?.({ tool: data.tool, quizData: (data as any).quizData });
         continue;
       }
 

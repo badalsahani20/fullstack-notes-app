@@ -10,6 +10,7 @@ import { GlobalChatSidebar } from "@/components/chat/GlobalChatSidebar";
 import { GlobalChatMessages } from "@/components/chat/GlobalChatMessages";
 import { GlobalChatCompose } from "@/components/chat/GlobalChatCompose";
 
+
 const GlobalChatPage = () => {
   const {
     sessions, sessionsLoading,

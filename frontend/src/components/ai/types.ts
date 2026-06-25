@@ -57,7 +57,7 @@ export type Message = {
   isThinking?: boolean;
   thinkingTime?: number;
   thought?: string;
-  toolCalls?: Array<{ tool: string }>;
+  toolCalls?: Array<{ tool: string; quizData?: any[] }>;
 };
 
 export type ChatHistoryMessage = {

@@ -19,7 +19,7 @@ export type ChatMessage = {
   thought?: string;
   isThinking?: boolean;
   thinkingTime?: number;
-  toolCalls?: { tool: string }[];
+  toolCalls?: { tool: string; quizData?: any }[];
 };
 
 export type ChatSession = {
@@ -106,6 +106,7 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
           text,
           imageUrl,
           segments: m.segments || (m.role === "assistant" ? parseIrisResponse(m.content) : undefined),
+          toolCalls: (m as any).toolCalls,
           skipAnimation: true,
         };
       });
@@ -196,11 +197,11 @@ export const useGlobalChatStore = create<GlobalChatStore>((set, get) => ({
       const { fullText, fullThought, thinkingTime: finalThinkingTime } =
         await consumeAiChatStream(response.body, {
           throttleMs: 60,
-          onToolCall: ({ tool }) => {
+          onToolCall: ({ tool, quizData }) => {
             set((state) => ({
               messages: state.messages.map((m) =>
                 m.id === aiMsgId
-                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool }] }
+                  ? { ...m, toolCalls: [...(m.toolCalls ?? []), { tool, quizData }] }
                   : m
               ),
             }));
