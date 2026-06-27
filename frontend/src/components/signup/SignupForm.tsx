@@ -43,7 +43,7 @@ const SignupForm = () => {
     }
   };
 
-  const isDesktop = !!(window as any).electronAPI?.auth;
+  const isDesktop = !!(window as any).electronAPI?.auth; //return true if desktop and false if web
 
   const handleGoogleSignup = async () => {
     if (isDesktop) {

@@ -51,6 +51,7 @@ export const requestSessionRefresh = async () => {
 
 const isAuthRoute = (url = "") =>
   url.includes("/users/login") ||
+  url.includes("/users/desktop/login") ||
   url.includes("/users/register") ||
   url.includes("/users/verify-email") ||
   url.includes("/users/refresh") ||

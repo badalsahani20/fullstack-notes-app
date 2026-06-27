@@ -245,6 +245,9 @@ const ALLOWED_DESKTOP_REDIRECTS = [
   
 ];
 
+const ALLOWED_CLIENT_TYPES = ["desktop", "mobile"];
+
+
 export const initiateGoogleAuth = catchAsync(async (req, res, next) => {
     const { code_challenge, redirect_uri, clientId, clientType } = req.query;
 
